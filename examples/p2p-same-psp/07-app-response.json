@@ -1,0 +1,22 @@
+{
+  "step": 7,
+  "title": "Anna's app shows: paid",
+  "from": "PSP A",
+  "to": "Banking App A",
+  "interface": "I1",
+  "specRef": "Annex D1-1 common outgoing envelope",
+  "schema": "contracts/i1-app-psp/schemas/response.schema.json",
+  "http": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "body": {
+    "MessageIdentification": "PSPA-RESP-0001",
+    "OriginalMessageIdentification": "APPA-P2P-SAME-P-0001",
+    "CreationDateTime": "2026-11-02T10:15:00.760Z",
+    "ReturnCode": 0
+  },
+  "explanation": "ReturnCode 0 = successful. Answering after the final status is our choice."
+}

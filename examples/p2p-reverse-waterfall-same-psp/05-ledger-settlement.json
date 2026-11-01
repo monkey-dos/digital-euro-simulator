@@ -1,0 +1,35 @@
+{
+  "step": 5,
+  "title": "Settle: DCA A −30, Anna +30 −150, Clara +150",
+  "from": "DESP",
+  "to": "DESP ledger",
+  "interface": "internal",
+  "specRef": "Annex D2-7 p.10 (atomic settlement)",
+  "body": {
+    "settlementDateTime": "2026-11-02T10:15:00.710Z",
+    "bookings": [
+      {
+        "entry": "DCA of PSP A",
+        "owner_for_observer": "PSP A central bank money",
+        "before": "1000000.00",
+        "change": "-30.00",
+        "after": "999970.00"
+      },
+      {
+        "entry": "ENT-C85E0FBE7F2F",
+        "owner_for_observer": "Anna (PSP A)",
+        "before": "120.00",
+        "change": "+30.00 -150.00",
+        "after": "0.00"
+      },
+      {
+        "entry": "ENT-F28B2B11CA84",
+        "owner_for_observer": "Clara (PSP A)",
+        "before": "40.00",
+        "change": "+150.00",
+        "after": "190.00"
+      }
+    ]
+  },
+  "explanation": "All three bookings happen atomically: either everything or nothing. 30 EUR of new digital euro are issued against PSP A's DCA. Which DCA is used is not named in any message (our reading: the instructed agent's)."
+}

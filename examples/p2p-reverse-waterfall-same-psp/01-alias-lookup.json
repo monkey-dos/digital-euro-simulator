@@ -1,0 +1,20 @@
+{
+  "step": 1,
+  "title": "Which bank serves +4915100000002?",
+  "placeholder": true,
+  "from": "PSP A",
+  "to": "DESP",
+  "interface": "I3 (placeholder)",
+  "specRef": "Rulebook §4.4.3 p.99 (Alias Lookup Service). Message not specified in the documents available.",
+  "body": {
+    "request": {
+      "proxyAlias": "+4915100000002",
+      "proxyAliasType": "TELE"
+    },
+    "response": {
+      "DEAN": "EU2200000000000002",
+      "digitalEuroPspId": "SIMADEF0XXX"
+    }
+  },
+  "explanation": "PLACEHOLDER. The payer's bank resolves the alias to the payee's DEAN and bank. The real call is in an ECB document we do not have; field names borrowed from the D2-6 account data query."
+}

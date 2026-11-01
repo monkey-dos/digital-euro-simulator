@@ -1,0 +1,31 @@
+{
+  "step": 4,
+  "title": "Received: payment and funding technically valid",
+  "from": "DESP",
+  "to": "PSP A",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.62–64",
+  "schema": "contracts/i3-psp-desp/schemas/desp-api/post-payment-instructions.response-201.schema.json",
+  "http": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "93358e3c-4d96-4eee-a635-a6846cb2ce5b",
+      "Response-Timestamp": "2026-11-02T10:15:00.460Z"
+    }
+  },
+  "body": {
+    "paymentIdentification": {
+      "UETR": "01a19bc1-5244-7963-ab4a-be41261c75f1"
+    },
+    "paymentInstructionId": "f8508cdc-778e-4726-b31c-124a3a30292e",
+    "paymentTransactionStatus": {
+      "status": "AcceptedTechnicalValidation"
+    },
+    "fundingId": "85b6f216-d277-4cad-8ba0-b0b7b5eaad7c",
+    "fundingStatus": {
+      "status": "AcceptedTechnicalValidation"
+    }
+  },
+  "explanation": "Payment and funding get separate IDs but will be settled together."
+}

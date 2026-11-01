@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/encrypted-payment-instruction-content.schema.json",
+  "title": "Content of encryptedPaymentInstructionObject",
+  "description": "Annex D2-7 p.59–61. Readable only by the other bank; in the simulation decoded for the observer.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "creditorAccount",
+    "debtorAccount",
+    "debtor",
+    "transactionAmount"
+  ],
+  "properties": {
+    "creditorAccount": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/AccountReference"
+    },
+    "creditor": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PartyDescription1"
+    },
+    "ultimateCreditor": {
+      "type": "object"
+    },
+    "debtorAccount": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/AccountReference"
+    },
+    "debtor": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PartyDescription1"
+    },
+    "remittanceInformationUnstructured": {
+      "type": "string",
+      "maxLength": 140
+    },
+    "remittanceInformationStructured": {
+      "type": "object"
+    },
+    "purposeCode": {
+      "type": "string"
+    },
+    "paymentIdentification": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentIdentification1"
+    },
+    "transactionAmount": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Amount"
+    },
+    "additionalAmount": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Amount"
+    },
+    "totalAmount": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Amount"
+    },
+    "originalPaymentId": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/UUID"
+    },
+    "originalUetr": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/UUID"
+    }
+  }
+}

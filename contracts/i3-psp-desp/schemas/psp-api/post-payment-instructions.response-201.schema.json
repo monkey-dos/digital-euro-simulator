@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/psp-api/post-payment-instructions.response-201.schema.json",
+  "title": "PSP API · POST /v1/payment-instructions · 201 response (payee PSP → DESP)",
+  "description": "Annex D2-7 p.104–105. The payee bank contributes its customer's ledger entry here (required when accepted). Status values: Rejected or AcceptedCustomerProfile; statusReason required on rejection.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "paymentIdentification",
+    "paymentTransactionStatus"
+  ],
+  "properties": {
+    "paymentIdentification": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentIdentification2"
+    },
+    "paymentTransactionStatus": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/TransactionStatus",
+      "properties": {
+        "status": {
+          "enum": [
+            "Rejected",
+            "AcceptedCustomerProfile"
+          ]
+        }
+      }
+    },
+    "statusReason": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/StatusReason"
+    },
+    "paymentInstructionObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "creditorEntry"
+      ],
+      "properties": {
+        "creditorEntry": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Entry"
+        }
+      }
+    },
+    "paymentDefundingObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instructedAgent",
+        "amount"
+      ],
+      "properties": {
+        "instructedAgent": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/FinancialInstitutionIdentification1"
+        },
+        "amount": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Amount"
+        }
+      },
+      "description": "Waterfall on the payee side: present if the payee would exceed the holding limit. No encryptedDefundingObject: open defunding never happens in this simulation (ADR 0001)."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "paymentTransactionStatus": {
+            "properties": {
+              "status": {
+                "const": "Rejected"
+              }
+            }
+          }
+        },
+        "required": [
+          "paymentTransactionStatus"
+        ]
+      },
+      "then": {
+        "required": [
+          "statusReason"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paymentTransactionStatus": {
+            "properties": {
+              "status": {
+                "const": "AcceptedCustomerProfile"
+              }
+            }
+          }
+        },
+        "required": [
+          "paymentTransactionStatus"
+        ]
+      },
+      "then": {
+        "required": [
+          "paymentInstructionObject"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "step": 2,
+  "title": "Block 30.00 EUR on Anna's giro account",
+  "from": "PSP A",
+  "to": "PSP A core banking",
+  "interface": "I5 (ours)",
+  "specRef": "Rulebook LM-030 (reverse waterfall); D1-1 §7.2 non-digital euro payment account funds management service (funds blocking, debit)",
+  "body": {
+    "action": "block",
+    "account": "giro of Anna Schmidt",
+    "amount": {
+      "currency": "EUR",
+      "amount": "30.00"
+    }
+  },
+  "explanation": "Bank-internal step on the giro account. Not part of the ECB messages; shown so the money trail is complete."
+}

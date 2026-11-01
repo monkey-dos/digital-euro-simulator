@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/psp-api/post-payment-instruction-status.request.schema.json",
+  "title": "PSP API · POST /v1/payment-instructions/{payment-instruction-id}/status · request (DESP → each involved PSP)",
+  "description": "Annex D2-7 p.106–109. Final status push, answered with 204 and no body. Status values: Rejected or AcceptedSettlementCompletedDebitorAccount. settlementDateTime and settlementBusinessDay are required on success; statusReason on rejection.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "paymentIdentification",
+    "paymentTransactionStatus"
+  ],
+  "properties": {
+    "paymentIdentification": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentIdentification2"
+    },
+    "settlementDateTime": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/ISODateTime"
+    },
+    "settlementBusinessDay": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/ISODate"
+    },
+    "paymentTransactionStatus": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/TransactionStatus",
+      "properties": {
+        "status": {
+          "enum": [
+            "Rejected",
+            "AcceptedSettlementCompletedDebitorAccount"
+          ]
+        }
+      }
+    },
+    "fundingStatus": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/TransactionStatus",
+      "properties": {
+        "status": {
+          "enum": [
+            "Rejected",
+            "AcceptedSettlementCompletedDebitorAccount"
+          ]
+        }
+      }
+    },
+    "fundingId": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/UUID"
+    },
+    "defundingStatus": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/TransactionStatus",
+      "properties": {
+        "status": {
+          "enum": [
+            "Rejected",
+            "AcceptedSettlementCompletedDebitorAccount"
+          ]
+        }
+      }
+    },
+    "defundingId": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/UUID"
+    },
+    "statusReason": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/StatusReason"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "paymentTransactionStatus": {
+            "properties": {
+              "status": {
+                "const": "Rejected"
+              }
+            }
+          }
+        },
+        "required": [
+          "paymentTransactionStatus"
+        ]
+      },
+      "then": {
+        "required": [
+          "statusReason"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "paymentTransactionStatus": {
+            "properties": {
+              "status": {
+                "const": "AcceptedSettlementCompletedDebitorAccount"
+              }
+            }
+          }
+        },
+        "required": [
+          "paymentTransactionStatus"
+        ]
+      },
+      "then": {
+        "required": [
+          "settlementDateTime",
+          "settlementBusinessDay"
+        ]
+      }
+    }
+  ]
+}

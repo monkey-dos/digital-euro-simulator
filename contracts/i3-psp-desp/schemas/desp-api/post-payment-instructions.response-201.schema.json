@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/desp-api/post-payment-instructions.response-201.schema.json",
+  "title": "DESP API · POST /v1/payment-instructions · 201 response (DESP → payer PSP)",
+  "description": "Annex D2-7 p.62–64. Status values here: Rejected or AcceptedTechnicalValidation. statusReason is required on rejection; fundingId/defundingId when the funding/defunding part is accepted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "paymentIdentification",
+    "paymentInstructionId",
+    "paymentTransactionStatus"
+  ],
+  "properties": {
+    "paymentIdentification": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentIdentification2"
+    },
+    "paymentInstructionId": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/UUID"
+    },
+    "paymentTransactionStatus": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/TransactionStatus",
+      "properties": {
+        "status": {
+          "enum": [
+            "Rejected",
+            "AcceptedTechnicalValidation"
+          ]
+        }
+      }
+    },
+    "fundingId": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/UUID"
+    },
+    "fundingStatus": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/TransactionStatus",
+      "properties": {
+        "status": {
+          "enum": [
+            "Rejected",
+            "AcceptedTechnicalValidation"
+          ]
+        }
+      }
+    },
+    "defundingId": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/UUID"
+    },
+    "defundingStatus": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/TransactionStatus",
+      "properties": {
+        "status": {
+          "enum": [
+            "Rejected",
+            "AcceptedTechnicalValidation"
+          ]
+        }
+      }
+    },
+    "statusReason": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/StatusReason"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "paymentTransactionStatus": {
+            "properties": {
+              "status": {
+                "const": "Rejected"
+              }
+            }
+          }
+        },
+        "required": [
+          "paymentTransactionStatus"
+        ]
+      },
+      "then": {
+        "required": [
+          "statusReason"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "fundingStatus": {
+            "properties": {
+              "status": {
+                "const": "AcceptedTechnicalValidation"
+              }
+            }
+          }
+        },
+        "required": [
+          "fundingStatus"
+        ]
+      },
+      "then": {
+        "required": [
+          "fundingId"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "defundingStatus": {
+            "properties": {
+              "status": {
+                "const": "AcceptedTechnicalValidation"
+              }
+            }
+          }
+        },
+        "required": [
+          "defundingStatus"
+        ]
+      },
+      "then": {
+        "required": [
+          "defundingId"
+        ]
+      }
+    }
+  ]
+}

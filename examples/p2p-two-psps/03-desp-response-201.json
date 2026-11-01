@@ -1,0 +1,27 @@
+{
+  "step": 3,
+  "title": "Received and technically valid",
+  "from": "DESP",
+  "to": "PSP A",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.62–64",
+  "schema": "contracts/i3-psp-desp/schemas/desp-api/post-payment-instructions.response-201.schema.json",
+  "http": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "b99d5b5d-f809-46c1-9863-e24ee511d597",
+      "Response-Timestamp": "2026-11-02T10:15:00.400Z"
+    }
+  },
+  "body": {
+    "paymentIdentification": {
+      "UETR": "01a19bc1-5208-7595-86e5-c3cfd53c4aa6"
+    },
+    "paymentInstructionId": "b19713a3-a946-48d9-b480-99f2a026f59a",
+    "paymentTransactionStatus": {
+      "status": "AcceptedTechnicalValidation"
+    }
+  },
+  "explanation": "Receipt only. Settlement waits for PSP B."
+}

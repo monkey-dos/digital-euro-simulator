@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/desp-api/post-payment-instructions.request.schema.json",
+  "title": "DESP API · POST /v1/payment-instructions · request (payer PSP → DESP)",
+  "description": "Annex D2-7 p.57–62. creditorEntry is mandatory if both users are at the same bank; encryptedPaymentInstructionObject is mandatory if they are at different banks (checked by tools/validate.py).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "acceptanceDateTime",
+    "paymentIdentification",
+    "paymentInstructionObject"
+  ],
+  "properties": {
+    "acceptanceDateTime": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/ISODateTime"
+    },
+    "paymentIdentification": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentIdentification2"
+    },
+    "paymentInstructionObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "debtorAgent",
+        "creditorAgent",
+        "paymentType",
+        "amount",
+        "debtorEntry"
+      ],
+      "properties": {
+        "debtorAgent": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/FinancialInstitutionIdentification1"
+        },
+        "creditorAgent": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/FinancialInstitutionIdentification1"
+        },
+        "paymentType": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentType"
+        },
+        "amount": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Amount"
+        },
+        "debtorEntry": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Entry"
+        },
+        "creditorEntry": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Entry"
+        },
+        "encryptedPaymentInstructionObject": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/SimEncrypted"
+        }
+      }
+    },
+    "fundingObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instructedAgent",
+        "amount"
+      ],
+      "properties": {
+        "instructedAgent": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/FinancialInstitutionIdentification1"
+        },
+        "amount": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Amount"
+        }
+      },
+      "description": "Reverse waterfall: present when the payer's balance is lower than the amount. No encryptedFundingObject: open funding never happens in this simulation (ADR 0001)."
+    },
+    "defundingObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instructedAgent",
+        "amount"
+      ],
+      "properties": {
+        "instructedAgent": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/FinancialInstitutionIdentification1"
+        },
+        "amount": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Amount"
+        }
+      },
+      "description": "Waterfall: only when payer and payee have the same digital euro PSP. No encryptedDefundingObject: open defunding never happens in this simulation (ADR 0001)."
+    }
+  }
+}

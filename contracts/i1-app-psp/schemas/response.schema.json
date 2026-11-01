@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i1-app-psp/schemas/response.schema.json",
+  "title": "I1 · Outgoing message envelope (bank → banking app)",
+  "description": "Annex D1-1 common envelope for outgoing messages.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "MessageIdentification",
+    "CreationDateTime",
+    "ReturnCode"
+  ],
+  "properties": {
+    "MessageIdentification": {
+      "type": "string",
+      "maxLength": 35
+    },
+    "OriginalMessageIdentification": {
+      "type": "string",
+      "maxLength": 35
+    },
+    "CreationDateTime": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+    },
+    "ReturnCode": {
+      "type": "integer",
+      "enum": [
+        0,
+        1
+      ],
+      "description": "0 successful, 1 failure"
+    },
+    "StatusReason": {
+      "type": "string",
+      "maxLength": 4,
+      "description": "Only on rejection. Code list in D1-5 (not available): placeholder."
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/psp-api/post-payment-instructions.request.schema.json",
+  "title": "PSP API · POST /v1/payment-instructions · request (DESP → payee PSP)",
+  "description": "Annex D2-7 p.102–104. DESP forwards the payer bank's instruction; the payer's ledger entry is NOT forwarded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "acceptanceDateTime",
+    "paymentIdentification",
+    "paymentInstructionObject"
+  ],
+  "properties": {
+    "acceptanceDateTime": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/ISODateTime"
+    },
+    "paymentIdentification": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentIdentification2"
+    },
+    "paymentInstructionObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "paymentInstructionId",
+        "debtorAgent",
+        "creditorAgent",
+        "paymentType",
+        "amount",
+        "encryptedPaymentInstructionObject"
+      ],
+      "properties": {
+        "paymentInstructionId": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/UUID"
+        },
+        "debtorAgent": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/FinancialInstitutionIdentification1"
+        },
+        "creditorAgent": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/FinancialInstitutionIdentification1"
+        },
+        "paymentType": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentType"
+        },
+        "amount": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Amount"
+        },
+        "encryptedPaymentInstructionObject": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/SimEncrypted"
+        }
+      }
+    }
+  }
+}
