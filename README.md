@@ -47,10 +47,15 @@ Two apps that respect the same contract can replace each other. For example, a b
 
 ## Try the examples
 
+**Watch them:** open `apps/observer/index.html` in a browser. The observer plays every example step by step, with live balances.
+
+**Check them:**
+
 ```bash
 pip install jsonschema
 python3 tools/generate_examples.py   # rebuilds examples/ from the test data
 python3 tools/validate.py            # checks every example against the schemas
+python3 tools/build_observer.py      # bundles the examples for the observer
 ```
 
 ## Sources
