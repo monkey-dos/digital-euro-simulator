@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Digital Euro Observer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: control strip on top, stage (the network of apps) beside the message inspector, ledger and timeline below. */
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --ink:#13202D; --muted:#566576; --line:#CBD3DD; --grid:#E4E9EF;
+  --central:#1D4C99; --central-t:#E5ECF8;
+  --psp:#0E7566; --psp-t:#E1F1ED;
+  --front:#A85F0A; --front-t:#FAEEDD;
+  --sim:#6A4C9E; --sim-t:#EEE8F6;
+  --ok:#1E7B3C; --bad:#B3261E; --enc:#7A3E00; --enc-t:#FFF1DE;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E141B; --surface:#16202A; --ink:#E4EAF1; --muted:#97A5B4; --line:#2E3C4A; --grid:#1B2631;
+  --central:#86AAEA; --central-t:#18294A; --psp:#5FC4B1; --psp-t:#123029;
+  --front:#E4A75C; --front-t:#352812; --sim:#B9A0E4; --sim-t:#28213C;
+  --ok:#6FCF8A; --bad:#FF8A80; --enc:#F2B66B; --enc-t:#33240F; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E141B; --surface:#16202A; --ink:#E4EAF1; --muted:#97A5B4; --line:#2E3C4A; --grid:#1B2631;
+  --central:#86AAEA; --central-t:#18294A; --psp:#5FC4B1; --psp-t:#123029;
+  --front:#E4A75C; --front-t:#352812; --sim:#B9A0E4; --sim-t:#28213C;
+  --ok:#6FCF8A; --bad:#FF8A80; --enc:#F2B66B; --enc-t:#33240F; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14.5px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--f-display);font-stretch:85%;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:clamp(24px,3.4vw,34px);font-weight:750;line-height:1.05}
+h2{font-size:19px;font-weight:700}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mono{font-family:var(--f-mono)}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+header p{margin:4px 0 0;color:var(--muted);max-width:70ch}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;padding:12px 14px}
+.controls label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px;min-width:0;max-width:100%}
+.controls label select{width:100%}
+select,button,input[type=range]{font:inherit}
+select{text-overflow:ellipsis;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);min-width:0;max-width:100%}
+.btns{display:flex;gap:6px}
+button{padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);min-width:84px}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible,.tl button:focus-visible{outline:2px solid var(--central);outline-offset:2px}
+.speed{display:flex;align-items:center;gap:8px}
+.speed output{font-family:var(--f-mono);font-size:12px;color:var(--ink);min-width:44px}
+.stepcount{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-left:auto}
+
+.main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.main{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.stage{overflow-x:auto;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.stage svg{display:block;width:100%;min-width:560px;height:auto}
+svg text{font-family:var(--f-body);fill:var(--ink)}
+.node rect{stroke-width:1.6;transition:stroke-width .2s,opacity .25s}
+.node .t{font-weight:600;font-size:15px}
+.node .s{font-size:12px;fill:var(--muted)}
+.node.k-central rect{fill:var(--central-t);stroke:var(--central)}
+.node.k-psp rect{fill:var(--psp-t);stroke:var(--psp)}
+.node.k-front rect{fill:var(--front-t);stroke:var(--front)}
+.node.k-sim rect{fill:var(--sim-t);stroke:var(--sim)}
+.node.inner rect{fill:var(--surface)}
+.node.active rect{stroke-width:3.2}
+.node.flash rect{animation:flash .6s ease-out}
+@keyframes flash{0%{stroke-width:5}100%{stroke-width:1.6}}
+.node.dim{opacity:.35}
+.wire{stroke:var(--line);stroke-width:2;fill:none}
+.wire.hot{stroke:var(--ink)}
+.msg circle{fill:var(--ink)}
+.msg.hidden circle{fill:var(--muted)}
+.msg text{font-family:var(--f-mono);font-size:11.5px;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+
+.inspector{padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.inspector .route{font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.badge{font-family:var(--f-mono);font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.badge.ph{color:var(--front);border-color:currentColor}
+.badge.if{color:var(--central);border-color:currentColor}
+.explain{margin:0}
+.http{font-family:var(--f-mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-x:auto;white-space:pre}
+.json{font-family:var(--f-mono);font-size:12px;line-height:1.55;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow:auto;max-height:420px;white-space:pre;margin:0}
+.json .k{color:var(--central)} .json .s{color:var(--psp)} .json .n{color:var(--front)} .json .b{color:var(--sim)}
+.json .enc{color:var(--enc);background:var(--enc-t);border-radius:3px;padding:0 3px}
+.json .red{color:var(--muted);font-style:italic}
+.decrypt{display:flex;flex-direction:column;gap:8px;border:1px dashed var(--enc);border-radius:6px;padding:10px;background:var(--enc-t)}
+.decrypt p{margin:0;font-size:13px}
+.hiddenmsg{border:1px dashed var(--line);border-radius:6px;padding:14px;color:var(--muted)}
+.ref{font-size:12px;color:var(--muted)}
+.ref a{color:var(--central)}
+
+.ledger{padding:14px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:440px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono)}
+tr.changed td{animation:hl 1.4s ease-out}
+@keyframes hl{0%{background:var(--enc-t)}100%{background:transparent}}
+.delta{font-size:11px;margin-left:6px}
+.delta.up{color:var(--ok)} .delta.down{color:var(--bad)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.tile .v{font-family:var(--f-mono);font-size:18px;font-variant-numeric:tabular-nums}
+.tile .l{font-size:12px;color:var(--muted)}
+.check{font-size:13px}
+.check.ok{color:var(--ok)} .check.bad{color:var(--bad)}
+.tl{padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.tl ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:360px;overflow:auto}
+.tl button{width:100%;text-align:left;border:0;border-radius:4px;padding:5px 8px;background:transparent;display:grid;grid-template-columns:28px minmax(0,1fr);gap:6px;font-size:13px}
+.tl button .n{font-family:var(--f-mono);color:var(--muted)}
+.tl button.cur{background:var(--central-t)}
+.tl button.done .n{color:var(--ok)}
+.tl button.hid{color:var(--muted)}
+.summary{color:var(--muted);margin:0;font-size:13.5px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Digital euro simulator · transparency observer</div>
+      <h1>Digital Euro Observer</h1>
+      <p>Watch every message travel between the apps, step by step, and see the ledger change. All people, banks and amounts are fictional. Messages follow the ECB's draft specification v0.91.</p>
+    </div>
+  </header>
+
+  <section class="card controls" aria-label="Playback controls">
+    <label>Scenario <select id="scenario"></select></label>
+    <label>Whose view
+      <select id="lens">
+        <option value="all">Everything (game master)</option>
+        <option value="desp">What the central platform sees</option>
+        <option value="A">What PSP A sees</option>
+        <option value="B">What PSP B sees</option>
+        <option value="public">What the public sees</option>
+      </select>
+    </label>
+    <div class="btns">
+      <button type="button" id="restart" title="Back to the start">Restart</button>
+      <button type="button" id="prev" title="Previous step (←)">◀ Step</button>
+      <button type="button" id="play" class="primary" title="Play / pause (space)">Play</button>
+      <button type="button" id="next" title="Next step (→)">Step ▶</button>
+    </div>
+    <label>Speed
+      <span class="speed"><input type="range" id="speed" min="0.5" max="5" step="0.5" value="2" aria-label="Seconds per message"><output id="speedOut">2.0 s</output></span>
+    </label>
+    <span class="stepcount" id="stepcount"></span>
+  </section>
+  <p class="summary" id="summary"></p>
+
+  <div class="main">
+   <div class="col">
+    <section class="card" aria-label="Network of apps">
+      <div class="stage"><svg id="stage" viewBox="0 0 1000 540" role="img" aria-label="Apps and the messages between them"></svg></div>
+      <div class="legend">
+        <span>● message in transit</span><span>Blue: central platform (ECB)</span><span>Green: banks</span><span>Amber: banking apps</span><span>Violet: game master (simulation only)</span>
+      </div>
+    </section>
+    <section class="card ledger" id="ledger" aria-label="Balances"></section>
+   </div>
+   <div class="col">
+    <section class="card inspector" id="inspector" aria-live="polite"></section>
+    <section class="card tl" aria-label="Steps">
+      <h2>Steps</h2>
+      <ol id="timeline"></ol>
+    </section>
+   </div>
+  </div>
+  <p class="ref">Source, interface contracts and example messages: <a href="https://github.com/monkey-dos/digital-euro-simulator" target="_blank" rel="noopener">github.com/monkey-dos/digital-euro-simulator</a> · MIT license · Keyboard: space = play/pause, ← → = step.</p>
+</div>
+
+<script src="scenarios.js"></script>
+<script>
+(function(){
+"use strict";
+var DATA = window.OBSERVER_DATA;
+var ins = document.getElementById("inspector");
+if(!DATA || !DATA.scenarios || !DATA.scenarios.length){
+  ins.innerHTML = '<h2>No scenarios loaded</h2><p class="explain">The file <code>scenarios.js</code> is missing. Run <code>python3 tools/build_observer.py</code> in the repository and reload.</p>';
+  return;
+}
+var TD = DATA.testData;
+var SVGNS = "http://www.w3.org/2000/svg";
+
+/* ---------- stage layout ---------- */
+var NODES = {
+  "Game Master":        {x:30,  y:24,  w:200, h:58,  k:"sim",     t:"Game master",            s:"simulation only"},
+  "DESP":               {x:350, y:18,  w:300, h:168, k:"central", t:"DESP",                   s:"ECB digital euro platform"},
+  "DESP ledger":        {x:372, y:92,  w:256, h:76,  k:"central", t:"Central ledger",         s:"all digital euro live here", inner:true},
+  "PSP A":              {x:50,  y:236, w:270, h:84,  k:"psp",     t:"PSP A",                  s:"retail bank"},
+  "PSP B":              {x:680, y:236, w:270, h:84,  k:"psp",     t:"PSP B",                  s:"bank + merchant acquiring"},
+  "PSP A core banking": {x:50,  y:336, w:270, h:50,  k:"psp",     t:"Giro accounts A",        s:"", inner:true},
+  "PSP B core banking": {x:680, y:336, w:270, h:50,  k:"psp",     t:"Giro accounts B",        s:"", inner:true},
+  "Banking App A":      {x:85,  y:446, w:200, h:66,  k:"front",   t:"Banking App A",          s:"Anna, Clara"},
+  "Banking App B":      {x:715, y:446, w:200, h:66,  k:"front",   t:"Banking App B",          s:"Ben"}
+};
+var WIRES = [["Banking App A","PSP A"],["Banking App B","PSP B"],["PSP A","DESP"],["PSP B","DESP"],["PSP A","PSP A core banking"],["PSP B","PSP B core banking"]];
+var stage = document.getElementById("stage");
+function el(n,a,p){var e=document.createElementNS(SVGNS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+function center(n){var r=NODES[n];return [r.x+r.w/2,r.y+r.h/2];}
+function edge(n,toward){ // point on the rectangle border of n in the direction of `toward`
+  var r=NODES[n], c=center(n), dx=toward[0]-c[0], dy=toward[1]-c[1];
+  if(!dx&&!dy) return c;
+  var sx=dx?(r.w/2)/Math.abs(dx):Infinity, sy=dy?(r.h/2)/Math.abs(dy):Infinity, s=Math.min(sx,sy);
+  return [c[0]+dx*s, c[1]+dy*s];
+}
+var wireEls={};
+WIRES.forEach(function(w){
+  var a=edge(w[0],center(w[1])), b=edge(w[1],center(w[0]));
+  wireEls[w.join("|")]=el("line",{x1:a[0],y1:a[1],x2:b[0],y2:b[1],class:"wire"},stage);
+});
+var nodeEls={};
+Object.keys(NODES).forEach(function(name){
+  var r=NODES[name];
+  var g=el("g",{class:"node k-"+r.k+(r.inner?" inner":"")},stage);
+  el("rect",{x:r.x,y:r.y,width:r.w,height:r.h,rx:7},g);
+  var t=el("text",{class:"t",x:r.x+12,y:r.y+(r.h<60?22:26)},g); t.textContent=r.t;
+  if(r.s){var s=el("text",{class:"s",x:r.x+12,y:r.y+(r.h<60?38:44)},g); s.textContent=r.s;}
+  nodeEls[name]=g;
+});
+var msg=el("g",{class:"msg",visibility:"hidden"},stage);
+el("circle",{r:8},msg);
+var msgLabel=el("text",{x:12,y:-10},msg);
+
+/* ---------- state ---------- */
+var S={sc:0,idx:-1,playing:false,lens:"all",timer:null,anim:null};
+function sc(){return DATA.scenarios[S.sc];}
+function userByEntry(id){for(var k in TD.users){if(TD.users[k].entry===id)return k;}return null;}
+function userByName(n){for(var k in TD.users){if(TD.users[k].name===n)return k;}return null;}
+function dec(x){return Math.round(parseFloat(x)*100);} // cents
+function eur(c){var neg=c<0;c=Math.abs(c);var s=(Math.floor(c/100)).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",")+"."+String(c%100).padStart(2,"0");return (neg?"−":"")+s;}
+
+function initialState(){
+  var st={users:{},dca:{},limit:dec(TD.holdingLimit),settled:0,created:0};
+  Object.keys(TD.users).forEach(function(k){var u=TD.users[k];st.users[k]={de:dec(u.balance),giro:dec(u.giro),blocked:0};});
+  Object.keys(TD.dcaBalances).forEach(function(b){st.dca[b]=dec(TD.dcaBalances[b]);});
+  return st;
+}
+function apply(st,step){
+  var b=step.body||{};
+  if(step.to==="DESP ledger" && b.bookings){
+    st.settled++;
+    b.bookings.forEach(function(bk){
+      var m=/^DCA of PSP (\w+)$/.exec(bk.entry);
+      if(m){st.dca[m[1]]=dec(bk.after);return;}
+      var u=userByEntry(bk.entry); if(u) st.users[u].de=dec(bk.after);
+    });
+  } else if(/core banking$/.test(step.to) && b.action){
+    var u=userByName((b.account||"").replace(/^giro of /,"")), a=dec(b.amount.amount);
+    if(!u) return;
+    var x=st.users[u];
+    if(b.action==="block"){x.blocked+=a;}
+    else if(b.action==="debit blocked amount"){x.giro-=a;x.blocked-=a;}
+    else if(b.action==="credit"){x.giro+=a;}
+    else if(b.action==="debit"){x.giro-=a;}
+  } else if(step.from==="Game Master" && b.command==="SET_HOLDING_LIMIT"){
+    st.limit=dec(b.amount.amount);
+  }
+}
+function stateAt(i){var st=initialState();for(var j=0;j<=i;j++)apply(st,sc().steps[j]);return st;}
+
+/* ---------- lenses ---------- */
+function parties(step){return [step.from,step.to];}
+function seesStep(step,lens){
+  if(lens==="all") return true;
+  if(lens==="public") return false;
+  var p=parties(step);
+  if(lens==="desp") return p.some(function(x){return /^DESP/.test(x);});
+  return p.some(function(x){return x==="PSP "+lens||x==="Banking App "+lens||x==="PSP "+lens+" core banking";}) || (step.from==="Game Master");
+}
+function canDecrypt(step,lens){
+  if(!step.decryptedView) return false;
+  if(lens==="all") return true;
+  if(lens==="A"||lens==="B") return step.from==="PSP "+lens||step.to==="PSP "+lens;
+  return false;
+}
+var LENS_NAME={all:"the game master",desp:"the central platform",A:"PSP A",B:"PSP B",public:"the public"};
+function cap(x){return x.charAt(0).toUpperCase()+x.slice(1);}
+
+/* ---------- JSON rendering ---------- */
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function renderJSON(v,ind,opts,key){
+  ind=ind||"";var pad=ind+"  ";
+  if(v===null) return '<span class="b">null</span>';
+  if(Array.isArray(v)){ if(!v.length) return "[]"; return "[\n"+v.map(function(x){return pad+renderJSON(x,pad,opts);}).join(",\n")+"\n"+ind+"]"; }
+  if(typeof v==="object"){
+    var ks=Object.keys(v); if(!ks.length) return "{}";
+    return "{\n"+ks.map(function(k){
+      var val=v[k];
+      if(opts.redactOwner && k==="owner_for_observer") return pad+'<span class="k">"'+esc(k)+'"</span>: <span class="red">hidden in this view</span>';
+      return pad+'<span class="k">"'+esc(k)+'"</span>: '+renderJSON(val,pad,opts,k);
+    }).join(",\n")+"\n"+ind+"}";
+  }
+  if(typeof v==="string"){
+    if(v.indexOf("SIMENC:")===0) return '<span class="enc" title="Encrypted for the other bank">"SIMENC:'+esc(v.slice(7,27))+'… ('+v.length+' characters, encrypted)"</span>';
+    return '<span class="s">"'+esc(v)+'"</span>';
+  }
+  if(typeof v==="number") return '<span class="n">'+v+'</span>';
+  return '<span class="b">'+esc(v)+'</span>';
+}
+function label(step){
+  if(step.http&&step.http.method) return step.http.method+" "+step.http.path.replace(/\/v1\/payment-instructions\/[0-9a-f-]+\/status/,"/v1/payment-instructions/{id}/status").replace(/\/v1\/(fundings|defundings)\/[0-9a-f-]+\/status/,"/v1/$1/{id}/status");
+  if(step.http&&step.http.status) return String(step.http.status);
+  if(step.to==="DESP ledger") return "settle";
+  if(/core banking$/.test(step.to)) return (step.body&&step.body.action)||"giro";
+  return step.interface||"";
+}
+
+/* ---------- rendering ---------- */
+function renderInspector(){
+  var s=sc(), st=s.steps[S.idx];
+  if(!st){
+    ins.innerHTML='<div class="eyebrow">Ready</div><h2>'+esc(s.title)+'</h2><p class="explain">'+esc(s.summary)+'</p><p class="ref">Press Play or Step ▶. Use the speed slider to slow the messages down. "Whose view" shows the same scenario through the eyes of the central platform, a bank or the public.</p>';
+    return;
+  }
+  var lens=S.lens, sees=seesStep(st,lens);
+  var h='<div class="eyebrow">Step '+st.step+' of '+(s.steps.length-1)+'</div><h2>'+esc(st.title)+'</h2>';
+  h+='<div class="route">'+esc(st.from)+' → '+esc(st.to)+'</div><div class="badges"><span class="badge if">'+esc(st.interface||"")+'</span>'+(st.placeholder?'<span class="badge ph">placeholder: not in the ECB documents</span>':'')+'</div>';
+  if(!sees){
+    h+='<div class="hiddenmsg">'+(lens==="public"?'The public sees no individual messages, only totals (below).':'This message is not visible to '+esc(LENS_NAME[lens])+'. It travels between other parties.')+'</div>';
+    ins.innerHTML=h; return;
+  }
+  h+='<p class="explain">'+esc(st.explanation||"")+'</p>';
+  if(st.http){
+    var line=st.http.method?st.http.method+" "+st.http.path:"HTTP "+st.http.status;
+    var hd=st.http.headers||{}; line+="\n"+Object.keys(hd).map(function(k){return k+": "+hd[k];}).join("\n");
+    h+='<div class="http">'+esc(line)+'</div>';
+  }
+  if(st.body!==null && st.body!==undefined){
+    h+='<pre class="json">'+renderJSON(st.body,"",{redactOwner:lens==="desp"})+'</pre>';
+  } else if(st.http) {
+    h+='<p class="ref">No body.</p>';
+  }
+  if(st.decryptedView){
+    if(canDecrypt(st,lens)){
+      h+='<div class="decrypt"><p><b>Encrypted part, opened for '+(lens==="all"?"the audience":esc(LENS_NAME[lens]))+'.</b> '+(lens==="all"?'Only the other bank can read this in reality; the central platform forwards it unread.':'This bank can read it.')+'</p><button type="button" id="decBtn">Show content</button><pre class="json" id="decBody" hidden>'+renderJSON(st.decryptedView.content,"",{})+'</pre></div>';
+    } else {
+      h+='<div class="decrypt"><p><b>Encrypted part.</b> '+esc(cap(LENS_NAME[lens]))+' cannot read it: it is meant for the other bank.</p></div>';
+    }
+  }
+  h+='<p class="ref">Spec: '+esc(st.specRef||"–")+(st.schema?' · contract: <span class="mono">'+esc(st.schema)+'</span>':'')+'</p>';
+  ins.innerHTML=h;
+  var b=document.getElementById("decBtn");
+  if(b) b.addEventListener("click",function(){var d=document.getElementById("decBody");d.hidden=!d.hidden;b.textContent=d.hidden?"Show content":"Hide content";});
+}
+
+var lastState=null;
+function renderLedger(){
+  var st=stateAt(S.idx), prev=S.idx>=0?stateAt(S.idx-1):st, lens=S.lens;
+  var circ=0, circ0=0; var st0=initialState();
+  Object.keys(st.users).forEach(function(k){circ+=st.users[k].de;circ0+=st0.users[k].de;});
+  var dcaSum=0,dca0=0; Object.keys(st.dca).forEach(function(b){dcaSum+=st.dca[b];dca0+=st0.dca[b];});
+  function delta(now,before){var d=now-before;if(!d)return "";return '<span class="delta '+(d>0?"up":"down")+'">'+(d>0?"+":"−")+eur(Math.abs(d))+'</span>';}
+  var h='<h2>Balances</h2>';
+  if(lens==="public"){
+    h+='<div class="tiles"><div class="tile"><div class="v">'+eur(circ)+'</div><div class="l">Digital euro in circulation (EUR)</div></div><div class="tile"><div class="v">'+st.settled+'</div><div class="l">Settlements in this scenario</div></div></div><p class="ref">The public sees aggregate figures only.</p>';
+    document.getElementById("ledger").innerHTML=h; return;
+  }
+  var rows="";
+  Object.keys(TD.users).forEach(function(k){
+    var u=TD.users[k], x=st.users[k], p=prev.users[k];
+    if((lens==="A"||lens==="B") && u.bank!==lens) return;
+    var who = lens==="desp" ? '<span class="mono">'+esc(u.entry)+'</span>' : esc(u.name)+' <span class="ref">PSP '+u.bank+'</span>';
+    var giro = lens==="desp" ? '<span class="ref">not visible</span>' : eur(x.giro)+delta(x.giro,p.giro)+(x.blocked?' <span class="ref">('+eur(x.blocked)+' blocked)</span>':'');
+    var changed=(x.de!==p.de||x.giro!==p.giro||x.blocked!==p.blocked)&&S.idx>=0;
+    rows+='<tr'+(changed?' class="changed"':'')+'><td>'+who+'</td><td class="num">'+eur(x.de)+delta(x.de,p.de)+'</td><td class="num">'+giro+'</td></tr>';
+  });
+  h+='<div class="tblwrap"><table><thead><tr><th>'+(lens==="desp"?"Ledger entry":"Person")+'</th><th class="num">Digital euro (ECB ledger)</th><th class="num">Giro account (bank money)</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  var tiles="";
+  Object.keys(st.dca).forEach(function(b){
+    if((lens==="A"||lens==="B") && b!==lens) return;
+    tiles+='<div class="tile"><div class="v">'+eur(st.dca[b])+delta(st.dca[b],prev.dca[b])+'</div><div class="l">DCA of PSP '+b+' (central bank money)</div></div>';
+  });
+  if(lens==="all"||lens==="desp") tiles+='<div class="tile"><div class="v">'+eur(circ)+delta(circ,(function(){var c=0;Object.keys(prev.users).forEach(function(k){c+=prev.users[k].de;});return c;})())+'</div><div class="l">Digital euro in circulation</div></div>';
+  tiles+='<div class="tile"><div class="v">'+eur(st.limit)+'</div><div class="l">Holding limit per person</div></div>';
+  h+='<div class="tiles">'+tiles+'</div>';
+  if(lens==="all"||lens==="desp"){
+    var issued=circ-circ0, paid=dca0-dcaSum, ok=issued===paid+st.created;
+    var sgn=function(c){return (c>0?"+":"")+eur(c);};
+    h+='<p class="check '+(ok?"ok":"bad")+'">'+(ok?"✓ ":"✗ ")+'Digital euro in circulation changed by '+sgn(issued)+' EUR, the banks\' DCAs by '+sgn(-paid)+' EUR'+(st.created?', game-master top-ups '+sgn(st.created)+' EUR':'')+(ok?': they mirror each other.':': they do not add up!')+'</p>';
+  }
+  document.getElementById("ledger").innerHTML=h;
+}
+
+function renderTimeline(){
+  var ol=document.getElementById("timeline"); ol.innerHTML="";
+  sc().steps.forEach(function(st,i){
+    var li=document.createElement("li"), b=document.createElement("button");
+    b.type="button";
+    var vis=seesStep(st,S.lens);
+    b.className=(i===S.idx?"cur ":"")+(i<S.idx?"done ":"")+(vis?"":"hid");
+    b.innerHTML='<span class="n">'+st.step+'</span><span>'+esc(vis?st.title:(S.lens==="public"?"message":"not visible"))+'</span>';
+    b.addEventListener("click",function(){stop();go(i,false);});
+    li.appendChild(b); ol.appendChild(li);
+  });
+  var cur=ol.querySelector(".cur");
+  if(cur){var li=cur.parentNode; if(li.offsetTop<ol.scrollTop||li.offsetTop+li.offsetHeight>ol.scrollTop+ol.clientHeight) ol.scrollTop=li.offsetTop-ol.offsetTop-40;}
+}
+
+function highlight(step){
+  Object.keys(nodeEls).forEach(function(n){nodeEls[n].classList.remove("active","dim");});
+  Object.keys(wireEls).forEach(function(k){wireEls[k].classList.remove("hot");});
+  if(!step) return;
+  [step.from,step.to].forEach(function(n){if(nodeEls[n])nodeEls[n].classList.add("active");});
+  var k1=step.from+"|"+step.to, k2=step.to+"|"+step.from;
+  var hotKey = wireEls[k1]?k1:(wireEls[k2]?k2:null);
+  if(!hotKey && /^DESP/.test(step.to) && /^PSP [AB]$/.test(step.from)) hotKey=step.from+"|DESP";
+  if(!hotKey && /^DESP/.test(step.from) && /^PSP [AB]$/.test(step.to)) hotKey=step.to+"|DESP";
+  if(hotKey && wireEls[hotKey]) wireEls[hotKey].classList.add("hot");
+}
+
+function updateControls(){
+  var n=sc().steps.length;
+  document.getElementById("prev").disabled=S.idx<0;
+  document.getElementById("next").disabled=S.idx>=n-1;
+  document.getElementById("play").textContent=S.playing?"Pause":(S.idx>=n-1?"Replay":"Play");
+  document.getElementById("stepcount").textContent=(S.idx<0?"start":"step "+(S.idx)+" / "+(n-1));
+}
+function renderAll(){renderInspector();renderLedger();renderTimeline();highlight(sc().steps[S.idx]);updateControls();}
+
+/* ---------- animation ---------- */
+var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function animate(step,dur,done){
+  if(S.anim) cancelAnimationFrame(S.anim);
+  var from=step.from==="Game Master"?"Game Master":step.from, to=step.to;
+  if(step.from==="Game Master"){ // broadcast: flash every node
+    Object.keys(nodeEls).forEach(function(n){nodeEls[n].classList.remove("flash");void nodeEls[n].getBoundingClientRect();nodeEls[n].classList.add("flash");});
+    msg.setAttribute("visibility","hidden"); setTimeout(done,reduced?0:dur*0.6); return;
+  }
+  if(!NODES[from]||!NODES[to]||reduced||dur<=0){msg.setAttribute("visibility","hidden");done();return;}
+  var a=edge(from,center(to)), b=edge(to,center(from));
+  if(to==="DESP ledger"){a=[center("DESP")[0],NODES["DESP"].y+56];b=center("DESP ledger");}
+  var vis=seesStep(step,S.lens);
+  msg.setAttribute("class","msg"+(vis?"":" hidden"));
+  msgLabel.textContent=vis?label(step):"?";
+  msg.setAttribute("visibility","visible");
+  var t0=null;
+  function frame(ts){
+    if(t0===null)t0=ts;
+    var p=Math.min(1,(ts-t0)/dur), e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
+    msg.setAttribute("transform","translate("+(a[0]+(b[0]-a[0])*e)+","+(a[1]+(b[1]-a[1])*e)+")");
+    if(p<1){S.anim=requestAnimationFrame(frame);}else{S.anim=null;msg.setAttribute("visibility","hidden");if(nodeEls[to]){nodeEls[to].classList.remove("flash");void nodeEls[to].getBoundingClientRect();nodeEls[to].classList.add("flash");}done();}
+  }
+  S.anim=requestAnimationFrame(frame);
+}
+function speedMs(){return parseFloat(document.getElementById("speed").value)*1000;}
+function go(i,anim){
+  var n=sc().steps.length; i=Math.max(-1,Math.min(n-1,i));
+  if(anim && i===S.idx+1 && i>=0){
+    var step=sc().steps[i]; highlight(step);
+    animate(step,speedMs()*0.75,function(){S.idx=i;renderAll();if(S.playing)schedule();});
+  } else {
+    if(S.anim){cancelAnimationFrame(S.anim);S.anim=null;} msg.setAttribute("visibility","hidden");
+    S.idx=i; renderAll();
+  }
+}
+function schedule(){
+  clearTimeout(S.timer);
+  if(S.idx>=sc().steps.length-1){stop();return;}
+  S.timer=setTimeout(function(){go(S.idx+1,true);},speedMs()*0.25);
+}
+function play(){ if(S.idx>=sc().steps.length-1) go(-1,false); S.playing=true; updateControls(); go(S.idx+1,true); }
+function stop(){ S.playing=false; clearTimeout(S.timer); updateControls(); }
+
+/* ---------- wiring ---------- */
+var selSc=document.getElementById("scenario");
+DATA.scenarios.forEach(function(s,i){var o=document.createElement("option");o.value=i;o.textContent=s.title;selSc.appendChild(o);});
+function loadScenario(i){stop();S.sc=i;S.idx=-1;document.getElementById("summary").textContent=sc().summary;renderAll();}
+selSc.addEventListener("change",function(){loadScenario(+selSc.value);});
+document.getElementById("lens").addEventListener("change",function(e){S.lens=e.target.value;renderAll();});
+document.getElementById("play").addEventListener("click",function(){S.playing?stop():play();});
+document.getElementById("next").addEventListener("click",function(){stop();go(S.idx+1,true);});
+document.getElementById("prev").addEventListener("click",function(){stop();go(S.idx-1,false);});
+document.getElementById("restart").addEventListener("click",function(){stop();go(-1,false);});
+var sp=document.getElementById("speed"), spo=document.getElementById("speedOut");
+sp.addEventListener("input",function(){spo.textContent=parseFloat(sp.value).toFixed(1)+" s";});
+document.addEventListener("keydown",function(e){
+  if(/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.target.tagName)&&e.key!==" ") return;
+  if(e.target.tagName==="SELECT") return;
+  if(e.key===" "){e.preventDefault();S.playing?stop():play();}
+  else if(e.key==="ArrowRight"){stop();go(S.idx+1,true);}
+  else if(e.key==="ArrowLeft"){stop();go(S.idx-1,false);}
+});
+var start=0;
+try{var h=(location.hash||"").replace("#","");DATA.scenarios.forEach(function(s,i){if(s.id===h)start=i;});}catch(e){}
+selSc.value=start; loadScenario(start);
+})();
+</script>
+</body>
+</html>
