@@ -2,7 +2,7 @@
 
 **Run by:** bank customers
 
-**Does:** Open account, register phone alias, load/unload money, pay by alias or DEAN, balance, history.
+**Does:** Open account, register phone alias, funding and defunding, pay by alias or DEAN, balance, history.
 
 **Offers interfaces:** –
 

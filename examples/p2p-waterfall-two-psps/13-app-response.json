@@ -1,0 +1,22 @@
+{
+  "step": 13,
+  "title": "Anna's app shows: paid",
+  "from": "PSP A",
+  "to": "Banking App A",
+  "interface": "I1",
+  "specRef": "Annex D1-1 common outgoing envelope",
+  "schema": "contracts/i1-app-psp/schemas/response.schema.json",
+  "http": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "body": {
+    "MessageIdentification": "PSPA-RESP-0013",
+    "OriginalMessageIdentification": "APPA-P2P-WATERF-0001",
+    "CreationDateTime": "2026-11-02T10:15:00.940Z",
+    "ReturnCode": 0
+  },
+  "explanation": "Ben ends with 100.00 EUR in digital euro and 1730.00 EUR on his giro account."
+}

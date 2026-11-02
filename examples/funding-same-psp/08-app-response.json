@@ -1,0 +1,22 @@
+{
+  "step": 8,
+  "title": "Clara's app shows the new balances",
+  "from": "PSP A",
+  "to": "Banking App A",
+  "interface": "I1",
+  "specRef": "Annex D1-1 §7.1.1.1 outgoing message",
+  "schema": "contracts/i1-app-psp/schemas/response.schema.json",
+  "http": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "body": {
+    "MessageIdentification": "PSPA-RESP-0011",
+    "OriginalMessageIdentification": "APPA-FUNDING-SA-0001",
+    "CreationDateTime": "2026-11-02T10:15:00.700Z",
+    "ReturnCode": 0
+  },
+  "explanation": "Giro 900.00 → 700.00 EUR, digital euro 40.00 → 240.00 EUR. The bank's balance sheet: its DCA shrank by 200, the customer deposit shrank by 200."
+}

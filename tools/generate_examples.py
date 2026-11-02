@@ -29,6 +29,13 @@ def dean(serial: int, business: bool = False) -> str:
     return f"EU{98 - num % 97:02d}{bban}"
 
 
+def iban(account: int) -> str:
+    """Fictional German-format IBAN with valid check digits. Bank code 00000001 belongs to no real bank."""
+    bban = "00000001" + f"{account:010d}"
+    num = int("".join(str(ord(c) - 55) if c.isalpha() else c for c in bban + "DE00"))
+    return f"DE{98 - num % 97:02d}{bban}"
+
+
 def _rand(seed: str, n: int) -> bytes:
     return hashlib.sha256(seed.encode()).digest()[:n]
 
@@ -84,8 +91,9 @@ USERS = {
     "clara": {"name": "Clara Weber", "bank": "A", "dean": dean(2), "phone": "+4915100000002", "balance": "40.00", "giro": "900.00"},
     "ben": {"name": "Ben Müller", "bank": "B", "dean": dean(3), "phone": "+4915100000003", "balance": "80.00", "giro": "1700.00"},
 }
-for k, u in USERS.items():
+for i, (k, u) in enumerate(USERS.items(), start=1):
     u["entry"] = entry_id(k)
+    u["iban"] = iban(1000 + i)
 HOLDING_LIMIT = "3000.00"  # placeholder, ADR 0005
 DCA = {"A": "1000000.00", "B": "1000000.00"}
 
@@ -392,6 +400,218 @@ def scenario_reverse_waterfall():
     s.write()
 
 
+# --------------------------------------------------------------------------
+# funding / defunding
+# --------------------------------------------------------------------------
+
+def app_funding_request(seq, user, kind, amount, text):
+    """I1 online funding (ONLF) or defunding (ONLD) request, Annex D1-1 §7.1.1.1."""
+    u = USERS[user]
+    funding = kind == "funding"
+    seq.tick(0)
+    mid = f"APP{u['bank']}-{seq.folder[:10].upper()}-0001"
+    body = {
+        "MessageIdentification": mid,
+        "EventIdentification": "Online funding request" if funding else "Online defunding request",
+        "RequestType": "ONLF" if funding else "ONLD",
+        "TransactionType": "FU01" if funding else "DF01",
+        "CreationDateTime": ts(seq.t),
+        "DigitalEuroAccountNumber": u["dean"],
+        "DebtorCashAccountType": "CBMA" if funding else "DEUR",
+        "DebtorAccount": u["iban"] if funding else u["dean"],
+        "CreditorAccount": u["dean"] if funding else u["iban"],
+        "CreditorCashAccountType": "DEUR" if funding else "CBMA",
+        "Amount": float(amount),
+        "UnstructuredRemittanceInformation": text,
+    }
+    first = u["name"].split()[0]
+    seq.add(_slug=f"app-{kind}-request", title=f"{first} asks her bank to {'move' if funding else 'take back'} {amount} EUR {'into digital euro' if funding else 'to her giro account'}" if user != "ben" else f"{first} asks his bank to {'move' if funding else 'take back'} {amount} EUR {'into digital euro' if funding else 'to his giro account'}",
+            **{"from": f"Banking App {u['bank']}", "to": NODES[u["bank"]]}, interface="I1",
+            specRef="Annex D1-1 §7.1.1.1, p.96–98",
+            schema="contracts/i1-app-psp/schemas/funding-defunding-request.request.schema.json",
+            http={"method": "POST", "path": "/i1/messages", "headers": {"Content-Type": "application/json"}},
+            body=body,
+            explanation=("Funding: debited account is the giro account (CBMA), credited account the digital euro account (DEUR)." if funding else
+                         "Defunding: debited account is the digital euro account (DEUR), credited account the giro account (CBMA).")
+                        + " Transport (POST /i1/messages) is our choice; content per D1-1.")
+    return mid
+
+
+def standalone(seq, user, kind, amount, giro_before, dca_before, d_before):
+    """DESP API POST /v1/fundings or /v1/defundings at the same bank (Annex D2-7 Fig. 1 / Fig. 3)."""
+    u = USERS[user]
+    bic = BANKS[u["bank"]]["bic"]
+    funding = kind == "funding"
+    a = Decimal(amount)
+    uetr = uuid7(f"{seq.folder}-uetr", seq.tick())
+    rid = uuid4(f"{seq.folder}-r1")
+    seq.add(_slug=f"desp-post-{kind}s", title=f"{'Funding' if funding else 'Defunding'} instruction to the central platform",
+            **{"from": NODES[u["bank"]], "to": "DESP"}, interface="I3",
+            specRef=f"Annex D2-7 DESP API POST /{kind}s, {'p.49–52' if funding else 'p.53–56'}",
+            schema=f"contracts/i3-psp-desp/schemas/desp-api/post-{kind}s.request.schema.json",
+            http={"method": "POST", "path": f"/v1/{kind}s", "headers": hdr_req(seq, rid, bic)},
+            body={"acceptanceDateTime": ts(seq.t), "paymentIdentification": {"UETR": uetr},
+                  f"{kind}Object": {"instructingAgent": {"bicfi": bic}, "instructedAgent": {"bicfi": bic}, "amount": amt(a),
+                                    "userEntry": {"entryId": u["entry"]}, "paymentType": "FU01" if funding else "DF01"}},
+            explanation="Giro account and digital euro account are at the same bank, so instructingAgent = instructedAgent and no encrypted part is sent. "
+                        "DESP sees only the bank code, the amount and the ledger entry: no name, no DEAN, no IBAN.")
+    rid_id = uuid4(f"{seq.folder}-id")
+    seq.tick(40)
+    seq.add(_slug="desp-response-201", title="Received and technically valid", **{"from": "DESP", "to": NODES[u["bank"]]}, interface="I3",
+            specRef=f"Annex D2-7 {'p.52–53' if funding else 'p.56–57'}",
+            schema=f"contracts/i3-psp-desp/schemas/desp-api/post-{kind}s.response-201.schema.json",
+            http={"status": 201, "headers": hdr_resp(seq, rid)},
+            body={"paymentIdentification": {"UETR": uetr}, f"{kind}Id": rid_id, f"{kind}TransactionStatus": status("AcceptedTechnicalValidation")},
+            explanation="Receipt only; the result follows as a status push. The spec also allows AcceptedCustomerProfile here.")
+    first = u["name"].split()[0]
+    dca_after = Decimal(dca_before) + (-a if funding else a)
+    d_after = Decimal(d_before) + (a if funding else -a)
+    sdt = ledger_step(seq, f"Settle: DCA {u['bank']} {'−' if funding else '+'}{a}, {first} {'+' if funding else '−'}{a}", [
+        {"entry": f"DCA of PSP {u['bank']}", "owner_for_observer": f"PSP {u['bank']} central bank money", "before": f"{Decimal(dca_before):.2f}",
+         "change": f"{'-' if funding else '+'}{a}", "after": f"{dca_after:.2f}"},
+        {"entry": u["entry"], "owner_for_observer": f"{first} (PSP {u['bank']})", "before": f"{Decimal(d_before):.2f}",
+         "change": f"{'+' if funding else '-'}{a}", "after": f"{d_after:.2f}"}],
+        ("New digital euro are issued: the bank pays for them with central bank money from its DCA. " if funding else
+         "Digital euro are redeemed: the bank's DCA gets the central bank money back. ")
+        + "Which DCA is used is not named in the message (our reading: the instructed agent's, INTERPRETATION T4).")
+    r2 = uuid4(f"{seq.folder}-r2")
+    seq.tick(30)
+    seq.add(_slug=f"psp-api-{kind}-status-push", title="Final status: settled", **{"from": "DESP", "to": NODES[u["bank"]]}, interface="I3",
+            specRef=f"Annex D2-7 PSP API POST /{kind}s/{{{kind}-id}}/status, {'p.95–97' if funding else 'p.100–102'}",
+            schema=f"contracts/i3-psp-desp/schemas/psp-api/post-{kind}-status.request.schema.json",
+            http={"method": "POST", "path": f"/v1/{kind}s/{rid_id}/status", "headers": hdr_req(seq, r2)},
+            body={"paymentIdentification": {"UETR": uetr}, f"{kind}TransactionStatus": status("AcceptedSettlementCompletedDebitorAccount"),
+                  "settlementDateTime": sdt, "settlementBusinessDay": "2026-11-02"},
+            explanation="settlementBusinessDay is the DCA business day (D2-7).")
+    seq.tick(20)
+    seq.add(_slug="psp-api-204", title="Status received", **{"from": NODES[u["bank"]], "to": "DESP"}, interface="I3",
+            specRef=f"Annex D2-7 {'p.95–97' if funding else 'p.100–102'}",
+            http={"status": 204, "headers": {"Request-Id": r2, "Response-Timestamp": ts(seq.t)}}, body=None, explanation="204: no body.")
+    return d_after, dca_after
+
+
+def app_done(seq, user, n, note):
+    u = USERS[user]
+    seq.tick(60)
+    seq.add(_slug="app-response", title=f"{u['name'].split()[0]}'s app shows the new balances", **{"from": NODES[u["bank"]], "to": f"Banking App {u['bank']}"}, interface="I1",
+            specRef="Annex D1-1 §7.1.1.1 outgoing message", schema="contracts/i1-app-psp/schemas/response.schema.json",
+            http={"status": 200, "headers": {"Content-Type": "application/json"}},
+            body={"MessageIdentification": f"PSP{u['bank']}-RESP-{n:04d}", "OriginalMessageIdentification": seq.mid, "CreationDateTime": ts(seq.t), "ReturnCode": 0},
+            explanation=note)
+
+
+def scenario_funding():
+    s = Seq("funding-same-psp", "Clara moves 200 EUR from her giro account into digital euro (funding)",
+            "Manual funding at the same bank (Annex D2-7 Fig. 1, D1-1 §7.1). PSP A blocks the amount on Clara's giro account, the central platform issues new digital euro against PSP A's central bank money account (DCA), and PSP A then debits the giro account.")
+    C = USERS["clara"]
+    s.mid = app_funding_request(s, "clara", "funding", "200.00", "Top-up for the weekend")
+    giro_step(s, "clara", "block", Decimal("200.00"), "giro-block", "Block 200.00 EUR on Clara's giro account")
+    d_after, _ = standalone(s, "clara", "funding", "200.00", C["giro"], DCA["A"], C["balance"])
+    giro_step(s, "clara", "debit blocked amount", Decimal("200.00"), "giro-debit", "Debit 200.00 EUR from Clara's giro account")
+    app_done(s, "clara", 11, f"Giro {C['giro']} → {Decimal(C['giro']) - 200:.2f} EUR, digital euro {C['balance']} → {d_after:.2f} EUR. "
+             "The bank's balance sheet: its DCA shrank by 200, the customer deposit shrank by 200.")
+    s.write()
+
+
+def scenario_defunding():
+    s = Seq("defunding-same-psp", "Ben takes 60 EUR back from digital euro to his giro account (defunding)",
+            "Manual defunding at the same bank (Annex D2-7 Fig. 3, D1-1 §7.1). The central platform redeems Ben's digital euro and credits central bank money back to PSP B's DCA; PSP B then credits Ben's giro account. From here on the money is ordinary bank money.")
+    Bn = USERS["ben"]
+    s.mid = app_funding_request(s, "ben", "defunding", "60.00", "Back to giro")
+    d_after, _ = standalone(s, "ben", "defunding", "60.00", Bn["giro"], DCA["B"], Bn["balance"])
+    giro_step(s, "ben", "credit", Decimal("60.00"), "giro-credit", "Credit 60.00 EUR to Ben's giro account")
+    app_done(s, "ben", 12, f"Digital euro {Bn['balance']} → {d_after:.2f} EUR, giro {Bn['giro']} → {Decimal(Bn['giro']) + 60:.2f} EUR.")
+    s.write()
+
+
+def scenario_waterfall_two_psps():
+    s = Seq("p2p-waterfall-two-psps", "Anna (PSP A) pays Ben (PSP B) 50 EUR; Ben's holding limit is 100 EUR (waterfall)",
+            "The game master lowers the holding limit to 100 EUR so the waterfall becomes visible. Ben has 80 EUR, so receiving 50 would take him to 130. PSP B answers the forwarded instruction with a defunding part of 30 EUR (D2-7 PSP API POST /payment-instructions response, p.104–105); the platform settles payment and defunding together, and PSP B credits the 30 EUR to Ben's giro account.")
+    A, Bn = USERS["anna"], USERS["ben"]
+    ba, bb = BANKS["A"]["bic"], BANKS["B"]["bic"]
+    limit, pay = Decimal("100.00"), Decimal("50.00")
+    excess = Decimal(Bn["balance"]) + pay - limit
+    s.tick(0)
+    s.add(_slug="game-master-holding-limit", title="Game master sets the holding limit to 100 EUR", placeholder=True,
+          **{"from": "Game Master", "to": "all apps"}, interface="I7 (ours)", specRef="ADR 0005; holding limit amount is not set in the rulebook",
+          body={"command": "SET_HOLDING_LIMIT", "amount": amt(limit)},
+          explanation="A simulation-only command. Real holding limits are set by the scheme, not by anyone in a payment.")
+    s.mid = app_initiation(s, "anna", "ben", "50.00", "Concert ticket")
+    alias_lookup(s, "anna", "ben")
+    uetr = uuid7("wf-uetr", s.tick())
+    accept = ts(s.t)
+    secret = {"creditorAccount": {"DEAN": Bn["dean"]}, "creditor": {"name": Bn["name"]},
+              "debtorAccount": {"DEAN": A["dean"]}, "debtor": {"name": A["name"]},
+              "remittanceInformationUnstructured": "Concert ticket", "transactionAmount": amt(pay)}
+    enc = sim_encrypt(secret)
+    dv = {"field": "paymentInstructionObject.encryptedPaymentInstructionObject",
+          "schema": "contracts/i3-psp-desp/schemas/encrypted-payment-instruction-content.schema.json", "content": secret}
+    rid = uuid4("wf-r1")
+    s.add(_slug="desp-post-payment-instructions", title="Payment instruction to the central platform", **{"from": "PSP A", "to": "DESP"}, interface="I3",
+          specRef="Annex D2-7 p.57–62", schema="contracts/i3-psp-desp/schemas/desp-api/post-payment-instructions.request.schema.json",
+          http={"method": "POST", "path": "/v1/payment-instructions", "headers": hdr_req(s, rid, ba)},
+          body={"acceptanceDateTime": accept, "paymentIdentification": {"UETR": uetr},
+                "paymentInstructionObject": {"debtorAgent": {"bicfi": ba}, "creditorAgent": {"bicfi": bb}, "paymentType": "PP01", "amount": amt(pay),
+                                             "debtorEntry": {"entryId": A["entry"]}, "encryptedPaymentInstructionObject": enc}},
+          decryptedView=dv, explanation="Identical to the plain cross-bank payment. PSP A does not know about Ben's limit; the waterfall is PSP B's business.")
+    piid = uuid4("wf-piid")
+    s.tick(40)
+    s.add(_slug="desp-response-201", title="Received and technically valid", **{"from": "DESP", "to": "PSP A"}, interface="I3",
+          specRef="Annex D2-7 p.62–64", schema="contracts/i3-psp-desp/schemas/desp-api/post-payment-instructions.response-201.schema.json",
+          http={"status": 201, "headers": hdr_resp(s, rid)},
+          body={"paymentIdentification": {"UETR": uetr}, "paymentInstructionId": piid, "paymentTransactionStatus": status("AcceptedTechnicalValidation")},
+          explanation="Receipt only.")
+    r3 = uuid4("wf-r3")
+    s.tick(30)
+    s.add(_slug="psp-api-forward-to-payee-bank", title="Forwarded to Ben's bank", **{"from": "DESP", "to": "PSP B"}, interface="I3",
+          specRef="Annex D2-7 PSP API POST /payment-instructions, p.102–104",
+          schema="contracts/i3-psp-desp/schemas/psp-api/post-payment-instructions.request.schema.json",
+          http={"method": "POST", "path": "/v1/payment-instructions", "headers": hdr_req(s, r3)},
+          body={"acceptanceDateTime": accept, "paymentIdentification": {"UETR": uetr},
+                "paymentInstructionObject": {"paymentInstructionId": piid, "debtorAgent": {"bicfi": ba}, "creditorAgent": {"bicfi": bb},
+                                             "paymentType": "PP01", "amount": amt(pay), "encryptedPaymentInstructionObject": enc}},
+          decryptedView=dv, explanation="Anna's ledger entry is not forwarded.")
+    s.tick(90)
+    s.add(_slug="psp-api-response-201-with-defunding", title=f"PSP B accepts and asks to sweep {excess} EUR to Ben's giro account", **{"from": "PSP B", "to": "DESP"}, interface="I3",
+          specRef="Annex D2-7 p.104–105 (paymentDefundingObject)", schema="contracts/i3-psp-desp/schemas/psp-api/post-payment-instructions.response-201.schema.json",
+          http={"status": 201, "headers": hdr_resp(s, r3)},
+          body={"paymentIdentification": {"UETR": uetr}, "paymentTransactionStatus": status("AcceptedCustomerProfile"),
+                "paymentInstructionObject": {"creditorEntry": {"entryId": Bn["entry"]}},
+                "paymentDefundingObject": {"instructedAgent": {"bicfi": bb}, "amount": amt(excess)}},
+          explanation=f"Waterfall amount = balance + amount − limit = {Bn['balance']} + {pay} − {limit} = {excess} (rulebook LM-050-002). The giro account is at PSP B itself, so no encrypted defunding part.")
+    did = uuid4("wf-did")
+    dca_b = Decimal(DCA["B"])
+    sdt = ledger_step(s, f"Settle: Anna −50, Ben +50 −{excess}, DCA B +{excess}", [
+        {"entry": A["entry"], "owner_for_observer": "Anna (PSP A)", "before": A["balance"], "change": "-50.00", "after": f"{Decimal(A['balance']) - pay:.2f}"},
+        {"entry": Bn["entry"], "owner_for_observer": "Ben (PSP B)", "before": Bn["balance"], "change": f"+50.00 -{excess}", "after": f"{limit:.2f}"},
+        {"entry": "DCA of PSP B", "owner_for_observer": "PSP B central bank money", "before": f"{dca_b:.2f}", "change": f"+{excess}", "after": f"{dca_b + excess:.2f}"}],
+        "Payment and defunding are booked in one atomic step. Ben never holds more than his limit, not even for a moment.")
+    push = {"paymentIdentification": {"UETR": uetr}, "settlementDateTime": sdt, "settlementBusinessDay": "2026-11-02",
+            "paymentTransactionStatus": status("AcceptedSettlementCompletedDebitorAccount")}
+    for bank, slug in (("A", "psp-api-status-push-payer-bank"), ("B", "psp-api-status-push-payee-bank")):
+        r = uuid4("wf-push" + bank)
+        body = dict(push)
+        if bank == "B":
+            body.update({"defundingStatus": status("AcceptedSettlementCompletedDebitorAccount"), "defundingId": did})
+        s.tick(15)
+        s.add(_slug=slug, title=f"Final status to PSP {bank}: settled" + (" (incl. defunding)" if bank == "B" else ""), **{"from": "DESP", "to": f"PSP {bank}"}, interface="I3",
+              specRef="Annex D2-7 p.106–109", schema="contracts/i3-psp-desp/schemas/psp-api/post-payment-instruction-status.request.schema.json",
+              http={"method": "POST", "path": f"/v1/payment-instructions/{piid}/status", "headers": hdr_req(s, r)}, body=body,
+              explanation=("Only PSP B gets the defunding status: the defunding is its business (our choice, INTERPRETATION T7)." if bank == "B" else
+                           "PSP A learns that the payment is settled; nothing about Ben's waterfall."))
+        s.tick(10)
+        s.add(_slug=f"psp-api-204-psp-{bank.lower()}", title="Status received", **{"from": f"PSP {bank}", "to": "DESP"}, interface="I3",
+              specRef="Annex D2-7 p.106–109", http={"status": 204, "headers": {"Request-Id": r, "Response-Timestamp": ts(s.t)}}, body=None, explanation="204: no body.")
+    giro_step(s, "ben", "credit", excess, "giro-credit", f"Credit {excess} EUR to Ben's giro account")
+    s.tick(60)
+    s.add(_slug="app-response", title="Anna's app shows: paid", **{"from": "PSP A", "to": "Banking App A"}, interface="I1",
+          specRef="Annex D1-1 common outgoing envelope", schema="contracts/i1-app-psp/schemas/response.schema.json",
+          http={"status": 200, "headers": {"Content-Type": "application/json"}},
+          body={"MessageIdentification": "PSPA-RESP-0013", "OriginalMessageIdentification": s.mid, "CreationDateTime": ts(s.t), "ReturnCode": 0},
+          explanation=f"Ben ends with {limit:.2f} EUR in digital euro and {Decimal(Bn['giro']) + excess:.2f} EUR on his giro account.")
+    s.write()
+
+
 def main():
     if os.path.isdir(OUT):
         for name in os.listdir(OUT):
@@ -406,6 +626,9 @@ def main():
     scenario_same_psp()
     scenario_two_psps()
     scenario_reverse_waterfall()
+    scenario_funding()
+    scenario_defunding()
+    scenario_waterfall_two_psps()
     print("examples written to", OUT)
 
 

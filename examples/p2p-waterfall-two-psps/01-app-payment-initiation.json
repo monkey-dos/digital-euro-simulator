@@ -1,0 +1,31 @@
+{
+  "step": 1,
+  "title": "Anna asks her bank to pay Ben 50.00 EUR",
+  "from": "Banking App A",
+  "to": "PSP A",
+  "interface": "I1",
+  "specRef": "Annex D1-1 §8.1.1.6, p.103–106",
+  "schema": "contracts/i1-app-psp/schemas/payment-initiation.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/i1/messages",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "body": {
+    "MessageIdentification": "APPA-P2P-WATERF-0001",
+    "EventIdentification": "Individual user payment initiation",
+    "CreationDateTime": "2026-11-02T10:15:00.000Z",
+    "PaymentMethod": "ALIA",
+    "TransactionType": "PP01",
+    "Amount": 50.0,
+    "Currency": "EUR",
+    "TransactionDate": "2026-11-02T10:15:00.000Z",
+    "ProxyAccount": "+4915100000003",
+    "ProxyAccountType": "TELE",
+    "MerchantCategoryCode": "4829",
+    "UnstructuredRemittanceInformation": "Concert ticket"
+  },
+  "explanation": "The app sends the payment by phone number (alias). The transport (POST /i1/messages) is our choice; the message content follows D1-1."
+}

@@ -1,0 +1,28 @@
+{
+  "step": 3,
+  "title": "Settle: DCA B +60.00, Ben −60.00",
+  "from": "DESP",
+  "to": "DESP ledger",
+  "interface": "internal",
+  "specRef": "Annex D2-7 p.10 (atomic settlement)",
+  "body": {
+    "settlementDateTime": "2026-11-02T10:15:00.470Z",
+    "bookings": [
+      {
+        "entry": "DCA of PSP B",
+        "owner_for_observer": "PSP B central bank money",
+        "before": "1000000.00",
+        "change": "+60.00",
+        "after": "1000060.00"
+      },
+      {
+        "entry": "ENT-365470EFA58A",
+        "owner_for_observer": "Ben (PSP B)",
+        "before": "80.00",
+        "change": "-60.00",
+        "after": "20.00"
+      }
+    ]
+  },
+  "explanation": "Digital euro are redeemed: the bank's DCA gets the central bank money back. Which DCA is used is not named in the message (our reading: the instructed agent's, INTERPRETATION T4)."
+}

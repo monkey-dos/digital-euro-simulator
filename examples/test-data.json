@@ -23,7 +23,8 @@
       "phone": "+4915100000001",
       "balance": "120.00",
       "giro": "2500.00",
-      "entry": "ENT-C85E0FBE7F2F"
+      "entry": "ENT-C85E0FBE7F2F",
+      "iban": "DE10000000010000001001"
     },
     "clara": {
       "name": "Clara Weber",
@@ -32,7 +33,8 @@
       "phone": "+4915100000002",
       "balance": "40.00",
       "giro": "900.00",
-      "entry": "ENT-F28B2B11CA84"
+      "entry": "ENT-F28B2B11CA84",
+      "iban": "DE80000000010000001002"
     },
     "ben": {
       "name": "Ben Müller",
@@ -41,7 +43,8 @@
       "phone": "+4915100000003",
       "balance": "80.00",
       "giro": "1700.00",
-      "entry": "ENT-365470EFA58A"
+      "entry": "ENT-365470EFA58A",
+      "iban": "DE53000000010000001003"
     }
   }
 }

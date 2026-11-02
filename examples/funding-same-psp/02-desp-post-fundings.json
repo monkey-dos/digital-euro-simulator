@@ -1,0 +1,42 @@
+{
+  "step": 2,
+  "title": "Funding instruction to the central platform",
+  "from": "PSP A",
+  "to": "DESP",
+  "interface": "I3",
+  "specRef": "Annex D2-7 DESP API POST /fundings, p.49–52",
+  "schema": "contracts/i3-psp-desp/schemas/desp-api/post-fundings.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/v1/fundings",
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "28926283-4b3d-43cb-b291-2db57e3a1cd5",
+      "Request-Timestamp": "2026-11-02T10:15:00.240Z",
+      "Requesting-Agent": "SIMADEF0XXX"
+    }
+  },
+  "body": {
+    "acceptanceDateTime": "2026-11-02T10:15:00.240Z",
+    "paymentIdentification": {
+      "UETR": "01a19bc1-5190-708d-8592-1cfe6e5e84f4"
+    },
+    "fundingObject": {
+      "instructingAgent": {
+        "bicfi": "SIMADEF0XXX"
+      },
+      "instructedAgent": {
+        "bicfi": "SIMADEF0XXX"
+      },
+      "amount": {
+        "currency": "EUR",
+        "amount": "200.00"
+      },
+      "userEntry": {
+        "entryId": "ENT-F28B2B11CA84"
+      },
+      "paymentType": "FU01"
+    }
+  },
+  "explanation": "Giro account and digital euro account are at the same bank, so instructingAgent = instructedAgent and no encrypted part is sent. DESP sees only the bank code, the amount and the ledger entry: no name, no DEAN, no IBAN."
+}

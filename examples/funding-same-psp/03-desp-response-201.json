@@ -1,0 +1,27 @@
+{
+  "step": 3,
+  "title": "Received and technically valid",
+  "from": "DESP",
+  "to": "PSP A",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.52–53",
+  "schema": "contracts/i3-psp-desp/schemas/desp-api/post-fundings.response-201.schema.json",
+  "http": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "28926283-4b3d-43cb-b291-2db57e3a1cd5",
+      "Response-Timestamp": "2026-11-02T10:15:00.280Z"
+    }
+  },
+  "body": {
+    "paymentIdentification": {
+      "UETR": "01a19bc1-5190-708d-8592-1cfe6e5e84f4"
+    },
+    "fundingId": "ae50e9ae-9b79-4b16-b783-aa5b123e8003",
+    "fundingTransactionStatus": {
+      "status": "AcceptedTechnicalValidation"
+    }
+  },
+  "explanation": "Receipt only; the result follows as a status push. The spec also allows AcceptedCustomerProfile here."
+}

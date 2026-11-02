@@ -18,6 +18,7 @@ Sources: Rulebook v0.91; Annex D1-1 (Distributing PSP requirements); D1-7 (Data 
 | C8 | Reason codes | Only a few named in D2-1 (AC05, AC06, AB03, ARFR, D002, D005); D1-1 refers to D1-5 (not available). | Use those where they fit; anything else is a placeholder code starting with `X`. |
 | C10 | Date-time format | D2-8: ISODateTime; UTC or UTC offset "strongly recommended", local time allowed. | Always UTC (`Z`) or an explicit offset; local time without offset is rejected. |
 | C9 | Test BICs | – | `SIMADEF0XXX` (PSP A), `SIMBDEF0XXX` (PSP B). Fictional. |
+| C11 | Test IBANs (giro accounts) | – | German format with valid check digits and bank code `00000001`, which belongs to no real bank. |
 
 ## I3 · Bank ↔ central platform
 
@@ -29,6 +30,8 @@ Sources: Rulebook v0.91; Annex D1-1 (Distributing PSP requirements); D1-7 (Data 
 | T4 | Which DCA is debited on funding | Not named in any message. | The DCA of the bank in `instructedAgent`. |
 | T5 | Alias lookup and onboarding calls | Only referenced (`GET /users/{userID}`, `PUT /deans`); spec in a document we don't have. | Placeholder steps, marked `"placeholder": true`, field names borrowed from the D2-6 account data query. |
 | T6 | `UETR` presence | D2-8: optional; D2-7: mandatory for all transactions. | Mandatory. |
+| T7 | Who gets the defunding status in a waterfall between two banks | PSP API status push has optional `defundingStatus`/`defundingId`; D2-7 doesn't say which bank receives them. | Only the payee's bank (the defunding concerns its customer). The payer's bank gets the payment status only. |
+| T8 | Status in the DESP 201 for a standalone funding/defunding | Allowed: Rejected, AcceptedTechnicalValidation, AcceptedCustomerProfile. | `AcceptedTechnicalValidation`, as for payment instructions. |
 
 ## I1 · Banking app ↔ its bank
 
@@ -42,3 +45,6 @@ Sources: Rulebook v0.91; Annex D1-1 (Distributing PSP requirements); D1-7 (Data 
 | A6 | Alias type for phone numbers | ISO `ExternalProxyAccountType1Code`. | `TELE`. **To be verified** against the ISO list. |
 | A7 | When the bank answers the app | Not fixed. | After the final settlement status. |
 | A8 | `ReturnCode` | BOOL, 0 = successful, 1 = failure. | Integer `0` / `1`. |
+| A9 | Funding/defunding request: account types | D1-1 §7.1.1.1 uses the standardised name `CashAccountType` for both the debited and the credited account. | Keys `DebtorCashAccountType` and `CreditorCashAccountType`. |
+| A10 | Funding/defunding request: DEAN field | "Digital euro account number", standardised name "(New for digital euro)". | Key `DigitalEuroAccountNumber`. |
+| A11 | When the bank debits or credits the giro account | D1-1 lists blocking, debit, credit and release, without an order. | Funding: block before sending to DESP, debit after the settled status. Defunding and waterfall: credit after the settled status. |

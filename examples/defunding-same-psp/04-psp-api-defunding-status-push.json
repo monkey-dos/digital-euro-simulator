@@ -1,0 +1,29 @@
+{
+  "step": 4,
+  "title": "Final status: settled",
+  "from": "DESP",
+  "to": "PSP B",
+  "interface": "I3",
+  "specRef": "Annex D2-7 PSP API POST /defundings/{defunding-id}/status, p.100–102",
+  "schema": "contracts/i3-psp-desp/schemas/psp-api/post-defunding-status.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/v1/defundings/3a5aa632-f6cf-4513-ad75-ff8425f90be0/status",
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "5c7133f3-b6b4-4305-bed7-406a7afef82a",
+      "Request-Timestamp": "2026-11-02T10:15:00.500Z"
+    }
+  },
+  "body": {
+    "paymentIdentification": {
+      "UETR": "01a19bc1-5154-77d6-adc9-db36c5206bc5"
+    },
+    "defundingTransactionStatus": {
+      "status": "AcceptedSettlementCompletedDebitorAccount"
+    },
+    "settlementDateTime": "2026-11-02T10:15:00.470Z",
+    "settlementBusinessDay": "2026-11-02"
+  },
+  "explanation": "settlementBusinessDay is the DCA business day (D2-7)."
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/desp-api/post-defundings.request.schema.json",
+  "title": "DESP API · POST /v1/defundings · request (digital euro PSP → DESP)",
+  "description": "Annex D2-7 p.53–56. Standalone defunding: the bank sends the complete settlement data in one call (Fig. 3).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "acceptanceDateTime",
+    "paymentIdentification",
+    "defundingObject"
+  ],
+  "properties": {
+    "acceptanceDateTime": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/ISODateTime"
+    },
+    "paymentIdentification": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentIdentification2"
+    },
+    "defundingObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "instructingAgent",
+        "instructedAgent",
+        "amount",
+        "userEntry",
+        "paymentType"
+      ],
+      "description": "No encryptedDefundingObject: open defunding never happens in this simulation (ADR 0001), so instructingAgent and instructedAgent are always the same bank.",
+      "properties": {
+        "instructingAgent": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/FinancialInstitutionIdentification1",
+          "description": "The user's digital euro PSP."
+        },
+        "instructedAgent": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/FinancialInstitutionIdentification1",
+          "description": "The user's commercial bank money PSP; same value as instructingAgent when it is the same bank."
+        },
+        "amount": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Amount",
+          "description": "Amount to be redeemed from the digital euro holding."
+        },
+        "userEntry": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/Entry"
+        },
+        "paymentType": {
+          "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentType",
+          "const": "DF01"
+        }
+      }
+    }
+  }
+}
