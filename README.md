@@ -6,7 +6,7 @@ An educational simulation of the ECB **digital euro**. It shows what happens bet
 
 ## What it will look like
 
-- A **banking app** for each bank. Test users open a digital euro account, load money from their giro account, and pay each other.
+- A **banking app** for each bank. Test users open a digital euro account, fund it from their giro account, and pay each other.
 - The **central platform (DESP)** keeps the one ledger where all digital euro live.
 - At least **two banks (PSPs)**, each built as its own app. A bank provides only the interface; the money itself sits on the ECB ledger.
 - A **transparency observer** shows every message travelling between the apps, slowed down so you can follow it, plus all balances in real time.
@@ -41,7 +41,7 @@ Two apps that respect the same contract can replace each other. For example, a b
 
 ## Build phases
 
-1. **Money between people:** open an account, register a phone alias, load and unload money, pay at the same bank and across banks, waterfall and reverse waterfall, observer with slow motion.
+1. **Money between people:** open an account, register a phone alias, funding and defunding, pay at the same bank and across banks, waterfall and reverse waterfall, observer with slow motion.
 2. **Merchants:** business accounts, QR payments in a shop, pay-by-link, refunds, pre-authorisation.
 3. **Scheme depth:** fraud scoring, disputes, reports, switching banks, standing orders, offline.
 

@@ -1,0 +1,27 @@
+{
+  "step": 2,
+  "title": "Received and technically valid",
+  "from": "DESP",
+  "to": "PSP B",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.56–57",
+  "schema": "contracts/i3-psp-desp/schemas/desp-api/post-defundings.response-201.schema.json",
+  "http": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "157ed5b5-a82c-413d-ac3e-047cf37398b3",
+      "Response-Timestamp": "2026-11-02T10:15:00.220Z"
+    }
+  },
+  "body": {
+    "paymentIdentification": {
+      "UETR": "01a19bc1-5154-77d6-adc9-db36c5206bc5"
+    },
+    "defundingId": "3a5aa632-f6cf-4513-ad75-ff8425f90be0",
+    "defundingTransactionStatus": {
+      "status": "AcceptedTechnicalValidation"
+    }
+  },
+  "explanation": "Receipt only; the result follows as a status push. The spec also allows AcceptedCustomerProfile here."
+}

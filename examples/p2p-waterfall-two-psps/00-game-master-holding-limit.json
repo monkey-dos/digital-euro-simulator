@@ -1,0 +1,17 @@
+{
+  "step": 0,
+  "title": "Game master sets the holding limit to 100 EUR",
+  "placeholder": true,
+  "from": "Game Master",
+  "to": "all apps",
+  "interface": "I7 (ours)",
+  "specRef": "ADR 0005; holding limit amount is not set in the rulebook",
+  "body": {
+    "command": "SET_HOLDING_LIMIT",
+    "amount": {
+      "currency": "EUR",
+      "amount": "100.00"
+    }
+  },
+  "explanation": "A simulation-only command. Real holding limits are set by the scheme, not by anyone in a payment."
+}

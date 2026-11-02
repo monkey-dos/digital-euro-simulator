@@ -1,0 +1,66 @@
+{
+  "step": 3,
+  "title": "Payment instruction to the central platform",
+  "from": "PSP A",
+  "to": "DESP",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.57–62",
+  "schema": "contracts/i3-psp-desp/schemas/desp-api/post-payment-instructions.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/v1/payment-instructions",
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "0b2eaf5c-3ac3-41a2-895b-88dd07a438c0",
+      "Request-Timestamp": "2026-11-02T10:15:00.360Z",
+      "Requesting-Agent": "SIMADEF0XXX"
+    }
+  },
+  "body": {
+    "acceptanceDateTime": "2026-11-02T10:15:00.360Z",
+    "paymentIdentification": {
+      "UETR": "01a19bc1-5208-7667-ac1d-ba42f0940c4d"
+    },
+    "paymentInstructionObject": {
+      "debtorAgent": {
+        "bicfi": "SIMADEF0XXX"
+      },
+      "creditorAgent": {
+        "bicfi": "SIMBDEF0XXX"
+      },
+      "paymentType": "PP01",
+      "amount": {
+        "currency": "EUR",
+        "amount": "50.00"
+      },
+      "debtorEntry": {
+        "entryId": "ENT-C85E0FBE7F2F"
+      },
+      "encryptedPaymentInstructionObject": "SIMENC:eyJjcmVkaXRvckFjY291bnQiOnsiREVBTiI6IkVVOTIwMDAwMDAwMDAwMDAwMyJ9LCJjcmVkaXRvciI6eyJuYW1lIjoiQmVuIE3DvGxsZXIifSwiZGVidG9yQWNjb3VudCI6eyJERUFOIjoiRVU0OTAwMDAwMDAwMDAwMDAxIn0sImRlYnRvciI6eyJuYW1lIjoiQW5uYSBTY2htaWR0In0sInJlbWl0dGFuY2VJbmZvcm1hdGlvblVuc3RydWN0dXJlZCI6IkNvbmNlcnQgdGlja2V0IiwidHJhbnNhY3Rpb25BbW91bnQiOnsiY3VycmVuY3kiOiJFVVIiLCJhbW91bnQiOiI1MC4wMCJ9fQ=="
+    }
+  },
+  "decryptedView": {
+    "field": "paymentInstructionObject.encryptedPaymentInstructionObject",
+    "schema": "contracts/i3-psp-desp/schemas/encrypted-payment-instruction-content.schema.json",
+    "content": {
+      "creditorAccount": {
+        "DEAN": "EU9200000000000003"
+      },
+      "creditor": {
+        "name": "Ben Müller"
+      },
+      "debtorAccount": {
+        "DEAN": "EU4900000000000001"
+      },
+      "debtor": {
+        "name": "Anna Schmidt"
+      },
+      "remittanceInformationUnstructured": "Concert ticket",
+      "transactionAmount": {
+        "currency": "EUR",
+        "amount": "50.00"
+      }
+    }
+  },
+  "explanation": "Identical to the plain cross-bank payment. PSP A does not know about Ben's limit; the waterfall is PSP B's business."
+}

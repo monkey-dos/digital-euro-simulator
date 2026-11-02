@@ -1,0 +1,29 @@
+{
+  "step": 8,
+  "title": "Final status to PSP A: settled",
+  "from": "DESP",
+  "to": "PSP A",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.106–109",
+  "schema": "contracts/i3-psp-desp/schemas/psp-api/post-payment-instruction-status.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/v1/payment-instructions/9d33b4c8-a34c-45ff-a41c-9328109f36e4/status",
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "d931ab18-bec6-4765-acca-1c4a41f299f5",
+      "Request-Timestamp": "2026-11-02T10:15:00.785Z"
+    }
+  },
+  "body": {
+    "paymentIdentification": {
+      "UETR": "01a19bc1-5208-7667-ac1d-ba42f0940c4d"
+    },
+    "settlementDateTime": "2026-11-02T10:15:00.770Z",
+    "settlementBusinessDay": "2026-11-02",
+    "paymentTransactionStatus": {
+      "status": "AcceptedSettlementCompletedDebitorAccount"
+    }
+  },
+  "explanation": "PSP A learns that the payment is settled; nothing about Ben's waterfall (D2-7 p.16)."
+}

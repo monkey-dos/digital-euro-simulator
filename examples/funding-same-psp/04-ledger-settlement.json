@@ -1,0 +1,28 @@
+{
+  "step": 4,
+  "title": "Settle: DCA A −200.00, Clara +200.00",
+  "from": "DESP",
+  "to": "DESP ledger",
+  "interface": "internal",
+  "specRef": "Annex D2-7 p.10 (atomic settlement)",
+  "body": {
+    "settlementDateTime": "2026-11-02T10:15:00.530Z",
+    "bookings": [
+      {
+        "entry": "DCA of PSP A",
+        "owner_for_observer": "PSP A central bank money",
+        "before": "1000000.00",
+        "change": "-200.00",
+        "after": "999800.00"
+      },
+      {
+        "entry": "ENT-F28B2B11CA84",
+        "owner_for_observer": "Clara (PSP A)",
+        "before": "40.00",
+        "change": "+200.00",
+        "after": "240.00"
+      }
+    ]
+  },
+  "explanation": "New digital euro are issued: the bank pays for them with central bank money from its DCA. Which DCA is used is not named in the message (our reading: the instructed agent's, INTERPRETATION T4)."
+}

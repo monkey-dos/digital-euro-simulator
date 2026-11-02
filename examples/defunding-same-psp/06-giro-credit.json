@@ -1,0 +1,17 @@
+{
+  "step": 6,
+  "title": "Credit 60.00 EUR to Ben's giro account",
+  "from": "PSP B",
+  "to": "PSP B core banking",
+  "interface": "I5 (ours)",
+  "specRef": "Rulebook LM-040-003 (credit right after DESP confirms settlement); D1-1 §7.2 non-digital euro payment account credit, p.99",
+  "body": {
+    "action": "credit",
+    "account": "giro of Ben Müller",
+    "amount": {
+      "currency": "EUR",
+      "amount": "60.00"
+    }
+  },
+  "explanation": "Bank-internal step on the giro account. Not part of the ECB messages; shown so the money trail is complete."
+}

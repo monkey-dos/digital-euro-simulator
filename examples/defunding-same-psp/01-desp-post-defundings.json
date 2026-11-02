@@ -1,0 +1,42 @@
+{
+  "step": 1,
+  "title": "Defunding instruction to the central platform",
+  "from": "PSP B",
+  "to": "DESP",
+  "interface": "I3",
+  "specRef": "Annex D2-7 DESP API POST /defundings, p.53–56",
+  "schema": "contracts/i3-psp-desp/schemas/desp-api/post-defundings.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/v1/defundings",
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "157ed5b5-a82c-413d-ac3e-047cf37398b3",
+      "Request-Timestamp": "2026-11-02T10:15:00.180Z",
+      "Requesting-Agent": "SIMBDEF0XXX"
+    }
+  },
+  "body": {
+    "acceptanceDateTime": "2026-11-02T10:15:00.180Z",
+    "paymentIdentification": {
+      "UETR": "01a19bc1-5154-77d6-adc9-db36c5206bc5"
+    },
+    "defundingObject": {
+      "instructingAgent": {
+        "bicfi": "SIMBDEF0XXX"
+      },
+      "instructedAgent": {
+        "bicfi": "SIMBDEF0XXX"
+      },
+      "amount": {
+        "currency": "EUR",
+        "amount": "60.00"
+      },
+      "userEntry": {
+        "entryId": "ENT-365470EFA58A"
+      },
+      "paymentType": "DF01"
+    }
+  },
+  "explanation": "Giro account and digital euro account are at the same bank, so instructingAgent = instructedAgent and no encrypted part is sent. DESP sees only the bank code, the amount and the ledger entry: no name, no DEAN, no IBAN."
+}

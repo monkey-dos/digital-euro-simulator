@@ -1,0 +1,22 @@
+{
+  "step": 7,
+  "title": "Ben's app shows the new balances",
+  "from": "PSP B",
+  "to": "Banking App B",
+  "interface": "I1",
+  "specRef": "Annex D1-1 §7.1.1.1 outgoing message",
+  "schema": "contracts/i1-app-psp/schemas/response.schema.json",
+  "http": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "body": {
+    "MessageIdentification": "PSPB-RESP-0012",
+    "OriginalMessageIdentification": "APPB-DEFUNDING--0001",
+    "CreationDateTime": "2026-11-02T10:15:00.640Z",
+    "ReturnCode": 0
+  },
+  "explanation": "Digital euro 80.00 → 20.00 EUR, giro 1700.00 → 1760.00 EUR."
+}

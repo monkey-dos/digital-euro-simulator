@@ -1,6 +1,6 @@
 # Contracts
 
-Contract version: **0.1.0** (draft)
+Contract version: **0.2.0** (draft)
 
 This folder defines how the apps talk to each other. An app is compatible if every message it sends validates against these schemas and it accepts every message described here.
 
@@ -25,7 +25,10 @@ Schemas are JSON Schema 2020-12. Their `$id`s use the placeholder host `digital-
 | `POST /v1/payment-instructions` (forwarded) | DESP → payee bank | `i3-psp-desp/schemas/psp-api/…request…` + `…response-201…` |
 | `POST /v1/payment-instructions/{id}/status` | DESP → each bank | `i3-psp-desp/schemas/psp-api/post-payment-instruction-status.request.schema.json` |
 | Content of the encrypted payment part | bank → bank via DESP | `i3-psp-desp/schemas/encrypted-payment-instruction-content.schema.json` |
+| Online funding / defunding request | app → bank | `i1-app-psp/schemas/funding-defunding-request.request.schema.json` |
+| `POST /v1/fundings`, `POST /v1/defundings` | bank → DESP | `i3-psp-desp/schemas/desp-api/post-fundings…`, `post-defundings…` (request + 201) |
+| `POST /v1/fundings/{id}/status`, `POST /v1/defundings/{id}/status` | DESP → bank | `i3-psp-desp/schemas/psp-api/post-funding-status…`, `post-defunding-status…` |
 
 ## Next
 
-Fundings and defundings (manual load and unload), payee-initiated payments (`POST /v1/payments`), status queries, refunds, balance query, and placeholder onboarding calls. The full list of I3 endpoints is in `docs/spec-notes/settlement-catalogue.md`.
+Payee-initiated payments (`POST /v1/payments`), status queries, refunds, balance query, and placeholder onboarding calls. The full list of I3 endpoints is in `docs/spec-notes/settlement-catalogue.md`.

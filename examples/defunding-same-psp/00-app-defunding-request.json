@@ -1,0 +1,31 @@
+{
+  "step": 0,
+  "title": "Ben asks his bank to take back 60.00 EUR to his giro account",
+  "from": "Banking App B",
+  "to": "PSP B",
+  "interface": "I1",
+  "specRef": "Annex D1-1 §7.1.1.1, p.96–98",
+  "schema": "contracts/i1-app-psp/schemas/funding-defunding-request.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/i1/messages",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "body": {
+    "MessageIdentification": "APPB-DEFUNDING--0001",
+    "EventIdentification": "Online defunding request",
+    "RequestType": "ONLD",
+    "TransactionType": "DF01",
+    "CreationDateTime": "2026-11-02T10:15:00.000Z",
+    "DigitalEuroAccountNumber": "EU9200000000000003",
+    "DebtorCashAccountType": "DEUR",
+    "DebtorAccount": "EU9200000000000003",
+    "CreditorAccount": "DE53000000010000001003",
+    "CreditorCashAccountType": "CBMA",
+    "Amount": 60.0,
+    "UnstructuredRemittanceInformation": "Back to giro"
+  },
+  "explanation": "Defunding: debited account is the digital euro account (DEUR), credited account the giro account (CBMA). Transport (POST /i1/messages) is our choice; content per D1-1."
+}

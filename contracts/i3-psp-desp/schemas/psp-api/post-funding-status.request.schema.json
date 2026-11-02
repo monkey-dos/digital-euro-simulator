@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/psp-api/post-funding-status.request.schema.json",
+  "title": "PSP API · POST /v1/fundings/{funding-id}/status · request (DESP → PSP)",
+  "description": "Annex D2-7 p.95–97. Final status push, answered with 204 and no body. settlementDateTime and settlementBusinessDay required on success, statusReason on rejection.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "paymentIdentification",
+    "fundingTransactionStatus"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "fundingTransactionStatus": {
+            "properties": {
+              "status": {
+                "const": "Rejected"
+              }
+            }
+          }
+        },
+        "required": [
+          "fundingTransactionStatus"
+        ]
+      },
+      "then": {
+        "required": [
+          "statusReason"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "fundingTransactionStatus": {
+            "properties": {
+              "status": {
+                "const": "AcceptedSettlementCompletedDebitorAccount"
+              }
+            }
+          }
+        },
+        "required": [
+          "fundingTransactionStatus"
+        ]
+      },
+      "then": {
+        "required": [
+          "settlementDateTime",
+          "settlementBusinessDay"
+        ]
+      }
+    }
+  ],
+  "properties": {
+    "paymentIdentification": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/PaymentIdentification2"
+    },
+    "fundingTransactionStatus": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/TransactionStatus",
+      "properties": {
+        "status": {
+          "enum": [
+            "Rejected",
+            "AcceptedSettlementCompletedDebitorAccount"
+          ]
+        }
+      }
+    },
+    "statusReason": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/StatusReason"
+    },
+    "settlementDateTime": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/ISODateTime"
+    },
+    "settlementBusinessDay": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/ISODate"
+    }
+  }
+}
