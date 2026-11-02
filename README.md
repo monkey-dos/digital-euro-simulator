@@ -60,3 +60,7 @@ ECB, digital euro scheme rulebook v0.91 and annexes (draft, 2 July 2026), publis
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+Code and documentation in this repository: [MIT](LICENSE). The ECB documents themselves are not part of this repository and are not covered by this license; short references and field names are quoted for explanation.

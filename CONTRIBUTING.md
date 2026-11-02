@@ -10,6 +10,10 @@ Thanks for helping. The project is built so that people can work on different ap
 4. **Mark placeholders.** Anything invented because the spec is missing (e.g. onboarding calls, reason codes) is marked `placeholder` in the schema description and in the example.
 5. **No real data.** Only fictional people, banks and account numbers.
 
+## License
+
+By contributing you agree that your contribution is published under the [MIT license](LICENSE).
+
 ## Making a change to a contract
 
 - Open a pull request that changes the schema, the examples and, if needed, `INTERPRETATION.md` together.
