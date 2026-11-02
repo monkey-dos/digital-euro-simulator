@@ -4,7 +4,7 @@
   "from": "PSP A",
   "to": "PSP A core banking",
   "interface": "I5 (ours)",
-  "specRef": "Rulebook LM-030 (reverse waterfall); D1-1 §7.2 non-digital euro payment account funds management service (funds blocking, debit)",
+  "specRef": "Rulebook LM-020-001 (funding); D1-1 §7.2 non-digital euro payment account funds management service (funds blocking, debit)",
   "body": {
     "action": "debit blocked amount",
     "account": "giro of Clara Weber",

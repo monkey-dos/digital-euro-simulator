@@ -4,7 +4,7 @@
   "from": "PSP B",
   "to": "DESP",
   "interface": "I3",
-  "specRef": "Annex D2-7 p.104–105 (paymentDefundingObject)",
+  "specRef": "Annex D2-7 p.104–106 (paymentDefundingObject)",
   "schema": "contracts/i3-psp-desp/schemas/psp-api/post-payment-instructions.response-201.schema.json",
   "http": {
     "status": 201,

@@ -2,12 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/desp-api/post-fundings.response-201.schema.json",
   "title": "DESP API · POST /v1/fundings · 201 response (DESP → digital euro PSP)",
-  "description": "Annex D2-7 p.52–53. Status values: Rejected, AcceptedTechnicalValidation or AcceptedCustomerProfile; statusReason required on rejection.",
+  "description": "Annex D2-7 p.52–53. Status values: Rejected, AcceptedTechnicalValidation or AcceptedCustomerProfile; statusReason required on rejection. fundingId required unless rejected (INTERPRETATION T9).",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "paymentIdentification",
-    "fundingId",
     "fundingTransactionStatus"
   ],
   "allOf": [
@@ -29,6 +28,27 @@
       "then": {
         "required": [
           "statusReason"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "fundingTransactionStatus": {
+            "properties": {
+              "status": {
+                "const": "Rejected"
+              }
+            }
+          }
+        },
+        "required": [
+          "fundingTransactionStatus"
+        ]
+      },
+      "else": {
+        "required": [
+          "fundingId"
         ]
       }
     }

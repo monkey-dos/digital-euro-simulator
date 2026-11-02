@@ -30,7 +30,8 @@ Sources: Rulebook v0.91; Annex D1-1 (Distributing PSP requirements); D1-7 (Data 
 | T4 | Which DCA is debited on funding | Not named in any message. | The DCA of the bank in `instructedAgent`. |
 | T5 | Alias lookup and onboarding calls | Only referenced (`GET /users/{userID}`, `PUT /deans`); spec in a document we don't have. | Placeholder steps, marked `"placeholder": true`, field names borrowed from the D2-6 account data query. |
 | T6 | `UETR` presence | D2-8: optional; D2-7: mandatory for all transactions. | Mandatory. |
-| T7 | Who gets the defunding status in a waterfall between two banks | PSP API status push has optional `defundingStatus`/`defundingId`; D2-7 doesn't say which bank receives them. | Only the payee's bank (the defunding concerns its customer). The payer's bank gets the payment status only. |
+| T7 | Defunding status in a waterfall between two banks | D2-7 p.16: defunding ID and status are received only by the payee's digital euro PSP and the payee's commercial bank money PSP; p.108: mandatory in the status push if the request had a defunding object. Fig. 13 sends a separate `POST /defundings/{id}/status` to the commercial bank money PSP when it is a different bank; in Fig. 11 (all roles at one bank) the status travels inside the payment-instruction status push. | The payee's bank is both roles (ADR 0001), so it gets `defundingStatus`/`defundingId` inside the payment-instruction status push and no separate call. The payer's bank gets neither. |
+| T9 | `fundingId` / `defundingId` in a rejected 201 | D2-7 p.52/p.56 mark the ID mandatory; p.16 says it is present only if validation is positive. | Required only when the status is not Rejected. |
 | T8 | Status in the DESP 201 for a standalone funding/defunding | Allowed: Rejected, AcceptedTechnicalValidation, AcceptedCustomerProfile. | `AcceptedTechnicalValidation`, as for payment instructions. |
 
 ## I1 · Banking app ↔ its bank
@@ -47,4 +48,4 @@ Sources: Rulebook v0.91; Annex D1-1 (Distributing PSP requirements); D1-7 (Data 
 | A8 | `ReturnCode` | BOOL, 0 = successful, 1 = failure. | Integer `0` / `1`. |
 | A9 | Funding/defunding request: account types | D1-1 §7.1.1.1 uses the standardised name `CashAccountType` for both the debited and the credited account. | Keys `DebtorCashAccountType` and `CreditorCashAccountType`. |
 | A10 | Funding/defunding request: DEAN field | "Digital euro account number", standardised name "(New for digital euro)". | Key `DigitalEuroAccountNumber`. |
-| A11 | When the bank debits or credits the giro account | D1-1 lists blocking, debit, credit and release, without an order. | Funding: block before sending to DESP, debit after the settled status. Defunding and waterfall: credit after the settled status. |
+| A11 | When the bank debits or credits the giro account | D1-1 §7.2 lists blocking, debit, credit and release without an order. Rulebook LM-040-003 and LM-050-003: credit the giro account immediately after DESP confirms settlement (defunding, waterfall). | Funding: block before sending to DESP, debit after the settled status. Defunding and waterfall: credit after the settled status. |

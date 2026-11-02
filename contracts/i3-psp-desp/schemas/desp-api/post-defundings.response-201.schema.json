@@ -2,12 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/desp-api/post-defundings.response-201.schema.json",
   "title": "DESP API · POST /v1/defundings · 201 response (DESP → digital euro PSP)",
-  "description": "Annex D2-7 p.56–57. Status values: Rejected, AcceptedTechnicalValidation or AcceptedCustomerProfile; statusReason required on rejection.",
+  "description": "Annex D2-7 p.56–57. Status values: Rejected, AcceptedTechnicalValidation or AcceptedCustomerProfile; statusReason required on rejection. defundingId required unless rejected (INTERPRETATION T9).",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "paymentIdentification",
-    "defundingId",
     "defundingTransactionStatus"
   ],
   "allOf": [
@@ -29,6 +28,27 @@
       "then": {
         "required": [
           "statusReason"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "defundingTransactionStatus": {
+            "properties": {
+              "status": {
+                "const": "Rejected"
+              }
+            }
+          }
+        },
+        "required": [
+          "defundingTransactionStatus"
+        ]
+      },
+      "else": {
+        "required": [
+          "defundingId"
         ]
       }
     }

@@ -29,5 +29,5 @@
     },
     "defundingId": "62fe6ed5-7e53-4a6c-ba11-a0501a3a892b"
   },
-  "explanation": "Only PSP B gets the defunding status: the defunding is its business (our choice, INTERPRETATION T7)."
+  "explanation": "Defunding ID and status go only to the payee's digital euro PSP and commercial bank money PSP (D2-7 p.16). PSP B is both, so it gets them inside this one status push, as in Fig. 11 (INTERPRETATION T7)."
 }

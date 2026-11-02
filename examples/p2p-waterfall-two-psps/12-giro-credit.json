@@ -4,7 +4,7 @@
   "from": "PSP B",
   "to": "PSP B core banking",
   "interface": "I5 (ours)",
-  "specRef": "Rulebook LM-030 (reverse waterfall); D1-1 §7.2 non-digital euro payment account funds management service (funds blocking, debit)",
+  "specRef": "Rulebook LM-050-003 (credit right after DESP confirms settlement); D1-1 §7.2 non-digital euro payment account credit, p.99",
   "body": {
     "action": "credit",
     "account": "giro of Ben Müller",

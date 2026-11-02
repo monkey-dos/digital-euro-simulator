@@ -186,11 +186,11 @@ def alias_lookup(seq, payer, payee):
             explanation="PLACEHOLDER. The payer's bank resolves the alias to the payee's DEAN and bank. The real call is in an ECB document we do not have; field names borrowed from the D2-6 account data query.")
 
 
-def giro_step(seq, user, action, amount, slug, title):
+def giro_step(seq, user, action, amount, slug, title, ref="Rulebook LM-030 (reverse waterfall); D1-1 §7.2 non-digital euro payment account funds management service (funds blocking, debit)"):
     u = USERS[user]
     seq.tick(60)
     seq.add(_slug=slug, title=title, **{"from": NODES[u["bank"]], "to": f"PSP {u['bank']} core banking"}, interface="I5 (ours)",
-            specRef="Rulebook LM-030 (reverse waterfall); D1-1 §7.2 non-digital euro payment account funds management service (funds blocking, debit)",
+            specRef=ref,
             body={"action": action, "account": f"giro of {u['name']}", "amount": amt(amount)},
             explanation="Bank-internal step on the giro account. Not part of the ECB messages; shown so the money trail is complete.")
 
@@ -404,6 +404,11 @@ def scenario_reverse_waterfall():
 # funding / defunding
 # --------------------------------------------------------------------------
 
+REF_FUND = "Rulebook LM-020-001 (funding); D1-1 §7.2 non-digital euro payment account funds management service (funds blocking, debit)"
+REF_DEFUND = "Rulebook LM-040-003 (credit right after DESP confirms settlement); D1-1 §7.2 non-digital euro payment account credit, p.99"
+REF_WATERFALL = "Rulebook LM-050-003 (credit right after DESP confirms settlement); D1-1 §7.2 non-digital euro payment account credit, p.99"
+
+
 def app_funding_request(seq, user, kind, amount, text):
     """I1 online funding (ONLF) or defunding (ONLD) request, Annex D1-1 §7.1.1.1."""
     u = USERS[user]
@@ -505,9 +510,9 @@ def scenario_funding():
             "Manual funding at the same bank (Annex D2-7 Fig. 1, D1-1 §7.1). PSP A blocks the amount on Clara's giro account, the central platform issues new digital euro against PSP A's central bank money account (DCA), and PSP A then debits the giro account.")
     C = USERS["clara"]
     s.mid = app_funding_request(s, "clara", "funding", "200.00", "Top-up for the weekend")
-    giro_step(s, "clara", "block", Decimal("200.00"), "giro-block", "Block 200.00 EUR on Clara's giro account")
+    giro_step(s, "clara", "block", Decimal("200.00"), "giro-block", "Block 200.00 EUR on Clara's giro account", REF_FUND)
     d_after, _ = standalone(s, "clara", "funding", "200.00", C["giro"], DCA["A"], C["balance"])
-    giro_step(s, "clara", "debit blocked amount", Decimal("200.00"), "giro-debit", "Debit 200.00 EUR from Clara's giro account")
+    giro_step(s, "clara", "debit blocked amount", Decimal("200.00"), "giro-debit", "Debit 200.00 EUR from Clara's giro account", REF_FUND)
     app_done(s, "clara", 11, f"Giro {C['giro']} → {Decimal(C['giro']) - 200:.2f} EUR, digital euro {C['balance']} → {d_after:.2f} EUR. "
              "The bank's balance sheet: its DCA shrank by 200, the customer deposit shrank by 200.")
     s.write()
@@ -519,7 +524,7 @@ def scenario_defunding():
     Bn = USERS["ben"]
     s.mid = app_funding_request(s, "ben", "defunding", "60.00", "Back to giro")
     d_after, _ = standalone(s, "ben", "defunding", "60.00", Bn["giro"], DCA["B"], Bn["balance"])
-    giro_step(s, "ben", "credit", Decimal("60.00"), "giro-credit", "Credit 60.00 EUR to Ben's giro account")
+    giro_step(s, "ben", "credit", Decimal("60.00"), "giro-credit", "Credit 60.00 EUR to Ben's giro account", REF_DEFUND)
     app_done(s, "ben", 12, f"Digital euro {Bn['balance']} → {d_after:.2f} EUR, giro {Bn['giro']} → {Decimal(Bn['giro']) + 60:.2f} EUR.")
     s.write()
 
@@ -573,7 +578,7 @@ def scenario_waterfall_two_psps():
           decryptedView=dv, explanation="Anna's ledger entry is not forwarded.")
     s.tick(90)
     s.add(_slug="psp-api-response-201-with-defunding", title=f"PSP B accepts and asks to sweep {excess} EUR to Ben's giro account", **{"from": "PSP B", "to": "DESP"}, interface="I3",
-          specRef="Annex D2-7 p.104–105 (paymentDefundingObject)", schema="contracts/i3-psp-desp/schemas/psp-api/post-payment-instructions.response-201.schema.json",
+          specRef="Annex D2-7 p.104–106 (paymentDefundingObject)", schema="contracts/i3-psp-desp/schemas/psp-api/post-payment-instructions.response-201.schema.json",
           http={"status": 201, "headers": hdr_resp(s, r3)},
           body={"paymentIdentification": {"UETR": uetr}, "paymentTransactionStatus": status("AcceptedCustomerProfile"),
                 "paymentInstructionObject": {"creditorEntry": {"entryId": Bn["entry"]}},
@@ -597,12 +602,12 @@ def scenario_waterfall_two_psps():
         s.add(_slug=slug, title=f"Final status to PSP {bank}: settled" + (" (incl. defunding)" if bank == "B" else ""), **{"from": "DESP", "to": f"PSP {bank}"}, interface="I3",
               specRef="Annex D2-7 p.106–109", schema="contracts/i3-psp-desp/schemas/psp-api/post-payment-instruction-status.request.schema.json",
               http={"method": "POST", "path": f"/v1/payment-instructions/{piid}/status", "headers": hdr_req(s, r)}, body=body,
-              explanation=("Only PSP B gets the defunding status: the defunding is its business (our choice, INTERPRETATION T7)." if bank == "B" else
-                           "PSP A learns that the payment is settled; nothing about Ben's waterfall."))
+              explanation=("Defunding ID and status go only to the payee's digital euro PSP and commercial bank money PSP (D2-7 p.16). PSP B is both, so it gets them inside this one status push, as in Fig. 11 (INTERPRETATION T7)." if bank == "B" else
+                           "PSP A learns that the payment is settled; nothing about Ben's waterfall (D2-7 p.16)."))
         s.tick(10)
         s.add(_slug=f"psp-api-204-psp-{bank.lower()}", title="Status received", **{"from": f"PSP {bank}", "to": "DESP"}, interface="I3",
               specRef="Annex D2-7 p.106–109", http={"status": 204, "headers": {"Request-Id": r, "Response-Timestamp": ts(s.t)}}, body=None, explanation="204: no body.")
-    giro_step(s, "ben", "credit", excess, "giro-credit", f"Credit {excess} EUR to Ben's giro account")
+    giro_step(s, "ben", "credit", excess, "giro-credit", f"Credit {excess} EUR to Ben's giro account", REF_WATERFALL)
     s.tick(60)
     s.add(_slug="app-response", title="Anna's app shows: paid", **{"from": "PSP A", "to": "Banking App A"}, interface="I1",
           specRef="Annex D1-1 common outgoing envelope", schema="contracts/i1-app-psp/schemas/response.schema.json",
