@@ -431,7 +431,7 @@ var S={
   lists:null,           // GET /control/scenarios
   recent:null,          // {item, until} an inside-the-app step shown on its node
   appsKnown:null,
-  pill:{id:null,mode:null}
+  pill:{id:null,mode:null}, dropped:0
 };
 
 /* ---------- lanes / nodes ---------- */
@@ -446,12 +446,12 @@ function bankOf(name){var m=/(?:PSP|Banking App) ([A-Z])/.exec(name||"");return 
 
 /* ---------- people (names for entries / DEANs / phone numbers) ---------- */
 function learnPerson(p){
-  if(!p||!p.name) return;
+  if(!p||typeof p.name!=="string"||!p.name) return;
   [p.entry,p.dean,p.phone,p.name].forEach(function(k){if(k) S.people[k]=p;});
 }
 function person(key){return key?S.people[key]||null:null;}
 if(TD&&TD.users){Object.keys(TD.users).forEach(function(k){var u=TD.users[k];learnPerson({name:u.name,bank:u.bank,dean:u.dean,entry:u.entry,phone:u.phone});});}
-function first(p){return p?p.name.split(" ")[0]:"someone";}
+function first(p){return p&&p.name?String(p.name).split(" ")[0]:"someone";}
 function pname(p,lens,short){
   if(!p) return "someone";
   var n=short?first(p):p.name;
@@ -465,8 +465,9 @@ function anon(text,lens){
   Object.keys(S.people).forEach(function(k){
     var p=S.people[k]; if(!p||seen[p.name]) return; seen[p.name]=1;
     if((lens==="A"||lens==="B")&&p.bank===lens) return;
-    var repl="a customer of PSP "+p.bank;
+    var repl="a customer of PSP "+p.bank, parts=p.name.split(" ");
     out=out.split(p.name).join(repl).replace(new RegExp("\\b"+first(p)+"(?:'s)?\\b","g"),function(m){return /'s$/.test(m)?"the customer's":"the customer";});
+    if(parts.length>1&&parts[parts.length-1].length>2) out=out.split(parts[parts.length-1]).join("");
   });
   return (text.charAt(0)!==out.charAt(0)&&/[A-Z]/.test(text.charAt(0)))?cap(out):out;
 }
@@ -540,6 +541,14 @@ function fromInternal(e){
 }
 
 /* match a live item to the next unused step of the running example */
+function giroClass(s){ // release / debit / credit win over block ("debit blocked amount" is a debit)
+  s=String(s||"").toLowerCase();
+  if(/release|unblock/.test(s)) return "release";
+  if(/debit/.test(s)) return "debit";
+  if(/credit/.test(s)) return "credit";
+  if(/block/.test(s)) return "block";
+  return null;
+}
 function matchExample(it){
   var sc=S.scen; if(!sc||!sc.steps||!sc.steps.length) return;
   for(var i=0;i<sc.steps.length;i++){
@@ -554,11 +563,8 @@ function matchExample(it){
       if(ek!==it.kind) continue;
       ok=st.from===it.from&&st.to===it.to;
       if(ok&&it.kind==="giro"&&it.body&&st.title&&it.body.action){ // same kind of giro step (block / debit / credit)
-        var a=it.body.action, t=(st.title||"").toLowerCase();
-        if(/block/.test(a)&&!/block/.test(t)) ok=false;
-        else if(/debit blocked/.test(a)&&!/debit/.test(t)) ok=false;
-        else if(a==="credit"&&!/credit/.test(t)) ok=false;
-        else if(a==="debit"&&!/debit/.test(t)) ok=false;
+        var ac=giroClass(it.body.action), tc=giroClass(st.title);
+        if(ac&&tc&&ac!==tc) ok=false;
       }
     }
     if(ok){
@@ -580,8 +586,13 @@ function statusWord(s){
   if(/^Accepted/i.test(s)) return "accepted";
   return s.replace(/([a-z])([A-Z])/g,"$1 $2").toLowerCase();
 }
-var REASONS={XBAL:"not enough money (digital euro plus giro balance)",XNET:"the central platform could not be reached",XFMT:"the message was malformed or unknown",
-  XLIM:"the holding limit would be exceeded",XACC:"unknown account",XTIM:"the request timed out"};
+var REASONS={
+  XFMT:"message format error",XHDR:"technical header missing or invalid",XAUT:"no logged-in user",XACC:"account unknown or not at this bank (or ledger entry unknown / held via another bank)",
+  XBAL:"insufficient funds",XLIM:"holding limit would be exceeded",XNSU:"not supported in this simulation",XALI:"alias not registered",
+  XNET:"central platform not reachable",XTMO:"no final status in time",XINT:"internal error",
+  XDCA:"not enough central bank money on the bank's DCA",XFWD:"invalid answer from the other bank",XDUP:"UETR already used",
+  AB03:"no answer from the other bank in time (settlement timeout)",D005:"bank is not a participant",
+  AC05:"account closed or unknown (ECB code)",AC06:"account blocked (ECB code)"};
 function reasonText(code){return code?(REASONS[code]?code+" – "+REASONS[code]:String(code)):"";}
 function bankName(bic){var l=S.banks[bic]; if(!l&&TD&&TD.banks){Object.keys(TD.banks).forEach(function(k){if(TD.banks[k].bic===bic) l=k;});} return l?"PSP "+l:(bic||"a bank");}
 
@@ -667,6 +678,7 @@ function shortLabel(it){
   var t=it.kind==="request"?((it.method||"")+" "+p.split("/").pop()).trim():String(it.status||"");
   return t||(it.kind==="request"?"request":"response");
 }
+function lensLabel(it,lens){ return anon(safe(function(){return chipLabel(it);},"step"),lens); }
 function chipLabel(it){ // short human text for the step chips / timeline rows
   var n=narrate(it,"all"); var t=it.matched&&it.title?it.title:null;
   if(t) return t;
@@ -703,7 +715,7 @@ function snapFromApps(apps,prev){
     var L=m[1].toUpperCase(); S.banks[a.bic]=L; banks.push(L);
     if(a.holdingLimit!=null) limit=dec(a.holdingLimit);
     (a.customers||[]).forEach(function(c){
-      var p={name:c.name,bank:L,dean:c.DEAN,entry:c.entryId,phone:c.phone,de:dec(c.digitalEuro),giro:dec(c.giro),blocked:dec(c.giroBlocked)};
+      var p={name:(typeof c.name==="string"&&c.name)?c.name:"Customer",bank:L,dean:c.DEAN,entry:c.entryId,phone:c.phone,de:dec(c.digitalEuro),giro:dec(c.giro),blocked:dec(c.giroBlocked)};
       learnPerson(p); people.push(p);
     });
   });
@@ -791,8 +803,17 @@ function fetchJSON(url,opts,ms){
   });
 }
 function resetLive(){
-  S.items=[];S.byId={};S.states=[];S.scen=null;S.result=null;S.sel=null;S.recent=null;S.lastSeq=0;
+  S.items=[];S.byId={};S.states=[];S.scen=null;S.result=null;S.sel=null;S.recent=null;S.lastSeq=0;S.dropped=0;
   S.ctrl={mode:S.ctrl.mode,delaySeconds:S.ctrl.delaySeconds,waiting:0,next:null};
+}
+var MAXKEEP=300;
+function trimItems(){ // traffic without scenario events would grow forever: keep the last MAXKEEP steps
+  var over=S.items.length-MAXKEEP; if(over<=0) return;
+  var gone=S.items.splice(0,over); S.dropped+=over;
+  gone.forEach(function(g){ if(g.id) delete S.byId[g.id]; });
+  S.states.forEach(function(st){st.n=Math.max(0,st.n-over);});
+  if(S.sel!=null){ S.sel-=over; if(S.sel<0) S.sel=null; }
+  S.recent=S.recent&&S.items.indexOf(S.recent.item)>=0?S.recent:null;
 }
 function handleEvent(e,quiet){
   if(!e||typeof e!=="object"||!e.type) return;
@@ -800,19 +821,19 @@ function handleEvent(e,quiet){
   try{
   switch(e.type){
     case "reset":
-      S.items=[];S.byId={};S.scen=null;S.result=null;S.sel=null;S.recent=null;S.states=[];
+      S.items=[];S.byId={};S.scen=null;S.result=null;S.sel=null;S.recent=null;S.states=[];S.dropped=0;
       if(!quiet) toast("Everything is back at the test data.","ok");
       break;
     case "message":{
       if(!e.id||S.byId[e.id]) break;
-      var it=fromMessage(e); matchExample(it); S.items.push(it); S.byId[it.id]=it;
+      var it=fromMessage(e); matchExample(it); S.items.push(it); S.byId[it.id]=it; trimItems();
       break;}
     case "released":{
       var r=S.byId[e.id]; if(r){r.released=true;r.waiting=false;}
       if(S.recent&&!quiet){var rc=S.recent; setTimeout(function(){if(S.recent===rc){S.recent=null;scheduleRender();}},S.ctrl.delaySeconds<0.6?1100:0);}
       break;}
     case "internal":{
-      var ii=fromInternal(e); matchExample(ii); S.items.push(ii);
+      var ii=fromInternal(e); matchExample(ii); S.items.push(ii); trimItems();
       if(!quiet) S.recent={item:ii};
       break;}
     case "state":{
@@ -828,7 +849,7 @@ function handleEvent(e,quiet){
       if(e.status==="started"){
         S.scen={id:e.id,title:e.title,steps:Array.isArray(e.steps)?e.steps:[],used:[],status:"started"}; S.result=null;
         if(!S.items.some(function(x){return x.live&&isMsg(x)&&!x.released;})){ // every run starts a fresh timeline (unless a message is still waiting)
-          S.items=[]; S.byId={}; S.sel=null; S.recent=null; S.states.forEach(function(st){st.n=0;});
+          S.items=[]; S.byId={}; S.sel=null; S.recent=null; S.dropped=0; S.states.forEach(function(st){st.n=0;});
         }
       }else if(e.status==="finished"||e.status==="failed"){
         var ok=e.status==="finished"&&e.ok, ans=e.answer||{}, code=ans.StatusReason||(ans.ReturnCode?("return code "+ans.ReturnCode):"");
@@ -873,16 +894,24 @@ function scheduleRetry(){
 }
 
 /* ---------- commands (I7) ---------- */
+function friendly(path,status,text){
+  var t=String(text||"");
+  if(status===409){
+    if(/reset/.test(path)) return "Messages are still waiting or a scenario is running \u2013 let them through (Play or Step) first, then reset."+(t?" ("+t+")":"");
+    return "A scenario is still running \u2013 let it finish first."+(t&&!/scenario/i.test(t)?" ("+t+")":"");
+  }
+  return t||("The relay answered "+status+".");
+}
 function post(path,body,quiet){
   return fetchJSON(S.base+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})},8000).then(function(r){
     var d=r.data||{};
-    if(!r.ok||d.ok===false){ if(!quiet) toast(d.error||("The relay answered "+r.status+"."),"bad"); return {ok:false,error:d.error||("HTTP "+r.status),data:d}; }
+    if(!r.ok||d.ok===false){ var msg=friendly(path,r.status,d.error); if(!quiet) toast(msg,"bad"); return {ok:false,error:msg,data:d}; }
     return {ok:true,data:d};
   }).catch(function(){ toast("The relay is not reachable.","bad"); return {ok:false,error:"unreachable"}; });
 }
 function toast(text,kind){
   try{
-    var box=$("toasts"), d=document.createElement("div"); d.className="toast "+(kind||""); d.textContent=text; box.appendChild(d);
+    var box=$("toasts"), d=document.createElement("div"); d.className="toast "+(kind||""); d.textContent=anon(String(text),S.lens); box.appendChild(d);
     while(box.children.length>4) box.removeChild(box.firstChild);
     setTimeout(function(){if(d.parentNode) d.parentNode.removeChild(d);},kind==="bad"?7000:4500);
   }catch(e){}
@@ -958,7 +987,13 @@ function headersHTML(h){
 var rafPending=false;
 function scheduleRender(){ if(rafPending) return; rafPending=true; (window.requestAnimationFrame||setTimeout)(function(){rafPending=false;render();}); }
 function guard(name,fn){try{fn();}catch(e){if(window.console) console.error("render "+name,e);}}
+var MAPIDS=["nPspA","nPspB","nAppA","nAppB","ledgerCard","narr","steps","inspector","moneyRow"], TLIDS=["seq","narrT","moneyT","lensT"];
+function clearView(ids){ // the view that is not shown keeps no stale (lens-filtered) text in the page
+  ids.forEach(function(id){ var el=$(id); if(el&&(el.innerHTML!==""||el._h)){ el.innerHTML=""; el._h=null; el._sig=null; } });
+  if(ids===MAPIDS){ lastInsSig=null; pillHide(); }
+}
 function render(){
+  guard("clear",function(){ clearView(S.view==="map"?TLIDS:MAPIDS); });
   guard("header",renderHeader); guard("bar",renderBar);
   var it=S.items[curIdx()]||null;
   if(S.view==="map"){ guard("map",function(){renderMap(it);}); }
@@ -995,7 +1030,7 @@ function renderHeader(){
   }else b.hidden=true;
   var live=S.mode==="live";
   $("runLbl").textContent=live?"Run scenario":"Play scenario";
-  $("bSet").disabled=!live; $("bSet").title=live?"":"Live mode only";
+  syncRun(); $("bSet").disabled=!live; $("bSet").title=live?"":"Live mode only";
 }
 
 /* ---------- control bar ---------- */
@@ -1012,7 +1047,6 @@ function renderBar(){
   else txt="Step "+(cur+1)+" of "+total+" · "+(playing?"playing":"paused");
   $("stepcount").textContent=txt;
   $("backLive").hidden=!(live&&S.sel!=null);
-  var head=S.items.length-1;
   $("bBack").disabled=none||cur<=0&&!(rep&&cur===0);
   if(rep) $("bBack").disabled=cur<0;
   if(live) $("bFwd").disabled=!(S.sel!=null||(S.ctrl.mode==="pause"&&S.ctrl.waiting>0));
@@ -1083,8 +1117,7 @@ function pillShow(it,mode,secs,extra){
     put(reduced?P:B,reduced?"none":"left "+secs+"s cubic-bezier(.45,.05,.4,.95), top "+secs+"s cubic-bezier(.45,.05,.4,.95)");
     hintEl.style.display="none";
   }else{
-    var wasHidden=pillEl.getAttribute("data-id")!==it.key;
-    if(wasHidden){ put(A,"none"); void pillEl.offsetWidth; }
+    if(pillEl.getAttribute("data-id")!==it.key){ put(A,"none"); void pillEl.offsetWidth; }
     put(P,reduced?"none":"left .35s ease-out, top .35s ease-out");
     var n=S.ctrl.waiting||0;
     hintEl.textContent="waiting – press Step"+(n>1?" · "+(n-1)+" more behind it":"");
@@ -1193,23 +1226,25 @@ function setList(container,html,sig){
   container.innerHTML=html; container._sig=sig; container.scrollLeft=sl;
   if(key){var n=container.querySelector('[data-k="'+key+'"]'); if(n) n.focus({preventScroll:true});}
 }
+var WINDOW=80;
 function renderChips(){
-  var lens=S.lens, cur=curIdx(), rs=rows();
-  var sig=[S.mode,lens,cur,S.items.length,rs.length,S.items.map(function(x){return x.released?1:0;}).join("")].join("|");
-  var html=rs.map(function(r){
+  var lens=S.lens, cur=curIdx(), rs=rows(), hiddenN=Math.max(0,rs.length-WINDOW);
+  var sig=[S.mode,lens,cur,S.items.length,rs.length,S.dropped,S.items.slice(-WINDOW).map(function(x){return x.released?1:0;}).join("")].join("|");
+  var html=rs.slice(hiddenN).map(function(r){
     var vis=sees(r.it,lens);
-    var label=vis?safe(function(){return chipLabel(r.it);},"step"):(lens==="public"?"message":"not visible");
-    if(vis) label=anon(label,lens);
-    var tag=r.status==="now"?" · now":r.status==="done"?" · done":r.status==="wait"?" · waiting":"";
+    var label=vis?lensLabel(r.it,lens):(lens==="public"?"message":"not visible");
+    var tag=r.status==="now"?" \u00b7 now":r.status==="done"?" \u00b7 done":r.status==="wait"?" \u00b7 waiting":"";
     var cls="step "+(r.status==="now"?"now":r.status==="done"?"done":r.status==="wait"?"wait":"future")+(vis?"":" hid");
     var dis=r.status==="future"&&S.mode==="live";
-    return '<button type="button" role="listitem" class="'+cls+'" data-i="'+r.i+'" data-k="c'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true"':"")+'><span class="n">'+(r.i+1)+tag+'</span>'+esc(label)+'</button>';
+    return '<div role="listitem" style="flex:none"><button type="button" class="'+cls+'" data-i="'+r.i+'" data-k="c'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true"':"")+'><span class="n">'+(r.i+1+S.dropped)+tag+'</span>'+esc(label)+'</button></div>';
   }).join("");
+  var older=hiddenN+S.dropped;
+  if(older>0) html='<div role="listitem" class="foot" style="flex:none;width:110px;align-self:center">'+older+' older steps hidden</div>'+html;
   var box=$("steps");
-  if(!rs.length) html='<div class="foot" style="padding:6px 2px">The steps will appear here as messages arrive.</div>';
+  if(!rs.length) html='<div role="listitem" class="foot" style="padding:6px 2px">The steps will appear here as messages arrive.</div>';
   setList(box,html,sig);
   var now=box.querySelector(".now");
-  if(now){ var l=now.offsetLeft, w=now.offsetWidth; if(l<box.scrollLeft||l+w>box.scrollLeft+box.clientWidth) box.scrollLeft=Math.max(0,l-box.clientWidth/2+w/2); }
+  if(now){ var l=now.parentNode.offsetLeft, w=now.offsetWidth; if(l<box.scrollLeft||l+w>box.scrollLeft+box.clientWidth) box.scrollLeft=Math.max(0,l-box.clientWidth/2+w/2); }
 }
 
 /* ---------- inspector ---------- */
@@ -1220,7 +1255,6 @@ function readersHTML(it){
     var d=s.map(function(x){return x.decoded;}).filter(Boolean)[0]||{}, parts=[];
     if(d.creditor||d.debtor) parts.push("names"); if(d.creditorAccount||d.debtorAccount) parts.push("account numbers (DEANs)"); if(d.remittanceInformationUnstructured) parts.push("payment text");
     var what=parts.length?parts.join(", "):"personal details";
-    var bothBanks=it.from!=="DESP"||true;
     return '<div class="readers">'+IC.eye.replace("<svg","<svg stroke=\"#1E7B3C\"")+'<div><strong>Central platform:</strong> amount, banks, payment type, IDs</div>'+
       IC.lockO.replace("<svg","<svg stroke=\"#7A3E00\"")+'<div><strong>Sealed for the banks only:</strong> '+esc(what)+'. The platform forwards the sealed part unread.</div></div>';
   }
@@ -1350,7 +1384,7 @@ function laneOf(name){var k=nodeKey(name);return LANES.indexOf(k);}
 function boxText(it,lens){
   if(it.kind==="ledger"){
     var bk=it.body&&it.body.bookings; if(Array.isArray(bk)&&sees(it,lens)){
-      return "settle: "+bk.map(function(x){var m=/^DCA of PSP (\w+)$/.exec(x.entry||"");var who=m?"DCA "+m[1]:(lens==="desp"?x.entry.slice(0,8)+"…":first(person(x.entry)||{name:x.entry}));return who+" "+String(x.change).replace("-","−");}).join(" · ");}
+      return "settle: "+bk.map(function(x){var m=/^DCA of PSP (\w+)$/.exec(x.entry||"");var who=m?"DCA "+m[1]:(lens==="desp"?String(x.entry).slice(0,8)+"…":(person(x.entry)?pname(person(x.entry),lens,true):String(x.entry).slice(0,8)+"…"));return who+" "+String(x.change).replace("-","−");}).join(" · ");}
     return "settlement";
   }
   if(it.kind==="giro"){var b=it.body||{};return (b.action||"giro step")+(b.amount?" "+b.amount.amount+" €":"");}
@@ -1364,8 +1398,9 @@ function renderTimeline(it){
     return '<div class="lanehead" style="grid-column:'+(2+2*i)+' / '+(4+2*i)+'"><span class="ic" style="background:'+col[0]+'">'+icon+'</span>'+m[0]+'</div>';
   }).join("");
   var lines='<div class="lanelines" aria-hidden="true"><i style="left:10%;border-color:#FAEEDD"></i><i style="left:30%;border-color:#E1F1ED"></i><i style="left:50%;border-color:#E5ECF8"></i><i style="left:70%;border-color:#E1F1ED"></i><i style="left:90%;border-color:#FAEEDD"></i></div>';
-  var sig=[S.mode,lens,cur,rs.length,S.items.map(function(x){return x.released?1:0;}).join("")].join("|");
-  var body=rs.map(function(r){
+  var hiddenN=Math.max(0,rs.length-WINDOW), older=hiddenN+S.dropped;
+  var sig=[S.mode,lens,cur,rs.length,S.dropped,S.items.slice(-WINDOW).map(function(x){return x.released?1:0;}).join("")].join("|");
+  var body=(older>0?'<div class="foot" style="padding:6px 8px;text-align:center">'+older+' older steps hidden</div>':"")+rs.slice(hiddenN).map(function(r){
     var it2=r.it, vis=sees(it2,lens), cls=r.status==="done"?"past":r.status==="now"?"cur":r.status==="wait"?"waitrow":"next";
     var fl=laneOf(it2.from), tl=laneOf(it2.to), cell="";
     if(isMsg(it2)&&fl>=0&&tl>=0&&fl!==tl){
@@ -1379,7 +1414,7 @@ function renderTimeline(it){
     }
     var dis=r.status==="future";
     return '<button type="button" class="trow'+(r.status==="now"?" sel":"")+'" data-i="'+r.i+'" data-k="t'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true" tabindex="-1" style="cursor:default"':"")+
-      ' aria-label="Step '+(r.i+1)+': '+esc(vis?safe(function(){return chipLabel(it2);},"step"):"not visible")+(r.status==="future"?" (upcoming)":"")+'"><span class="tnum" style="'+(r.status==="now"?"color:var(--blue);font-weight:600":"")+'">'+(r.i+1)+'</span>'+cell+'</button>';
+      ' aria-label="Step '+(r.i+1+S.dropped)+': '+esc(vis?lensLabel(it2,lens):"not visible")+(r.status==="future"?" (upcoming)":"")+'"><span class="tnum" style="'+(r.status==="now"?"color:var(--blue);font-weight:600":"")+'">'+(r.i+1+S.dropped)+'</span>'+cell+'</button>';
   }).join("");
   if(!rs.length) body='<div class="foot" style="padding:24px 8px;text-align:center">No messages yet. Run a scenario and they will appear here, one row per message.</div>';
   var seq=$("seq");
@@ -1495,7 +1530,12 @@ function fillPicker(){
     h=DATA.scenarios.map(function(s,i){return '<option value="'+i+'">'+esc(s.title)+'</option>';}).join("");
   }
   sel.innerHTML=h; if(keep&&sel.querySelector('option[value="'+keep.replace(/"/g,'\\"')+'"]')) sel.value=keep;
-  $("run").disabled=!h;
+  syncRun();
+}
+function syncRun(){
+  var running=S.mode==="live"&&!!S.scen&&S.scen.status==="started", b=$("run");
+  b.disabled=running||!$("scenario").options.length;
+  b.title=running?"A scenario is still running \u2013 let it finish first":"";
 }
 function openCustom(){
   var people=(S.lists&&S.lists.people)||[];
@@ -1535,7 +1575,7 @@ function setView(v,persist){
   lastInsSig=null; $("seq")._sig=null; pillHide(); S.pill={id:null,mode:null};
   render();
 }
-function setLens(l){ S.lens=l; lastInsSig=null; try{ $("steps")._sig=null; $("seq")._sig=null; }catch(e){} render(); }
+function setLens(l){ S.lens=l; try{ $("toasts").innerHTML=""; }catch(e){} lastInsSig=null; try{ $("steps")._sig=null; $("seq")._sig=null; }catch(e){} render(); }
 function wire(){
   $("vMap").addEventListener("click",function(){setView("map");});
   $("vTl").addEventListener("click",function(){setView("timeline");});
