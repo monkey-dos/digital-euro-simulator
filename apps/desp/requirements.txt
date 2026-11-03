@@ -1,0 +1,7 @@
+# DESP reference app. Python 3.11+.
+# Starlette is the web framework FastAPI is built on (ADR 0007 explains why not FastAPI itself).
+starlette==1.7.0
+uvicorn==0.54.0
+httpx==0.28.1
+jsonschema==4.26.0
+referencing==0.37.0

@@ -1,0 +1,7 @@
+{
+  "_note": "Participant register (simulation config). BIC -> where the bank's PSP API runs. Fictional banks (INTERPRETATION C9).",
+  "participants": {
+    "SIMADEF0XXX": {"name": "PSP A", "pspApiUrl": "http://127.0.0.1:8001"},
+    "SIMBDEF0XXX": {"name": "PSP B", "pspApiUrl": "http://127.0.0.1:8002"}
+  }
+}
