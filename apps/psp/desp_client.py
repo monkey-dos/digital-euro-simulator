@@ -7,7 +7,7 @@ Requesting-Agent = our BIC.
 import httpx
 
 from http_util import call, request_headers
-from reasons import XALI, XFMT, XNET, Rejection
+from reasons import XALI, XFMT, XNET, XTMO, Rejection
 
 S = "i3-psp-desp/schemas/"
 
@@ -22,8 +22,11 @@ class DespClient:
         try:
             status, _, resp = await call(self.client, self.me, "DESP", "POST", self.url, path, body,
                                          request_headers(self.bic))
-        except httpx.HTTPError:
-            raise Rejection(XNET)
+        except (httpx.ConnectError, httpx.ConnectTimeout):
+            raise Rejection(XNET)  # the DESP never got the message: safe to release what was reserved
+        except httpx.HTTPError as e:
+            # sent, but no (complete) answer: the DESP may have accepted it, so the outcome is unknown
+            raise Rejection(XTMO, f"No answer from the DESP ({type(e).__name__})")
         if status != ok_status:
             return status, resp
         errors = self.schemas.errors(S + resp_schema, resp)

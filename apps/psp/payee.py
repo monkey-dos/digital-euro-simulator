@@ -6,8 +6,9 @@ customer by DEAN, checks the holding limit and answers in the 201:
   - AcceptedCustomerProfile + creditorEntry, and
   - a paymentDefundingObject if the customer would exceed the holding limit
     (waterfall, rulebook LM-050-002: amount = balance + payment − limit).
-It then waits for the DESP's final status push (no I1 call involved) and books
-the waterfall credit on the giro account after the settled status (A11).
+The amount that will reach the customer is reserved (pending_in) until the
+DESP's final status push arrives (any outcome); then the bank books the balance
+and the waterfall credit on the giro account after the settled status (A11).
 """
 from decimal import Decimal
 
@@ -31,7 +32,9 @@ class PayeeSide:
         try:
             payee, amount = self._payee_of(body)
             limit = self.payer_side.holding_limit
-            excess = max(payee.balance + amount - limit, Decimal("0"))
+            # projected(): include payments still waiting for their final status, so two
+            # parallel payments cannot both fit under the limit (no `await` until the reservation below)
+            excess = max(payee.projected() + amount - limit, Decimal("0"))
         except Rejection as r:
             return {"paymentIdentification": {"UETR": uetr}, "paymentTransactionStatus": {"status": "Rejected"},
                     "statusReason": status_reason(r.code, r.info)}
@@ -39,14 +42,18 @@ class PayeeSide:
                 "paymentInstructionObject": {"creditorEntry": {"entryId": payee.entry}}}
         if excess:
             sim_log.emit("internal", self.me, self.me, "internal", kind="note",
-                         note=f"{payee.name}: {fmt(payee.balance)} + {fmt(amount)} > limit {fmt(limit)} → waterfall {fmt(excess)}")
+                         note=f"{payee.name}: {fmt(payee.projected())} + {fmt(amount)} > limit {fmt(limit)} → waterfall {fmt(excess)}")
             # ADR 0001: the giro account is at this bank, so instructedAgent = own BIC and no encrypted part
             resp["paymentDefundingObject"] = {"instructedAgent": {"bicfi": self.bic}, "amount": amount_obj(excess)}
 
+        incoming = amount - excess
+        payee.pending_in += incoming  # reserved until the final status (any outcome) releases it
+
         def on_final(push):
+            payee.pending_in -= incoming
             if push.get("paymentTransactionStatus", {}).get("status") != SETTLED:
                 return
-            payee.balance += amount - excess
+            payee.balance += incoming
             if excess:
                 self.bank.credit(payee, excess)  # A11: credit after the settled status
 

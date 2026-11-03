@@ -73,7 +73,7 @@ Each app prints one line per message it sends or receives. In a second terminal,
 python3 tools/e2e_flows.py        # or, without run_local.py:  python3 tools/e2e_flows.py --start
 ```
 
-It prints what happened and the balances after each flow and ends with `9 of 9 passed.` See [apps/desp](apps/desp/README.md), [apps/psp](apps/psp/README.md) and [ADR 0007](docs/decisions/0007-first-apps-python.md).
+It prints what happened and the balances after each flow and ends with `12 of 12 passed.` (11 without `--start`: the "DESP down" check needs it). See [apps/desp](apps/desp/README.md), [apps/psp](apps/psp/README.md) and [ADR 0007](docs/decisions/0007-first-apps-python.md).
 
 ## Sources
 

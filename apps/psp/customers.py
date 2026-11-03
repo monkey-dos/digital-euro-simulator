@@ -22,11 +22,24 @@ class Customer:
     def __init__(self, name, dean, phone, entry, iban, giro, balance):
         self.name, self.dean, self.phone, self.entry, self.iban = name, dean, phone, entry, iban
         self.giro, self.blocked, self.balance = money(giro), Decimal("0.00"), money(balance)
+        # Amounts of transactions still waiting for their final status. Taken into account
+        # by every new check, so parallel payments cannot overspend or exceed the holding limit.
+        self.reserved_out = Decimal("0.00")  # will leave the digital euro balance
+        self.pending_in = Decimal("0.00")    # will arrive on the digital euro balance
+
+    def spendable(self) -> Decimal:
+        """Digital euro the customer can still spend now."""
+        return self.balance - self.reserved_out
+
+    def projected(self) -> Decimal:
+        """Highest balance the customer may reach once pending transactions settle (holding-limit check)."""
+        return self.balance + self.pending_in
 
     def view(self) -> dict:
         return {"name": self.name, "DEAN": self.dean, "phone": self.phone, "entryId": self.entry, "iban": self.iban,
                 "giro": fmt(self.giro), "giroBlocked": fmt(self.blocked), "giroAvailable": fmt(self.giro - self.blocked),
-                "digitalEuro": fmt(self.balance)}
+                "digitalEuro": fmt(self.balance), "reservedOutgoing": fmt(self.reserved_out),
+                "pendingIncoming": fmt(self.pending_in)}
 
 
 class Bank:
@@ -51,9 +64,13 @@ class Bank:
                      body={"action": action, "account": f"giro of {c.name}", "amount": amount_obj(amount)},
                      note=f"giro of {c.name}: {action} {fmt(amount)} → giro {fmt(c.giro)}, blocked {fmt(c.blocked)}")
 
-    def block(self, c: Customer, amount: Decimal):
+    @staticmethod
+    def check_giro(c: Customer, amount: Decimal):
         if c.giro - c.blocked < amount:
             raise Rejection(XBAL, f"Giro account: {fmt(c.giro - c.blocked)} available, {fmt(amount)} needed")
+
+    def block(self, c: Customer, amount: Decimal):
+        self.check_giro(c, amount)
         c.blocked += amount
         self._giro_event(c, "block", amount)
 

@@ -17,11 +17,15 @@ the example file, and then checks:
   3. end balances on the DESP ledger, the DCAs and the giro accounts match the
      example, nothing is left blocked or pending, and the money check holds
      (digital euro in circulation = opening balances + net DCA debits).
-Then it plays rejections, which must change nothing.
+Then it plays rejections, which must change nothing, and regression checks:
+parallel payments against the holding limit, a payment to oneself at the DESP
+and (with --start only) a funding while the DESP is down.
 Exit code 0 only if everything matches. Uses only the Python standard library.
 """
 import argparse
 import base64
+import shutil
+import threading
 import glob
 import json
 import os
@@ -383,6 +387,104 @@ def run_rejection(title, bank, user, changes, code, why):
     return problems
 
 
+# ---------------------------------------------------------------- regression checks
+
+def example_body(folder, prefix):
+    f = sorted(glob.glob(os.path.join(EX, folder, f"[0-9][0-9]-{prefix}*.json")))[0]
+    return json.load(open(f, encoding="utf-8"))
+
+
+def no_leftovers(st):
+    problems = []
+    for dean, c in st["customers"].items():
+        if c["giroBlocked"]:
+            problems.append(f"{dean}: {c['giroBlocked']} still blocked on the giro account")
+    if st["pending"]:
+        problems.append(f"{st['pending']} transaction(s) still pending at the banks")
+    for psp in ("PSP A", "PSP B"):
+        for c in get(psp, "/sim/state")["customers"]:
+            if D(c.get("reservedOutgoing", 0)) or D(c.get("pendingIncoming", 0)):
+                problems.append(f"{c['name']}: reservations left (out {c['reservedOutgoing']}, in {c['pendingIncoming']})")
+    return problems
+
+
+def check_parallel_holding_limit():
+    """Review item 2: two parallel 50 EUR payments to Ben (balance 80, limit 100) must not take him over 100."""
+    print("\n── regression: two parallel payments to Ben, holding limit 100 EUR")
+    reset_all()
+    ben = TD["users"]["ben"]
+    http("POST", URL["PSP B"] + "/sim/holding-limit", {"command": "SET_HOLDING_LIMIT", "amount": {"currency": "EUR", "amount": "100.00"}})
+    step = example_body("p2p-two-psps", "app-payment-initiation")
+    answers = [None, None]
+
+    def pay(i, payer):
+        body = dict(step["body"], MessageIdentification=f"E2E-PAR-{i}")
+        answers[i] = http("POST", URL["PSP A"] + "/i1/messages", body, {"Sim-User-DEAN": TD["users"][payer]["dean"]})
+
+    try:
+        threads = [threading.Thread(target=pay, args=(i, who)) for i, who in enumerate(("anna", "clara"))]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        settle_down()
+    finally:
+        http("POST", URL["PSP B"] + "/sim/holding-limit", {"command": "SET_HOLDING_LIMIT", "amount": {"currency": "EUR", "amount": TD["holdingLimit"]}})
+    st = snapshot()
+    problems = [f"payment {i}: {a}" for i, a in enumerate(answers) if a[0] != 200 or a[1].get("ReturnCode") != 0]
+    ben_de, ben_giro = st["entries"][ben["entry"]], st["customers"][ben["dean"]]["giro"]
+    if ben_de > D("100.00"):
+        problems.append(f"Ben holds {ben_de} digital euro, above the limit of 100.00")
+    if ben_de + ben_giro != D(ben["balance"]) + D(ben["giro"]) + 100:
+        problems.append(f"Ben's money does not add up: {ben_de} + {ben_giro}")
+    problems += no_leftovers(st)
+    if not st["money_ok"]:
+        problems.append(f"money check failed: {st['money']}")
+    print(f"   Both payments answered {[a[1].get('ReturnCode') for a in answers]}; Ben has {ben_de} digital euro and {ben_giro} on his giro account.")
+    return problems
+
+
+def check_self_payment():
+    """Review item 4: the DESP rejects debtorEntry == creditorEntry in its 201."""
+    print("\n── regression: payment instruction to the same ledger entry")
+    reset_all()
+    step = example_body("p2p-same-psp", "desp-post-payment-instructions")
+    body = json.loads(json.dumps(step["body"]))
+    body["paymentIdentification"]["UETR"] = "01a19bc1-0000-7000-8000-" + os.urandom(6).hex()
+    body["paymentInstructionObject"]["creditorEntry"] = body["paymentInstructionObject"]["debtorEntry"]
+    headers = dict(step["http"]["headers"], **{"Request-Id": str(__import__("uuid").uuid4())})
+    status, answer = http("POST", URL["DESP"] + "/v1/payment-instructions", body, headers)
+    time.sleep(0.3)
+    problems = []
+    if status != 201 or answer["paymentTransactionStatus"]["status"] != "Rejected" or answer["statusReason"]["statusReasonCode"] != "XACC":
+        problems.append(f"expected 201 Rejected XACC, got {status} {answer}")
+    problems += compare_state(snapshot(), *seed_expectation())
+    print(f"   DESP answered {status} {answer.get('paymentTransactionStatus')} {answer.get('statusReason', {}).get('statusReasonCode')}.")
+    return problems
+
+
+def check_desp_down(procs, log_dir, run_local):
+    """Review item 1: if the DESP cannot be reached, the giro block is released (XNET)."""
+    print("\n── regression: Clara funds 200 EUR while the DESP is down")
+    reset_all()
+    step = example_body("funding-same-psp", "app-funding-request")
+    desp = [p for p in procs if p.sim_name == "DESP"]
+    run_local.stop_all(desp)
+    try:
+        status, answer = send_i1(step)
+        clara = next(c for c in get("PSP A", "/sim/state")["customers"] if c["name"] == "Clara Weber")
+    finally:
+        run_local.restart(procs, "DESP", log_dir)
+    problems = []
+    if status != 200 or answer.get("ReturnCode") != 1 or answer.get("StatusReason") != "XNET":
+        problems.append(f"expected ReturnCode 1 XNET, got HTTP {status} {answer}")
+    if D(clara["giroBlocked"]) or D(clara["giro"]) != D(TD["users"]["clara"]["giro"]) or D(clara.get("pendingIncoming", 0)):
+        problems.append(f"Clara's giro not restored: {clara}")
+    reset_all()
+    print(f"   The app got StatusReason {answer.get('StatusReason')}; Clara's giro {clara['giro']}, blocked {clara['giroBlocked']}.")
+    return problems
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--start", action="store_true", help="start the apps (tools/run_local.py) and stop them afterwards")
@@ -402,6 +504,12 @@ def main():
             results.append((folder, run_flow(folder)))
         for r in REJECTIONS:
             results.append(("rejection " + r[4], run_rejection(*r)))
+        results.append(("regression: parallel payments vs holding limit", check_parallel_holding_limit()))
+        results.append(("regression: payment to the same ledger entry", check_self_payment()))
+        if procs:
+            results.append(("regression: giro block released when DESP is down", check_desp_down(procs, log_dir, run_local)))
+        else:
+            print("\n── regression 'DESP down' skipped: needs --start")
         reset_all()
     finally:
         if procs:
@@ -414,6 +522,10 @@ def main():
             print(f"         - {p}")
         failed += bool(problems)
     print(f"   {len(results) - failed} of {len(results)} passed.")
+    if procs and not failed:
+        shutil.rmtree(log_dir, ignore_errors=True)  # keep the logs only when something failed
+    elif procs:
+        print(f"   App logs: {log_dir}")
     sys.exit(1 if failed else 0)
 
 

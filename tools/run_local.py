@@ -41,14 +41,29 @@ def start_all(log_dir: str | None = None, timeout: float = 20.0) -> list:
     busy = [f"{name} (port {port})" for name, _, _, port in APPS if healthy(port)]
     if busy:
         raise SystemExit(f"Already running: {', '.join(busy)}. Stop them first, or run without --start.")
-    procs = []
-    for name, folder, args, port in APPS:
-        out = open(os.path.join(log_dir, name.replace(" ", "-") + ".log"), "w") if log_dir else None
-        env = dict(os.environ, PYTHONUNBUFFERED="1")
-        p = subprocess.Popen([sys.executable, *args], cwd=os.path.join(ROOT, folder), stdout=out,
-                             stderr=subprocess.STDOUT if out else None, env=env, start_new_session=True)
-        p.sim_name, p.sim_port = name, port
-        procs.append(p)
+    procs = [_spawn(name, log_dir) for name, _, _, _ in APPS]
+    wait_healthy(procs, log_dir, timeout)
+    return procs
+
+
+def _spawn(name: str, log_dir: str | None):
+    _, folder, args, port = next(a for a in APPS if a[0] == name)
+    out = open(os.path.join(log_dir, name.replace(" ", "-") + ".log"), "a") if log_dir else None
+    env = dict(os.environ, PYTHONUNBUFFERED="1")
+    p = subprocess.Popen([sys.executable, *args], cwd=os.path.join(ROOT, folder), stdout=out,
+                         stderr=subprocess.STDOUT if out else None, env=env, start_new_session=True)
+    p.sim_name, p.sim_port = name, port
+    return p
+
+
+def restart(procs: list, name: str, log_dir: str | None = None, timeout: float = 20.0) -> None:
+    """Start one app again (after stop_all([that one])); replaces it in `procs`."""
+    i = next(i for i, p in enumerate(procs) if p.sim_name == name)
+    procs[i] = _spawn(name, log_dir)
+    wait_healthy([procs[i]], log_dir, timeout)
+
+
+def wait_healthy(procs: list, log_dir: str | None, timeout: float) -> None:
     deadline = time.time() + timeout
     waiting = list(procs)
     while waiting and time.time() < deadline:
@@ -63,7 +78,6 @@ def start_all(log_dir: str | None = None, timeout: float = 20.0) -> list:
     if waiting:
         stop_all(procs)
         raise SystemExit("Not healthy in time: " + ", ".join(p.sim_name for p in waiting))
-    return procs
 
 
 def stop_all(procs: list) -> None:

@@ -1,16 +1,22 @@
 """What the bank does when its own customer asks for something over I1
 (Annex D1-1): pay someone, fund, defund.
 
-Each flow builds the I3 message for the DESP exactly like the matching
-scenario in /examples, registers what the final status means for this bank
-(Pending.register, before sending), sends, and waits for the final status
-(INTERPRETATION A7). A business problem raises Rejection, which the I1
-handler turns into ReturnCode 1 + StatusReason (A13).
+Each flow
+  1. builds the I3 message for the DESP exactly like the matching scenario in /examples;
+  2. checks and reserves in one step without any `await` in between, so parallel
+     requests cannot overspend or push a customer over the holding limit:
+     giro block (A11), digital euro going out (reserved_out), coming in (pending_in);
+  3. registers what the final status means for this bank (Pending.register,
+     before sending), sends, and waits for the final status (INTERPRETATION A7).
+Every way out without a settled status releases what step 2 reserved, except
+XTMO (outcome unknown): then the record stays and a late status push still books.
+A business problem raises Rejection, which the I1 handler turns into
+ReturnCode 1 + StatusReason (A13).
 """
 from decimal import Decimal
 
 import sim_log
-from reasons import XACC, XBAL, XFMT, XLIM, XNSU, XTMO, Rejection
+from reasons import XACC, XBAL, XFMT, XINT, XLIM, XNSU, XTMO, Rejection
 from sim_ids import amount_obj, fmt, money, now_ts, sim_encrypt, uuid7
 
 SETTLED = "AcceptedSettlementCompletedDebitorAccount"
@@ -28,19 +34,29 @@ class PayerSide:
         sim_log.emit("internal", self.me, self.me, "internal", kind="note", note=text)
 
     async def _send_and_wait(self, uetr: str, on_final, send, accepted) -> None:
-        """Register first (an early status push must not be lost), send, then wait for the final status."""
+        """Register first (an early status push must not be lost), send, then wait for the final status.
+        on_final() must already hold the reservations; any non-settled outcome passed to it releases them."""
         fut = self.pending.register(uetr, on_final)
+
+        def give_up(code: str, info: str | None = None):
+            # no status push will come: release blocks and reservations, then reject
+            self.pending.cancel(uetr)
+            on_final({"notSent": True})
+            return Rejection(code, info)
+
         try:
             resp = await send()
-        except Exception:
-            self.pending.cancel(uetr)
-            raise
+        except Rejection as r:
+            if r.code == XTMO:
+                raise  # the DESP may have received it: keep the record, a late status push still books
+            raise give_up(r.code, r.info)
+        except Exception as e:  # a bug: still release what was reserved
+            self.note(f"ERROR while sending {uetr}: {e!r}")
+            raise give_up(XINT)
         status, reason = accepted(resp)
         if status == "Rejected":
             # Fig. 6: rejected at technical validation, no status push will come
-            self.pending.cancel(uetr)
-            on_final({"rejectedIn201": True, "statusReason": reason})
-            raise Rejection(reason["statusReasonCode"], reason.get("statusReasonAdditionalInformation"))
+            raise give_up(reason["statusReasonCode"], reason.get("statusReasonAdditionalInformation"))
         push = await self.pending.wait(fut, self.status_timeout)
         if push is None:
             raise Rejection(XTMO)  # the record stays: a late status push is still booked
@@ -74,22 +90,21 @@ class PayerSide:
         same_bank = payee_bic == self.bic
         payee = self.bank.customer(payee_dean) if same_bank else None
 
-        # 2. balance check; reverse waterfall if the digital euro balance is too low
-        #    (rulebook LM-030-002; assumed enabled for every test user, see README)
-        missing = max(amount - payer.balance, Decimal("0"))
+        # 2. balance check (reverse waterfall, rulebook LM-030-002, assumed enabled for every
+        #    test user, see README) and holding limit of a payee at this bank (waterfall).
+        #    From here to the send there is no `await`: check and reserve are one step.
+        missing = max(amount - payer.spendable(), Decimal("0"))
         if missing:
-            self.note(f"{payer.name}: {fmt(payer.balance)} on digital euro, {fmt(amount)} needed → reverse waterfall {fmt(missing)}")
             try:
-                self.bank.block(payer, missing)  # A11: block before sending to the DESP
+                self.bank.check_giro(payer, missing)
             except Rejection:
-                raise Rejection(XBAL, f"Digital euro {fmt(payer.balance)} + giro {fmt(payer.giro - payer.blocked)} < {fmt(amount)}")
-
-        # 3. waterfall at the same bank: we are also the payee bank (D2-7 p.61 defundingObject)
+                raise Rejection(XBAL, f"Digital euro {fmt(payer.spendable())} + giro {fmt(payer.giro - payer.blocked)} < {fmt(amount)}")
         excess = Decimal("0")
-        if same_bank:
-            excess = max(payee.balance + amount - self.holding_limit, Decimal("0"))
+        if same_bank:  # we are also the payee bank (D2-7 p.61 defundingObject)
+            excess = max(payee.projected() + amount - self.holding_limit, Decimal("0"))
+        out, incoming = amount - missing, amount - excess  # digital euro leaving the payer / reaching the payee
 
-        # 4. the payment instruction (D2-7 p.57–62), same shape as /examples
+        # 3. the payment instruction (D2-7 p.57–62), same shape as /examples
         uetr = uuid7()  # C5
         pio = {"debtorAgent": {"bicfi": self.bic}, "creditorAgent": {"bicfi": payee_bic}, "paymentType": "PP01",
                "amount": amount_obj(amount), "debtorEntry": {"entryId": payer.entry}}
@@ -113,7 +128,18 @@ class PayerSide:
         if excess:
             body["defundingObject"] = {"instructedAgent": {"bicfi": self.bic}, "amount": amount_obj(excess)}
 
+        # 4. reserve (no `await` since step 2)
+        if missing:
+            self.note(f"{payer.name}: {fmt(payer.spendable())} digital euro available, {fmt(amount)} needed → reverse waterfall {fmt(missing)}")
+            self.bank.block(payer, missing)  # A11: block before sending to the DESP
+        payer.reserved_out += out
+        if same_bank:
+            payee.pending_in += incoming
+
         def on_final(push):
+            payer.reserved_out -= out
+            if same_bank:
+                payee.pending_in -= incoming
             if push.get("paymentTransactionStatus", {}).get("status") != SETTLED:
                 if missing:
                     self.bank.release(payer, missing)
@@ -121,9 +147,9 @@ class PayerSide:
             # A11: debit the blocked giro amount after the settled status
             if missing:
                 self.bank.debit_blocked(payer, missing)
-            payer.balance += missing - amount
+            payer.balance -= out
             if same_bank:
-                payee.balance += amount - excess
+                payee.balance += incoming
                 if excess:
                     self.bank.credit(payee, excess)  # A11: waterfall credit after the settled status
 
@@ -142,12 +168,16 @@ class PayerSide:
             raise Rejection(XACC, "Accounts in the request do not belong to the logged-in user")
         if msg.get("DebtorAgent") or msg.get("CreditorAgent"):
             raise Rejection(XNSU, "Giro account at another bank is not supported (ADR 0001)")
+        # check and reserve in one step (no `await` until the send)
         if funding:
-            if user.balance + amount > self.holding_limit:
-                raise Rejection(XLIM, f"{fmt(user.balance)} + {fmt(amount)} > holding limit {fmt(self.holding_limit)}")
+            if user.projected() + amount > self.holding_limit:
+                raise Rejection(XLIM, f"{fmt(user.projected())} + {fmt(amount)} > holding limit {fmt(self.holding_limit)}")
             self.bank.block(user, amount)  # A11: block before sending
-        elif user.balance < amount:
-            raise Rejection(XBAL, f"Digital euro balance {fmt(user.balance)} < {fmt(amount)}")
+            user.pending_in += amount
+        else:
+            if user.spendable() < amount:
+                raise Rejection(XBAL, f"Digital euro available {fmt(user.spendable())} < {fmt(amount)}")
+            user.reserved_out += amount
 
         uetr = uuid7()
         body = {"acceptanceDateTime": now_ts(), "paymentIdentification": {"UETR": uetr},
@@ -158,14 +188,17 @@ class PayerSide:
         def on_final(push):
             settled = push.get(f"{kind}TransactionStatus", {}).get("status") == SETTLED
             if funding:
+                user.pending_in -= amount
                 if settled:
                     self.bank.debit_blocked(user, amount)  # A11: debit after the settled status
                     user.balance += amount
                 else:
                     self.bank.release(user, amount)
-            elif settled:
-                user.balance -= amount
-                self.bank.credit(user, amount)  # A11: credit after the settled status
+            else:
+                user.reserved_out -= amount
+                if settled:
+                    user.balance -= amount
+                    self.bank.credit(user, amount)  # A11: credit after the settled status
 
         await self._send_and_wait(uetr, on_final, lambda: self.desp.post_funding(kind, body),
                                   lambda r: (r[f"{kind}TransactionStatus"]["status"], r.get("statusReason")))

@@ -145,9 +145,10 @@ async def i1_messages(request: Request):
         return problem(schemas, request, 401, XAUT, "No logged-in user",
                        "Send the header Sim-User-DEAN with the DEAN of a customer of this bank (INTERPRETATION A12).")
     try:
-        event = json.loads(await request.body()).get("EventIdentification")
-    except (ValueError, AttributeError):
-        event = None
+        parsed = json.loads(await request.body())
+    except ValueError as e:
+        return problem(schemas, request, 400, XFMT, "Body is not valid JSON", str(e))
+    event = parsed.get("EventIdentification") if isinstance(parsed, dict) else None
     if event not in I1_SCHEMAS:
         return problem(schemas, request, 400, XFMT, "Unknown or missing EventIdentification",
                        "Supported: " + ", ".join(I1_SCHEMAS))

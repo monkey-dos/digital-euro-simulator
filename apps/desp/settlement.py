@@ -16,7 +16,7 @@ import httpx
 
 import sim_log
 from http_util import call, request_headers
-from reasons import AB03, D005, XDUP, XFMT, XFWD, XINT, XNSU, Rejection
+from reasons import AB03, D005, XACC, XDUP, XFMT, XFWD, XINT, XNSU, Rejection
 from sim_ids import business_day, money, now_ts, uuid4
 
 S = "i3-psp-desp/schemas/"
@@ -111,13 +111,16 @@ class Engine:
     def _validate_payment_instruction(self, agent: str, body: dict):
         pio = body["paymentInstructionObject"]
         debtor, creditor = pio["debtorAgent"]["bicfi"], pio["creditorAgent"]["bicfi"]
-        if agent != debtor:
-            raise Rejection(XFMT, "Requesting-Agent must be the debtorAgent")
-        for bic in (debtor, creditor):
+        # D005 first: an unknown requesting bank learns that it is not a participant
+        for bic in (agent, debtor, creditor):
             if not self.participants.is_participant(bic):
                 raise Rejection(D005, f"{bic} is not a participant")
+        if agent != debtor:
+            raise Rejection(XFMT, "Requesting-Agent must be the debtorAgent")
         self._check_amount(pio["amount"], "payment")
         same = debtor == creditor
+        if same and pio.get("creditorEntry") == pio["debtorEntry"]:
+            raise Rejection(XACC, "Payer and payee are the same ledger entry")
         # D2-7 p.59: creditorEntry mandatory at the same bank; encrypted part only between different banks
         if same and "creditorEntry" not in pio:
             raise Rejection(XFMT, "creditorEntry is mandatory when both users are at the same bank")
@@ -235,10 +238,11 @@ class Engine:
         uetr = body["paymentIdentification"]["UETR"]
         try:
             bic = obj["instructingAgent"]["bicfi"]
+            for b in (agent, bic):  # D005 first, as for payment instructions
+                if not self.participants.is_participant(b):
+                    raise Rejection(D005, f"{b} is not a participant")
             if agent != bic:
                 raise Rejection(XFMT, "Requesting-Agent must be the instructingAgent")
-            if not self.participants.is_participant(bic):
-                raise Rejection(D005, f"{bic} is not a participant")
             if obj["instructedAgent"]["bicfi"] != bic:
                 raise Rejection(XNSU, f"Open {kind} is not supported (ADR 0001)")
             self._check_amount(obj["amount"], kind)

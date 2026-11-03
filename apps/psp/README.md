@@ -25,7 +25,7 @@ python3 app.py config/psp-b.json        # PSP B, SIMBDEF0XXX, http://127.0.0.1:8
 
 Usually you start everything at once with `python3 tools/run_local.py` (see the main README). A new bank = a new config file plus an entry in the DESP's participant register (`apps/desp/config/participants.json`) and customers in the test data.
 
-Settings (environment variables, override the config file): `PSP_PORT`, `DESP_URL`, `SIM_SEED` (test data), `PSP_STATUS_TIMEOUT` (seconds to wait for the final status, 15), `SIM_LOG_FORMAT=json`.
+Settings (environment variables, override the config file): `PSP_PORT`, `DESP_URL`, `SIM_SEED` (test data), `PSP_STATUS_TIMEOUT` (seconds to wait for the final status, 15), `PSP_HTTP_TIMEOUT` (seconds for one call to the DESP, 10), `SIM_LOG_FORMAT=json`.
 
 ## Endpoints
 
@@ -50,7 +50,9 @@ Every I1 request needs the header `Sim-User-DEAN` with the logged-in customer's 
 4. UETR = UUID v7 (C5). The bank registers the UETR **before** sending, so a status push that arrives early is not lost.
 5. Waits for the final status push (A7), then debits the blocked giro amount (or releases it on rejection) and answers the app: `ReturnCode` 0, or 1 + `StatusReason` (A13).
 
-**As payee's bank** (forwarded instruction): decrypts the party details, finds the customer by DEAN, answers 201 `AcceptedCustomerProfile` with the customer's ledger entry and, if balance + amount > holding limit, a `paymentDefundingObject` (waterfall, LM-050-002). After the settled status it credits the swept amount to the giro account (A11).
+Checks and reservations happen in one step: digital euro going out (`reservedOutgoing`), coming in (`pendingIncoming`) and giro blocks count for every new request until the final status arrives. So two payments in parallel cannot overspend or push a customer over the holding limit. If the instruction never reaches the DESP (`XNET`) or the DESP rejects it, everything reserved is released at once. If the DESP got it but did not answer in time (`XTMO`, outcome unknown), the reservations stay until the status push arrives.
+
+**As payee's bank** (forwarded instruction): decrypts the party details, finds the customer by DEAN, answers 201 `AcceptedCustomerProfile` with the customer's ledger entry and, if balance + pending incoming + amount > holding limit, a `paymentDefundingObject` (waterfall, LM-050-002). After the settled status it credits the swept amount to the giro account (A11).
 
 **Funding / defunding** (I1 online request): funding blocks the giro amount first and debits it after the settled status; defunding credits the giro account after the settled status (A11).
 
@@ -70,7 +72,7 @@ Every I1 request needs the header `Sim-User-DEAN` with the logged-in customer's 
 
 - `Sim-User-DEAN` login header (A12) and the alias lookup call (T5) are placeholders.
 - Waterfall and reverse waterfall are switched on for every test user (the D1-1 liquidity settings are not built yet).
-- The bank keeps its own copy of each customer's digital euro balance, updated from the DESP's status pushes. There is no balance query to the DESP yet.
+- The bank keeps its own copy of each customer's digital euro balance, updated from the DESP's status pushes. There is no balance query to the DESP yet. After an `XTMO` the copy and the reservations wait for the late status push; if none ever comes, a reset is needed.
 - The holding limit is one value per bank, set by config or the game master (ADR 0005), not per customer.
 - The payee name (`Name`, A14) goes into the encrypted part as typed by the user; it is not checked.
 - Only P2P (`PP01`, MCC 4829) with `ALIA` or `DEAN` as payment method. No notification to the payee's app yet.
