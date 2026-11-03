@@ -59,6 +59,9 @@ class Engine:
     def _book(self, uetr: str, legs: list) -> str:
         """Atomic settlement + one log event shaped like examples/*-ledger-settlement.json."""
         bookings = self.ledger.settle(legs)
+        for b in bookings:  # label DCAs as in /examples ("DCA of PSP B"); user entries stay anonymous
+            if b["entry"].startswith("DCA of "):
+                b["entry"] = "DCA of " + self.participants.name(b["entry"][len("DCA of "):])
         sdt = now_ts()
         sim_log.emit("internal", "DESP", "DESP ledger", "internal", kind="ledger",
                      body={"UETR": uetr, "settlementDateTime": sdt, "bookings": bookings},
