@@ -1,0 +1,5 @@
+# Network relay and control room server (simulation layer). Python 3.11+.
+# Same packages and versions as the reference apps (ADR 0007).
+starlette==1.7.0
+uvicorn==0.54.0
+httpx==0.28.1

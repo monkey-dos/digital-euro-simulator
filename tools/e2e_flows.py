@@ -40,6 +40,9 @@ from decimal import Decimal
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EX = os.path.join(ROOT, "examples")
 URL = {"DESP": "http://127.0.0.1:8000", "PSP A": "http://127.0.0.1:8001", "PSP B": "http://127.0.0.1:8002"}
+# Where the banking app's messages (I1) go. With --via-relay they pass the network relay like in the control room.
+I1_URL = dict(URL)
+RELAY_I1 = {"PSP A": "http://127.0.0.1:8100/r/app-a/psp-a", "PSP B": "http://127.0.0.1:8100/r/app-b/psp-b"}
 TD = json.load(open(os.path.join(EX, "test-data.json"), encoding="utf-8"))
 FLOWS = ["p2p-same-psp", "p2p-two-psps", "p2p-reverse-waterfall-same-psp",
          "funding-same-psp", "defunding-same-psp", "p2p-waterfall-two-psps"]
@@ -300,7 +303,7 @@ def settle_down():
 
 
 def send_i1(step):
-    return http("POST", URL[step["to"]] + step["http"]["path"], step["body"], step["http"]["headers"])
+    return http("POST", I1_URL[step["to"]] + step["http"]["path"], step["body"], step["http"]["headers"])
 
 
 def run_flow(folder):
@@ -367,7 +370,7 @@ def run_rejection(title, bank, user, changes, code, why):
         else:
             body[k] = v
     m = marks()
-    status, answer = http("POST", URL[bank] + "/i1/messages", body, {"Sim-User-DEAN": TD["users"][user]["dean"]})
+    status, answer = http("POST", I1_URL[bank] + "/i1/messages", body, {"Sim-User-DEAN": TD["users"][user]["dean"]})
     settle_down()
     events = events_since(m)
     after = snapshot()
@@ -419,7 +422,7 @@ def check_parallel_holding_limit():
 
     def pay(i, payer):
         body = dict(step["body"], MessageIdentification=f"E2E-PAR-{i}")
-        answers[i] = http("POST", URL["PSP A"] + "/i1/messages", body, {"Sim-User-DEAN": TD["users"][payer]["dean"]})
+        answers[i] = http("POST", I1_URL["PSP A"] + "/i1/messages", body, {"Sim-User-DEAN": TD["users"][payer]["dean"]})
 
     try:
         threads = [threading.Thread(target=pay, args=(i, who)) for i, who in enumerate(("anna", "clara"))]
@@ -488,14 +491,21 @@ def check_desp_down(procs, log_dir, run_local):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--start", action="store_true", help="start the apps (tools/run_local.py) and stop them afterwards")
+    ap.add_argument("--via-relay", action="store_true",
+                    help="send all traffic through the network relay (no delay), as in the control room; "
+                         "with --start the relay is started too")
     args = ap.parse_args()
+    if args.via_relay:
+        I1_URL.update(RELAY_I1)
     procs = []
     if args.start:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import run_local
+        if args.via_relay:
+            run_local.use_relay("play", "0")
         log_dir = tempfile.mkdtemp(prefix="desim-e2e-")
         procs = run_local.start_all(log_dir)
-        print(f"Started DESP, PSP A, PSP B (logs in {log_dir})")
+        print(f"Started {', '.join(p.sim_name for p in procs)} (logs in {log_dir})")
     elif apps_up():
         raise SystemExit(f"{apps_up()} is not running. Start the apps with  python3 tools/run_local.py  or use --start.")
     results = []
