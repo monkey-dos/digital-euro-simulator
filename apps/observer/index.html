@@ -83,7 +83,7 @@ svg{flex:none}
 /* map */
 .mainrow{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
 .stagecol{flex:999 1 640px;min-width:0;display:flex;flex-direction:column;gap:12px}
-.stage{position:relative;height:540px;overflow:hidden;background:#FBFCFD}
+.stage{position:relative;height:560px;overflow:hidden;background:#FBFCFD}
 .stage .dots-bg{position:absolute;inset:0;background-image:radial-gradient(var(--grid) 1px,transparent 1px);background-size:22px 22px}
 .stage svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .wire{stroke:var(--line);stroke-width:3;fill:none}
@@ -160,8 +160,8 @@ svg{flex:none}
 .money{display:flex;flex-direction:column;gap:8px}
 .money .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .tiles{display:flex;flex-wrap:wrap;gap:10px}
-.tile{flex:1 1 150px;min-width:0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
-.tile .v{font:500 18px/1.3 var(--f-mono);font-variant-numeric:tabular-nums}
+.tile{flex:1 1 168px;min-width:0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.tile .v{font:500 18px/1.3 var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tile .s{font-size:12.5px;line-height:1.4;color:var(--muted)}
 .tile.circ{border-color:var(--blue-l)}
 .tile.gm{background:#F8F5FC;border-color:var(--violet-l)}
@@ -318,8 +318,8 @@ dialog .db{padding:16px 18px;display:flex;flex-direction:column;gap:12px;max-hei
 
       <div class="node" id="nPspA" style="left:26%;top:288px;width:200px;border:1.5px solid var(--teal);padding:12px 14px"></div>
       <div class="node" id="nPspB" style="left:74%;top:288px;width:200px;border:1.5px solid var(--teal);padding:12px 14px"></div>
-      <div class="node" id="nAppA" style="left:11%;top:400px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
-      <div class="node" id="nAppB" style="left:89%;top:400px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
+      <div class="node" id="nAppA" style="left:11%;top:418px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
+      <div class="node" id="nAppB" style="left:89%;top:418px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
 
       <div class="pillwrap" id="pillwrap"></div>
 
@@ -589,11 +589,11 @@ function payerOf(it){
   var b=it.body||{}, h=it.headers||{};
   return person(h["Sim-User-DEAN"])||person(b.DigitalEuroAccountNumber)||person(b.DebtorAccount)||person(b.CreditorAccount);
 }
-function bookingList(it,lens){
+function bookingList(it,lens,short){
   var bk=it.body&&it.body.bookings; if(!Array.isArray(bk)) return "";
   return bk.map(function(x){
     var m=/^DCA of PSP (\w+)$/.exec(x.entry||"");
-    var who=m?"PSP "+m[1]+"'s central bank account (DCA)":(lens==="desp"?(x.entry||"an entry"):pname(person(x.entry),lens,true));
+    var who=m?(short?"DCA PSP "+m[1]:"PSP "+m[1]+"'s central bank account (DCA)"):(lens==="desp"?(x.entry||"an entry"):pname(person(x.entry),lens,true));
     return who+" "+String(x.change||"").replace(/-/g,"\u2212");
   }).join(", ");
 }
@@ -825,7 +825,9 @@ function handleEvent(e,quiet){
     case "scenario":
       if(e.status==="started"){
         S.scen={id:e.id,title:e.title,steps:Array.isArray(e.steps)?e.steps:[],used:[],status:"started"}; S.result=null;
-        S.items=[]; S.byId={}; S.sel=null; S.recent=null; S.states.forEach(function(st){st.n=0;}); // every run starts a fresh timeline
+        if(!S.items.some(function(x){return x.live&&isMsg(x)&&!x.released;})){ // every run starts a fresh timeline (unless a message is still waiting)
+          S.items=[]; S.byId={}; S.sel=null; S.recent=null; S.states.forEach(function(st){st.n=0;});
+        }
       }else if(e.status==="finished"||e.status==="failed"){
         var ok=e.status==="finished"&&e.ok, ans=e.answer||{}, code=ans.StatusReason||(ans.ReturnCode?("return code "+ans.ReturnCode):"");
         var text=e.status==="failed"?("Failed: "+(e.error||"unknown error")):ok?"Done – the bank answered ok.":("Rejected – "+(reasonText(ans.StatusReason)||code||"the bank said no")+".");
@@ -1127,7 +1129,7 @@ function nodeHTML(key,it,snap,lens){
     var sub=names.length?(names.join(" & ")+"'s bank"):"Retail bank";
     var g="", gi=it&&it.kind==="giro"?it:(S.recent&&S.recent.item.kind==="giro"&&S.mode==="live"&&S.sel==null?S.recent.item:null);
     if(gi&&nodeKey(gi.from)===key&&sees(gi,lens)) g='<div class="giro new">'+esc(narrate(gi,lens).head)+'</div>';
-    return '<div class="hd"><span class="ic" style="width:34px;height:34px;background:var(--teal-t)">'+IC.bank+'</span><div><div class="nt">PSP '+L+'</div><div class="ns">'+esc(sub)+'</div></div></div>'+stat+g;
+    return '<div class="hd"><span class="ic" style="width:34px;height:34px;background:var(--teal-t)">'+IC.bank+'</span><div><div class="nt">PSP '+L+'</div><div class="ns">'+esc(sub)+'</div></div></div>'+(g||stat)+(g?"":"");
   }
   var who=names.length?names.join(" · "):"Banking app";
   return '<div class="hd">'+IC.phone+'<div><div class="nt">Banking App '+L+'</div></div></div><div class="ns" style="margin-top:4px">'+esc(who)+'</div>'+stat.replace('class="st"','class="st" style="margin-top:6px"');
@@ -1145,7 +1147,7 @@ function ledgerHTML(it,snap,lens){
   snap.banks.forEach(function(L){ if(own&&L!==own) return; if(snap.dca[L]==null) return;
     var k="DCA of PSP "+L; g+='<span>DCA PSP '+esc(L)+'</span><span>'+val(k,snap.dca[L])+'</span>'; });
   var book="";
-  if(led&&(lens==="all"||lens==="desp")&&S.mode!=="none") book='<div class="book">Booked: '+esc(bookingList(led,lens))+'</div>';
+  if(led&&(lens==="all"||lens==="desp")&&S.mode!=="none") book='<div class="book">Booked: '+esc(bookingList(led,lens,true))+'</div>';
   return '<div class="eyebrow" style="margin-bottom:4px">Central ledger · no names</div><div class="g">'+g+'</div>'+book;
 }
 
@@ -1280,7 +1282,7 @@ function moneyData(){
       if((lens==="A"||lens==="B")&&p.bank!==lens) return;
       var q=prevPerson(p);
       T.push({k:"p"+(p.entry||p.name),l:first(p)+" · PSP "+p.bank,v:eur(p.de)+" €",d:delta(p.de,q?q.de:null),
-        s:"giro "+eur(p.giro)+" €"+(p.blocked?" ("+eur(p.blocked)+" blocked)":"")+(snap.limit!=null?" · limit "+eur(snap.limit).replace(/\.00$/,"")+" €":"")});
+        s:"giro "+eur(p.giro)+" €"+(p.blocked?" ("+eur(p.blocked)+" blocked)":"")});
     });
   }
   snap.banks.forEach(function(L){ if((lens==="A"||lens==="B")&&L!==lens) return; if(snap.dca[L]==null) return;
@@ -1425,7 +1427,8 @@ function toStart(){
 function loadReplay(i){
   replayStop(); pillHide();
   S.rSc=i; var sc=DATA.scenarios[i];
-  S.items=sc.steps.map(fromExample); S.byId={}; S.rIdx=-1; S.rTransit=false; lastInsSig=null; render();
+  S.items=sc.steps.map(fromExample); S.byId={};
+  S.items.forEach(function(it,ix){ if(it.kind==="response"&&!it.path){ for(var j=ix-1;j>=0;j--){ var q=S.items[j]; if(q.kind==="request"&&q.from===it.to&&q.to===it.from){ it.path=q.path; break; } } } }); S.rIdx=-1; S.rTransit=false; lastInsSig=null; render();
 }
 function replayStop(){ S.rPlaying=false; clearTimeout(S.rTimer); if(S.rTransit){S.rTransit=false;pillHide();} }
 function replaySecs(){var v=parseFloat($("speed").value);return isFinite(v)?v:2;}
@@ -1480,7 +1483,8 @@ function showSealed(){
 function fillPicker(){
   var sel=$("scenario"), keep=sel.value, h="";
   if(S.mode==="live"){
-    var ex=(S.lists&&S.lists.examples)||[];
+    var ORDER=["p2p-same-psp","p2p-two-psps","funding-same-psp","defunding-same-psp","p2p-reverse-waterfall-same-psp","p2p-waterfall-two-psps"];
+    var ex=((S.lists&&S.lists.examples)||[]).slice().sort(function(a,b){var x=ORDER.indexOf(a.id),y=ORDER.indexOf(b.id);return (x<0?99:x)-(y<0?99:y);});
     h=ex.map(function(e){return '<option value="'+esc(e.id)+'">'+esc(e.title)+'</option>';}).join("")+'<option value="__custom">Custom…</option>';
   }else if(S.mode==="replay"){
     h=DATA.scenarios.map(function(s,i){return '<option value="'+i+'">'+esc(s.title)+'</option>';}).join("");
@@ -1551,7 +1555,7 @@ function wire(){
   $("bSet").addEventListener("click",function(){ var p=$("pop"); p.hidden=!p.hidden; $("bSet").setAttribute("aria-expanded",String(!p.hidden)); if(!p.hidden) $("limit").focus(); });
   $("limitGo").addEventListener("click",function(){
     var v=$("limit").value.trim().replace(",","."); if(!/^\d+(\.\d{1,2})?$/.test(v)){ toast("Enter an amount like 3000.00.","bad"); return; }
-    post("/control/holding-limit",{amount:parseFloat(v).toFixed(2)}).then(function(r){ if(r.ok){ toast("Holding limit set to "+parseFloat(v).toFixed(2)+" EUR at every bank.","ok"); $("pop").hidden=true; $("bSet").setAttribute("aria-expanded","false"); } });
+    post("/control/holding-limit",{amount:parseFloat(v).toFixed(2)}).then(function(r){ if(r.ok){ $("pop").hidden=true; $("bSet").setAttribute("aria-expanded","false"); } });
   });
   $("limit").addEventListener("keydown",function(e){ if(e.key==="Enter"){e.preventDefault();$("limitGo").click();} });
   var sp=$("speed");
