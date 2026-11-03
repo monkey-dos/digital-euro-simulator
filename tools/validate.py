@@ -6,8 +6,11 @@ import json
 import os
 import sys
 
-from jsonschema import Draft202012Validator, FormatChecker
-from referencing import Registry, Resource
+try:
+    from jsonschema import Draft202012Validator, FormatChecker
+    from referencing import Registry, Resource
+except ImportError:
+    sys.exit("validate.py needs the Python package jsonschema:  pip install jsonschema")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

@@ -31,4 +31,6 @@ Test persons, banks and starting balances: [test-data.json](test-data.json). All
 }
 ```
 
-Regenerate with `python3 tools/generate_examples.py`, check with `python3 tools/validate.py`.
+Every I1 request carries the placeholder header `Sim-User-DEAN` (who is logged in, INTERPRETATION A12). The alias lookup is a placeholder call (T5) shown as two steps: request and 200 response.
+
+Regenerate with `python3 tools/generate_examples.py`, check with `python3 tools/validate.py`. `python3 tools/e2e_flows.py --start` plays the same flows live through the reference apps and checks that they send messages of the same shape.
