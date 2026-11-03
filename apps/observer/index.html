@@ -604,7 +604,7 @@ function gen(it,lens){
     return {head:"The central ledger books the change: "+bookingList(it,lens)+".",text:"One atomic booking: either everything is booked or nothing. No money travels between the banks – their digital euro already live on the same ledger."};
   }
   if(it.kind==="giro"){
-    var a=(b&&b.action)||"", acc=((b&&b.account)||"").replace(/^giro of /,""), pp=person(acc), who=pname(pp,lens,true), g=e||"the amount";
+    var a=(b&&b.action)||"", acc=String((b&&b.account)||"").replace(/^giro of /,""), pp=person(acc), who=pname(pp,lens,true), g=e||"the amount";
     var h2={block:from+" blocks "+g+" on "+who+"'s giro account.","debit blocked amount":from+" takes the blocked "+g+" off "+who+"'s giro account.",credit:from+" credits "+g+" to "+who+"'s giro account.",debit:from+" debits "+g+" from "+who+"'s giro account."};
     return {head:h2[a]||(from+" does a giro step ("+a+")."),text:"This happens inside the bank's own core banking system – no message goes out. Giro money is ordinary bank money; digital euro live on the central ledger."};
   }
@@ -645,8 +645,9 @@ function gen(it,lens){
   if(st===204) return {head:from+" confirms: status received.",text:"Nothing more to say – HTTP 204 has no body."};
   return {head:from+" answers "+to+(sw2?": "+sw2:" ("+st+")")+".",text:"HTTP "+st+"."};
 }
+function dispNameSafe(n){return n==="DESP"?"Central platform":String(n==null?"?":n);}
 function narrate(it,lens){
-  var g=gen(it,lens), head=g.head, text=g.text;
+  var g=safe(function(){return gen(it,lens);},{head:dispNameSafe(it.from)+" \u2192 "+dispNameSafe(it.to),text:""}), head=g.head, text=g.text;
   if(it.matched&&it.title){head=it.title; text=it.explanation||g.text;}
   return {head:anon(head,lens),text:anon(text,lens)};
 }
@@ -663,7 +664,8 @@ function shortLabel(it){
   if(/\/status$/.test(p)){ if(it.kind==="request") return "status: "+(statusWord(safe(function(){return (b.paymentTransactionStatus||b.fundingTransactionStatus||b.defundingTransactionStatus).status;},""))||"update"); return it.status+" · got it"; }
   if(/payment-instructions/.test(p)) return it.kind==="request"?"payment instruction":it.status+" · "+(it.status<300?"accepted":"rejected");
   if(/fundings/.test(p)) return it.kind==="request"?(/defundings/.test(p)?"defunding":"funding"):it.status+" · "+(it.status<300?"accepted":"rejected");
-  return it.kind==="request"?(it.method||"")+" "+p.split("/").pop():String(it.status||"");
+  var t=it.kind==="request"?((it.method||"")+" "+p.split("/").pop()).trim():String(it.status||"");
+  return t||(it.kind==="request"?"request":"response");
 }
 function chipLabel(it){ // short human text for the step chips / timeline rows
   var n=narrate(it,"all"); var t=it.matched&&it.title?it.title:null;
@@ -1196,7 +1198,7 @@ function renderChips(){
   var sig=[S.mode,lens,cur,S.items.length,rs.length,S.items.map(function(x){return x.released?1:0;}).join("")].join("|");
   var html=rs.map(function(r){
     var vis=sees(r.it,lens);
-    var label=vis?chipLabel(r.it):(lens==="public"?"message":"not visible");
+    var label=vis?safe(function(){return chipLabel(r.it);},"step"):(lens==="public"?"message":"not visible");
     if(vis) label=anon(label,lens);
     var tag=r.status==="now"?" · now":r.status==="done"?" · done":r.status==="wait"?" · waiting":"";
     var cls="step "+(r.status==="now"?"now":r.status==="done"?"done":r.status==="wait"?"wait":"future")+(vis?"":" hid");
@@ -1315,23 +1317,26 @@ function moneyListHTML(){
 
 /* ---------- map view ---------- */
 function renderMap(it){
-  var lens=S.lens, cur=curIdx(), snap=snapFor(cur);
+  var lens=S.lens, cur=curIdx(), snap=null;
+  guard("snap",function(){snap=snapFor(cur);});
   var fk=it?nodeKey(it.from):null, tk=it?nodeKey(it.to):null;
   var internal=it&&!isMsg(it);
   ["desp","pspA","pspB","appA","appB"].forEach(function(k){
-    var el=$("n"+cap(k)); if(!el) return;
-    var snd=!!it&&!internal&&fk===k, rcv=!!it&&(internal?fk===k:tk===k);
-    el.classList.toggle("snd",snd); el.classList.toggle("rcv",rcv);
-    el.classList.toggle("dim",!!it&&!sees(it,lens)&&lens!=="all");
-    if(k==="desp"){ $("ledgerCard").innerHTML=ledgerHTML(it,snap,lens); }
-    else { var sig=nodeHTML(k,it,snap,lens); if(el._h!==sig){el.innerHTML=sig;el._h=sig;} }
+    guard("node "+k,function(){
+      var el=$("n"+cap(k)); if(!el) return;
+      var snd=!!it&&!internal&&fk===k, rcv=!!it&&(internal?fk===k:tk===k);
+      el.classList.toggle("snd",snd); el.classList.toggle("rcv",rcv);
+      el.classList.toggle("dim",!!it&&!sees(it,lens)&&lens!=="all");
+      if(k==="desp"){ $("ledgerCard").innerHTML=ledgerHTML(it,snap,lens); }
+      else { var sig=nodeHTML(k,it,snap,lens); if(el._h!==sig){el.innerHTML=sig;el._h=sig;} }
+    });
   });
-  layoutWires(internal?null:fk,internal?null:tk);
-  var nr=$("narr"), nh=narrHTML(it,false); if(nr._h!==nh){nr.innerHTML=nh;nr._h=nh;}
-  renderChips();
-  var ih=null; renderInspectorOnce(it);
-  renderMoney();
-  syncPill();
+  guard("wires",function(){layoutWires(internal?null:fk,internal?null:tk);});
+  guard("narration",function(){var nr=$("narr"), nh=narrHTML(it,false); if(nr._h!==nh){nr.innerHTML=nh;nr._h=nh;}});
+  guard("chips",renderChips);
+  guard("inspector",function(){renderInspectorOnce(it);});
+  guard("money",renderMoney);
+  guard("pill",syncPill);
 }
 var lastInsSig=null;
 function renderInspectorOnce(it){
@@ -1374,7 +1379,7 @@ function renderTimeline(it){
     }
     var dis=r.status==="future";
     return '<button type="button" class="trow'+(r.status==="now"?" sel":"")+'" data-i="'+r.i+'" data-k="t'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true" tabindex="-1" style="cursor:default"':"")+
-      ' aria-label="Step '+(r.i+1)+': '+esc(vis?chipLabel(it2):"not visible")+(r.status==="future"?" (upcoming)":"")+'"><span class="tnum" style="'+(r.status==="now"?"color:var(--blue);font-weight:600":"")+'">'+(r.i+1)+'</span>'+cell+'</button>';
+      ' aria-label="Step '+(r.i+1)+': '+esc(vis?safe(function(){return chipLabel(it2);},"step"):"not visible")+(r.status==="future"?" (upcoming)":"")+'"><span class="tnum" style="'+(r.status==="now"?"color:var(--blue);font-weight:600":"")+'">'+(r.i+1)+'</span>'+cell+'</button>';
   }).join("");
   if(!rs.length) body='<div class="foot" style="padding:24px 8px;text-align:center">No messages yet. Run a scenario and they will appear here, one row per message.</div>';
   var seq=$("seq");
@@ -1386,8 +1391,8 @@ function renderTimeline(it){
       var rc=selEl.getBoundingClientRect(); if(rc.top<80||rc.bottom>window.innerHeight-20){ selEl.scrollIntoView({block:"center",behavior:"auto"}); }
     }
   }
-  var nt=$("narrT"), nh=narrHTML(it,true); if(nt._h!==nh){nt.innerHTML=nh;nt._h=nh;}
-  $("moneyT").innerHTML=moneyListHTML();
+  guard("side narration",function(){var nt=$("narrT"), nh=narrHTML(it,true); if(nt._h!==nh){nt.innerHTML=nh;nt._h=nh;}});
+  guard("side money",function(){$("moneyT").innerHTML=moneyListHTML();});
   $("lensT").innerHTML='<div class="eyebrow" style="margin-bottom:8px">Whose view</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+LENS_LABEL.map(function(l){return '<button type="button" class="btn small'+(S.lens===l[0]?" on":"")+'" data-lens="'+l[0]+'" aria-pressed="'+(S.lens===l[0])+'">'+(l[0]==="desp"?"Platform":l[1])+'</button>';}).join("")+'</div>';
 }
 
