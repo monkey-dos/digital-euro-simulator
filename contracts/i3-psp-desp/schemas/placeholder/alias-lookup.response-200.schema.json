@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/placeholder/alias-lookup.response-200.schema.json",
+  "title": "PLACEHOLDER · POST /v1/sim/alias-lookup · 200 response (DESP → payer PSP)",
+  "description": "PLACEHOLDER – not in available ECB documents. The payee's DEAN and the payee's digital euro PSP. An unknown alias is answered with 404 application/problem+json, reasonCode XALI (INTERPRETATION T5).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "DEAN",
+    "digitalEuroPspId"
+  ],
+  "properties": {
+    "DEAN": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/DEAN",
+      "description": "PLACEHOLDER – not in available ECB documents. The payee's digital euro account number."
+    },
+    "digitalEuroPspId": {
+      "$ref": "https://digital-euro-simulator.invalid/contracts/common/types.schema.json#/$defs/BICFI",
+      "description": "PLACEHOLDER – not in available ECB documents. BIC of the payee's digital euro PSP."
+    }
+  }
+}

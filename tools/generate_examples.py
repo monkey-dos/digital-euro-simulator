@@ -160,6 +160,7 @@ def app_initiation(seq, payer, payee, amount, text):
         "Amount": float(amount),
         "Currency": "EUR",
         "TransactionDate": ts(seq.t),
+        "Name": q["name"],
         "ProxyAccount": q["phone"],
         "ProxyAccountType": "TELE",
         "MerchantCategoryCode": "4829",
@@ -169,21 +170,34 @@ def app_initiation(seq, payer, payee, amount, text):
             **{"from": f"Banking App {p['bank']}", "to": NODES[p["bank"]]}, interface="I1",
             specRef="Annex D1-1 §8.1.1.6, p.103–106",
             schema="contracts/i1-app-psp/schemas/payment-initiation.request.schema.json",
-            http={"method": "POST", "path": "/i1/messages", "headers": {"Content-Type": "application/json"}},
+            http={"method": "POST", "path": "/i1/messages", "headers": {"Content-Type": "application/json", "Sim-User-DEAN": p["dean"]}},
             body=body,
-            explanation="The app sends the payment by phone number (alias). The transport (POST /i1/messages) is our choice; the message content follows D1-1.")
+            explanation="The app sends the payment by phone number (alias) plus the payee name the user entered or picked from contacts; the bank needs the name for the encrypted part. The transport (POST /i1/messages) is our choice; the message content follows D1-1. "
+                        "Sim-User-DEAN is a placeholder for the app's authentication: it tells the bank who is logged in (INTERPRETATION A12).")
     return mid
 
 
 def alias_lookup(seq, payer, payee):
+    """PLACEHOLDER call POST /v1/sim/alias-lookup (INTERPRETATION T5): request and 200 response."""
     p, q = USERS[payer], USERS[payee]
+    ref = "Rulebook §4.4.3 p.99 (Alias Lookup Service). Message not specified in the documents available (INTERPRETATION T5)."
+    rid = uuid4(f"{seq.folder}-alias")
     seq.tick()
-    seq.add(_slug="alias-lookup", title=f"Which bank serves {q['phone']}?", placeholder=True,
-            **{"from": NODES[p["bank"]], "to": "DESP"}, interface="I3 (placeholder)",
-            specRef="Rulebook §4.4.3 p.99 (Alias Lookup Service). Message not specified in the documents available.",
-            body={"request": {"proxyAlias": q["phone"], "proxyAliasType": "TELE"},
-                  "response": {"DEAN": q["dean"], "digitalEuroPspId": BANKS[q["bank"]]["bic"]}},
-            explanation="PLACEHOLDER. The payer's bank resolves the alias to the payee's DEAN and bank. The real call is in an ECB document we do not have; field names borrowed from the D2-6 account data query.")
+    seq.add(_slug="alias-lookup-request", title=f"Which bank serves {q['phone']}?", placeholder=True,
+            **{"from": NODES[p["bank"]], "to": "DESP"}, interface="I3 (placeholder)", specRef=ref,
+            schema="contracts/i3-psp-desp/schemas/placeholder/alias-lookup.request.schema.json",
+            http={"method": "POST", "path": "/v1/sim/alias-lookup", "headers": hdr_req(seq, rid, BANKS[p["bank"]]["bic"])},
+            body={"proxyAlias": q["phone"], "proxyAliasType": "TELE"},
+            explanation="PLACEHOLDER. The payer's bank asks the platform's alias lookup service who is behind the phone number. "
+                        "The real call is in an ECB document we do not have; field names borrowed from the D2-6 account data query.")
+    seq.tick(20)
+    seq.add(_slug="alias-lookup-response-200", title=f"{q['name'].split()[0]}'s DEAN, served by PSP {q['bank']}", placeholder=True,
+            **{"from": "DESP", "to": NODES[p["bank"]]}, interface="I3 (placeholder)", specRef=ref,
+            schema="contracts/i3-psp-desp/schemas/placeholder/alias-lookup.response-200.schema.json",
+            http={"status": 200, "headers": hdr_resp(seq, rid)},
+            body={"DEAN": q["dean"], "digitalEuroPspId": BANKS[q["bank"]]["bic"]},
+            explanation="PLACEHOLDER. The payee's DEAN and bank. Access Management knows DEANs and banks, never names. "
+                        "An unknown alias is answered with 404 application/problem+json, reason code XALI.")
 
 
 def giro_step(seq, user, action, amount, slug, title, ref="Rulebook LM-030 (reverse waterfall); D1-1 §7.2 non-digital euro payment account funds management service (funds blocking, debit)"):
@@ -210,7 +224,7 @@ def ledger_step(seq, title, moves, note):
 
 def scenario_same_psp():
     s = Seq("p2p-same-psp", "Anna pays Clara 25 EUR (same bank)",
-            "Both users bank with PSP A, so the central platform settles directly (Annex D2-7 Fig. 5). No encrypted part is sent: in the payment messages DESP receives no names and no DEANs, only ledger entries, bank codes and the amount. (The alias lookup in step 1 is a separate service of the platform.)")
+            "Both users bank with PSP A, so the central platform settles directly (Annex D2-7 Fig. 5). No encrypted part is sent: in the payment messages DESP receives no names and no DEANs, only ledger entries, bank codes and the amount. (The alias lookup in steps 1–2 is a separate service of the platform.)")
     A, C = USERS["anna"], USERS["clara"]
     bic = BANKS["A"]["bic"]
     mid = app_initiation(s, "anna", "clara", "25.00", "Cinema tickets")
@@ -434,11 +448,11 @@ def app_funding_request(seq, user, kind, amount, text):
             **{"from": f"Banking App {u['bank']}", "to": NODES[u["bank"]]}, interface="I1",
             specRef="Annex D1-1 §7.1.1.1, p.96–98",
             schema="contracts/i1-app-psp/schemas/funding-defunding-request.request.schema.json",
-            http={"method": "POST", "path": "/i1/messages", "headers": {"Content-Type": "application/json"}},
+            http={"method": "POST", "path": "/i1/messages", "headers": {"Content-Type": "application/json", "Sim-User-DEAN": u["dean"]}},
             body=body,
             explanation=("Funding: debited account is the giro account (CBMA), credited account the digital euro account (DEUR)." if funding else
                          "Defunding: debited account is the digital euro account (DEUR), credited account the giro account (CBMA).")
-                        + " Transport (POST /i1/messages) is our choice; content per D1-1.")
+                        + " Transport (POST /i1/messages) is our choice; content per D1-1. Sim-User-DEAN is a placeholder for the app's authentication (INTERPRETATION A12).")
     return mid
 
 

@@ -1,0 +1,28 @@
+{
+  "step": 7,
+  "title": "Settle: Anna −50, Ben +50",
+  "from": "DESP",
+  "to": "DESP ledger",
+  "interface": "internal",
+  "specRef": "Annex D2-7 p.10 (atomic settlement)",
+  "body": {
+    "settlementDateTime": "2026-11-02T10:15:00.790Z",
+    "bookings": [
+      {
+        "entry": "ENT-C85E0FBE7F2F",
+        "owner_for_observer": "Anna (PSP A)",
+        "before": "120.00",
+        "change": "-50.00",
+        "after": "70.00"
+      },
+      {
+        "entry": "ENT-365470EFA58A",
+        "owner_for_observer": "Ben (PSP B)",
+        "before": "80.00",
+        "change": "+50.00",
+        "after": "130.00"
+      }
+    ]
+  },
+  "explanation": "One atomic booking across both banks' customers. No money moves between the banks: both balances live on the same ECB ledger."
+}

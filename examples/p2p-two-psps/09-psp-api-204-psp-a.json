@@ -1,0 +1,17 @@
+{
+  "step": 9,
+  "title": "Status received",
+  "from": "PSP A",
+  "to": "DESP",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.106–109",
+  "http": {
+    "status": 204,
+    "headers": {
+      "Request-Id": "e76b6c1d-ca54-4df3-aaf2-620d6842a2a8",
+      "Response-Timestamp": "2026-11-02T10:15:00.815Z"
+    }
+  },
+  "body": null,
+  "explanation": "204: no body."
+}

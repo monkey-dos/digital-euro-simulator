@@ -1,0 +1,27 @@
+{
+  "step": 4,
+  "title": "Received and technically valid",
+  "from": "DESP",
+  "to": "PSP A",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.62–64",
+  "schema": "contracts/i3-psp-desp/schemas/desp-api/post-payment-instructions.response-201.schema.json",
+  "http": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "5168528e-e7bb-4d13-9171-2a7d11d3d6b9",
+      "Response-Timestamp": "2026-11-02T10:15:00.420Z"
+    }
+  },
+  "body": {
+    "paymentIdentification": {
+      "UETR": "01a19bc1-521c-71e9-9185-9bc7f8eae4c5"
+    },
+    "paymentInstructionId": "7dcfc8b1-7c51-410f-b875-b6bf995ea231",
+    "paymentTransactionStatus": {
+      "status": "AcceptedTechnicalValidation"
+    }
+  },
+  "explanation": "The 201 only confirms receipt. The final result comes later as a status push."
+}

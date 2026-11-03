@@ -28,11 +28,13 @@ Sources: Rulebook v0.91; Annex D1-1 (Distributing PSP requirements); D1-7 (Data 
 | T2 | Base path | D2-7 uses `/v1/…`, sometimes without the prefix. | Always `/v1/…`. |
 | T3 | Open funding / defunding | Allowed by the spec. | Never used (ADR 0001); no `encryptedFundingObject` / `encryptedDefundingObject`. |
 | T4 | Which DCA is debited on funding | Not named in any message. | The DCA of the bank in `instructedAgent`. |
-| T5 | Alias lookup and onboarding calls | Only referenced (`GET /users/{userID}`, `PUT /deans`); spec in a document we don't have. | Placeholder steps, marked `"placeholder": true`, field names borrowed from the D2-6 account data query. |
+| T5 | Alias lookup and onboarding calls | Only referenced (`GET /users/{userID}`, `PUT /deans`); spec in a document we don't have. Rulebook §4.4.3 p.99 names an Alias Lookup Service of the DESP. | Placeholder steps, marked `"placeholder": true`, field names borrowed from the D2-6 account data query. Alias lookup: `POST /v1/sim/alias-lookup`, request `{proxyAlias, proxyAliasType}`, 200 response `{DEAN, digitalEuroPspId}`, technical headers as T1; unknown alias → 404 problem+json (T10) with `XALI`. Schemas in `i3-psp-desp/schemas/placeholder/`. The DESP's Access Management keeps alias → DEAN → (bank, ledger entry); in the simulation this is seeded from `examples/test-data.json`. **Placeholder.** |
 | T6 | `UETR` presence | D2-8: optional; D2-7: mandatory for all transactions. | Mandatory. |
 | T7 | Defunding status in a waterfall between two banks | D2-7 p.16: defunding ID and status are received only by the payee's digital euro PSP and the payee's commercial bank money PSP; p.108: mandatory in the status push if the request had a defunding object. Fig. 13 sends a separate `POST /defundings/{id}/status` to the commercial bank money PSP when it is a different bank; in Fig. 11 (all roles at one bank) the status travels inside the payment-instruction status push. | The payee's bank is both roles (ADR 0001), so it gets `defundingStatus`/`defundingId` inside the payment-instruction status push and no separate call. The payer's bank gets neither. |
 | T9 | `fundingId` / `defundingId` in a rejected 201 | D2-7 p.52/p.56 mark the ID mandatory; p.16 says it is present only if validation is positive. | Required only when the status is not Rejected. |
 | T8 | Status in the DESP 201 for a standalone funding/defunding | Allowed: Rejected, AcceptedTechnicalValidation, AcceptedCustomerProfile. | `AcceptedTechnicalValidation`, as for payment instructions. |
+| T10 | Technical errors | D2-1 lists type, status, title, detail, instance, a reason code and additional errors for `application/problem+json`, without key names for the last two. | Keys `reasonCode` and `additionalErrors[]` (`location`, `detail`); schema `common/problem.schema.json`. Used for HTTP 400 (body or header invalid), 401 (I1, no user, A12) and 404 (unknown alias, T5). A business rejection is never a 4xx: it is a 201 with status `Rejected`. |
+| T11 | Which checks the DESP makes when | D2-7: the 201 reports technical validation; settlement verification happens later (p.10). | **In the 201** (status `Rejected`, no status push, Fig. 6): bank not a participant (`D005`), `Requesting-Agent` differs from `debtorAgent`/`instructingAgent`, `creditorEntry`/encrypted part present or missing against the same-bank rule, open funding/defunding (`XNSU`), amount not positive, UETR already used (`XDUP`). **At settlement** (status push `Rejected`): ledger entry unknown or held via another bank (`XACC`), balance too low (`XBAL`), DCA too low (`XDCA`), payee bank rejects (its reason), answers invalidly (`XFWD`) or not in time (`AB03`). If the payee bank rejects, only the payer bank gets a status push (Fig. 8). |
 
 ## I1 · Banking app ↔ its bank
 
@@ -49,3 +51,26 @@ Sources: Rulebook v0.91; Annex D1-1 (Distributing PSP requirements); D1-7 (Data 
 | A9 | Funding/defunding request: account types | D1-1 §7.1.1.1 uses the standardised name `CashAccountType` for both the debited and the credited account. | Keys `DebtorCashAccountType` and `CreditorCashAccountType`. |
 | A10 | Funding/defunding request: DEAN field | "Digital euro account number", standardised name "(New for digital euro)". | Key `DigitalEuroAccountNumber`. |
 | A11 | When the bank debits or credits the giro account | D1-1 §7.2 lists blocking, debit, credit and release without an order. Rulebook LM-040-003 and LM-050-003: credit the giro account immediately after DESP confirms settlement (defunding, waterfall). | Funding: block before sending to DESP, debit after the settled status. Defunding and waterfall: credit after the settled status. |
+| A12 | Who is logged in | D1-1 assumes the user has passed strong customer authentication (SCA) in the app; how the app proves this to its bank is not specified. | **Placeholder:** HTTP header `Sim-User-DEAN` with the logged-in user's DEAN on every I1 request. Missing or unknown → 401 problem+json (T10) with `XAUT`. Stands in for a real session or token after SCA. |
+| A13 | Errors on I1 | D1-1: `ReturnCode` 1 + `StatusReason` on failure. | Business rejections (also those coming back from the DESP): HTTP 200, `ReturnCode` 1, `StatusReason` = the reason code. Invalid request body: 400 problem+json (T10). |
+| A14 | Payee name in a payment initiation | D1-1 lists `Name` (payee name) in the payment initiation. | The app sends the name the user typed or picked from contacts. The bank copies it into `creditor.name` of the encrypted part and does not check it. |
+
+## Placeholder reason codes (C8)
+
+Codes from the ECB documents: `AB03` (timeout), `AC05` (account closed), `AC06` (account blocked), `D005` (bank not a participant). Our placeholders, all starting with `X`:
+
+| Code | Meaning |
+|---|---|
+| `XFMT` | Message format, schema or consistency error |
+| `XHDR` | Technical header missing or invalid (T1) |
+| `XAUT` | No logged-in user on I1 (A12) |
+| `XACC` | Account or ledger entry unknown, or held via another bank |
+| `XBAL` | Balance too low (digital euro, plus giro account where reverse waterfall applies) |
+| `XDCA` | The bank's DCA has not enough central bank money |
+| `XLIM` | Funding would exceed the holding limit |
+| `XNSU` | Not supported in this simulation (e.g. open funding, ADR 0001) |
+| `XFWD` | The other bank gave an invalid answer |
+| `XALI` | Alias not registered |
+| `XDUP` | UETR already used |
+| `XNET` | The bank could not reach the DESP |
+| `XTMO` | The bank got no final status in time |

@@ -22,4 +22,4 @@ See `contracts/INTERPRETATION.md`, choice T1.
 
 ## Errors
 
-Business rejection: status `Rejected` plus `statusReason` (e.g. `AC05` account closed, `AC06` account blocked, `AB03` settlement timeout, `D005` PSP not a participant). Technical errors: HTTP 4xx/5xx with an `application/problem+json` body (D2-1): `type`, `status`, `title`, `detail`, `instance`, reason code, `additionalErrors[]`.
+Business rejection: status `Rejected` plus `statusReason` (e.g. `AC05` account closed, `AC06` account blocked, `AB03` settlement timeout, `D005` PSP not a participant). Technical errors: HTTP 4xx/5xx with an `application/problem+json` body (D2-1): `type`, `status`, `title`, `detail`, `instance`, `reasonCode`, `additionalErrors[]` (schema `common/problem.schema.json`, INTERPRETATION T10). Which check leads to which answer: T11.

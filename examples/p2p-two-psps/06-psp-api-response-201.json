@@ -1,0 +1,31 @@
+{
+  "step": 6,
+  "title": "PSP B accepts and adds Ben's ledger entry",
+  "from": "PSP B",
+  "to": "DESP",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.104–105",
+  "schema": "contracts/i3-psp-desp/schemas/psp-api/post-payment-instructions.response-201.schema.json",
+  "http": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "5abbf0d0-8e58-49ef-819d-4b2724e37016",
+      "Response-Timestamp": "2026-11-02T10:15:00.540Z"
+    }
+  },
+  "body": {
+    "paymentIdentification": {
+      "UETR": "01a19bc1-521c-7595-86e5-c3cfd53c4aa6"
+    },
+    "paymentTransactionStatus": {
+      "status": "AcceptedCustomerProfile"
+    },
+    "paymentInstructionObject": {
+      "creditorEntry": {
+        "entryId": "ENT-365470EFA58A"
+      }
+    }
+  },
+  "explanation": "Ben's account is active and 80 + 50 = 130 EUR stays below the holding limit (3000.00 EUR), so no waterfall is needed."
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/common/problem.schema.json",
+  "title": "Technical error · application/problem+json (any API → caller)",
+  "description": "Annex D2-1 (technical errors) lists type, status, title, detail, instance, a reason code and additionalErrors, without key names for the last two. Our key names (reasonCode, additionalErrors[].location/detail) are a choice: INTERPRETATION T10. Sent with HTTP 4xx/5xx; a business rejection is a 201 with status Rejected instead.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "type",
+    "title",
+    "status",
+    "reasonCode"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "description": "URI identifying the problem type. Ours use the placeholder host digital-euro-simulator.invalid."
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 140
+    },
+    "status": {
+      "type": "integer",
+      "minimum": 400,
+      "maximum": 599,
+      "description": "Same value as the HTTP status code."
+    },
+    "detail": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "instance": {
+      "type": "string",
+      "description": "Path of the request that failed."
+    },
+    "reasonCode": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]{4}$",
+      "description": "PLACEHOLDER key name (D2-1 says 'reason code'). Values per INTERPRETATION C8."
+    },
+    "additionalErrors": {
+      "type": "array",
+      "maxItems": 20,
+      "description": "PLACEHOLDER item structure: one entry per problem found.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "location",
+          "detail"
+        ],
+        "properties": {
+          "location": {
+            "type": "string",
+            "description": "JSON path or header name, e.g. $.paymentInstructionObject.amount"
+          },
+          "detail": {
+            "type": "string",
+            "maxLength": 300
+          }
+        }
+      }
+    }
+  }
+}

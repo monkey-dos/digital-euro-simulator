@@ -1,0 +1,25 @@
+{
+  "step": 1,
+  "title": "Which bank serves +4915100000002?",
+  "placeholder": true,
+  "from": "PSP A",
+  "to": "DESP",
+  "interface": "I3 (placeholder)",
+  "specRef": "Rulebook §4.4.3 p.99 (Alias Lookup Service). Message not specified in the documents available (INTERPRETATION T5).",
+  "schema": "contracts/i3-psp-desp/schemas/placeholder/alias-lookup.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/v1/sim/alias-lookup",
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "c2dc8daf-9dcf-43fd-8c4d-bd35caa64f8f",
+      "Request-Timestamp": "2026-11-02T10:15:00.180Z",
+      "Requesting-Agent": "SIMADEF0XXX"
+    }
+  },
+  "body": {
+    "proxyAlias": "+4915100000002",
+    "proxyAliasType": "TELE"
+  },
+  "explanation": "PLACEHOLDER. The payer's bank asks the platform's alias lookup service who is behind the phone number. The real call is in an ECB document we do not have; field names borrowed from the D2-6 account data query."
+}

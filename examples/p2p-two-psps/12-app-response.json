@@ -1,0 +1,22 @@
+{
+  "step": 12,
+  "title": "Anna's app shows: paid",
+  "from": "PSP A",
+  "to": "Banking App A",
+  "interface": "I1",
+  "specRef": "Annex D1-1 common outgoing envelope",
+  "schema": "contracts/i1-app-psp/schemas/response.schema.json",
+  "http": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "body": {
+    "MessageIdentification": "PSPA-RESP-0002",
+    "OriginalMessageIdentification": "APPA-P2P-TWO-PS-0001",
+    "CreationDateTime": "2026-11-02T10:15:00.900Z",
+    "ReturnCode": 0
+  },
+  "explanation": "How PSP B notifies Ben's app is not specified in the documents we have."
+}

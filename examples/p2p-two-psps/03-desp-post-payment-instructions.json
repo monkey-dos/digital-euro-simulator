@@ -1,0 +1,66 @@
+{
+  "step": 3,
+  "title": "Payment instruction to the central platform",
+  "from": "PSP A",
+  "to": "DESP",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.57–62",
+  "schema": "contracts/i3-psp-desp/schemas/desp-api/post-payment-instructions.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/v1/payment-instructions",
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "b99d5b5d-f809-46c1-9863-e24ee511d597",
+      "Request-Timestamp": "2026-11-02T10:15:00.380Z",
+      "Requesting-Agent": "SIMADEF0XXX"
+    }
+  },
+  "body": {
+    "acceptanceDateTime": "2026-11-02T10:15:00.380Z",
+    "paymentIdentification": {
+      "UETR": "01a19bc1-521c-7595-86e5-c3cfd53c4aa6"
+    },
+    "paymentInstructionObject": {
+      "debtorAgent": {
+        "bicfi": "SIMADEF0XXX"
+      },
+      "creditorAgent": {
+        "bicfi": "SIMBDEF0XXX"
+      },
+      "paymentType": "PP01",
+      "amount": {
+        "currency": "EUR",
+        "amount": "50.00"
+      },
+      "debtorEntry": {
+        "entryId": "ENT-C85E0FBE7F2F"
+      },
+      "encryptedPaymentInstructionObject": "SIMENC:eyJjcmVkaXRvckFjY291bnQiOnsiREVBTiI6IkVVOTIwMDAwMDAwMDAwMDAwMyJ9LCJjcmVkaXRvciI6eyJuYW1lIjoiQmVuIE3DvGxsZXIifSwiZGVidG9yQWNjb3VudCI6eyJERUFOIjoiRVU0OTAwMDAwMDAwMDAwMDAxIn0sImRlYnRvciI6eyJuYW1lIjoiQW5uYSBTY2htaWR0In0sInJlbWl0dGFuY2VJbmZvcm1hdGlvblVuc3RydWN0dXJlZCI6IkNvbmNlcnQgdGlja2V0IiwidHJhbnNhY3Rpb25BbW91bnQiOnsiY3VycmVuY3kiOiJFVVIiLCJhbW91bnQiOiI1MC4wMCJ9fQ=="
+    }
+  },
+  "decryptedView": {
+    "field": "paymentInstructionObject.encryptedPaymentInstructionObject",
+    "schema": "contracts/i3-psp-desp/schemas/encrypted-payment-instruction-content.schema.json",
+    "content": {
+      "creditorAccount": {
+        "DEAN": "EU9200000000000003"
+      },
+      "creditor": {
+        "name": "Ben Müller"
+      },
+      "debtorAccount": {
+        "DEAN": "EU4900000000000001"
+      },
+      "debtor": {
+        "name": "Anna Schmidt"
+      },
+      "remittanceInformationUnstructured": "Concert ticket",
+      "transactionAmount": {
+        "currency": "EUR",
+        "amount": "50.00"
+      }
+    }
+  },
+  "explanation": "Different banks: no creditorEntry yet (PSP B will add it), and the party details are encrypted for PSP B."
+}

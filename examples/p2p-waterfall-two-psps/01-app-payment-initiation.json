@@ -10,7 +10,8 @@
     "method": "POST",
     "path": "/i1/messages",
     "headers": {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Sim-User-DEAN": "EU4900000000000001"
     }
   },
   "body": {
@@ -22,10 +23,11 @@
     "Amount": 50.0,
     "Currency": "EUR",
     "TransactionDate": "2026-11-02T10:15:00.000Z",
+    "Name": "Ben Müller",
     "ProxyAccount": "+4915100000003",
     "ProxyAccountType": "TELE",
     "MerchantCategoryCode": "4829",
     "UnstructuredRemittanceInformation": "Concert ticket"
   },
-  "explanation": "The app sends the payment by phone number (alias). The transport (POST /i1/messages) is our choice; the message content follows D1-1."
+  "explanation": "The app sends the payment by phone number (alias) plus the payee name the user entered or picked from contacts; the bank needs the name for the encrypted part. The transport (POST /i1/messages) is our choice; the message content follows D1-1. Sim-User-DEAN is a placeholder for the app's authentication: it tells the bank who is logged in (INTERPRETATION A12)."
 }
