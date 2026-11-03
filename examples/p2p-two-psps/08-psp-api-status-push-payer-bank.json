@@ -1,0 +1,29 @@
+{
+  "step": 8,
+  "title": "Final status to PSP A: settled",
+  "from": "DESP",
+  "to": "PSP A",
+  "interface": "I3",
+  "specRef": "Annex D2-7 p.106–109",
+  "schema": "contracts/i3-psp-desp/schemas/psp-api/post-payment-instruction-status.request.schema.json",
+  "http": {
+    "method": "POST",
+    "path": "/v1/payment-instructions/b19713a3-a946-48d9-b480-99f2a026f59a/status",
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "e76b6c1d-ca54-4df3-aaf2-620d6842a2a8",
+      "Request-Timestamp": "2026-11-02T10:15:00.805Z"
+    }
+  },
+  "body": {
+    "paymentIdentification": {
+      "UETR": "01a19bc1-521c-7595-86e5-c3cfd53c4aa6"
+    },
+    "settlementDateTime": "2026-11-02T10:15:00.790Z",
+    "settlementBusinessDay": "2026-11-02",
+    "paymentTransactionStatus": {
+      "status": "AcceptedSettlementCompletedDebitorAccount"
+    }
+  },
+  "explanation": "DESP sends the status to both banks at the same time."
+}

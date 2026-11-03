@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://digital-euro-simulator.invalid/contracts/i3-psp-desp/schemas/placeholder/alias-lookup.request.schema.json",
+  "title": "PLACEHOLDER · POST /v1/sim/alias-lookup · request (payer PSP → DESP)",
+  "description": "PLACEHOLDER – not in available ECB documents. The rulebook (§4.4.3 p.99) names an Alias Lookup Service of the DESP; the message is specified in a document we do not have. Field names borrowed from the D2-6 account data query (INTERPRETATION T5). Technical headers as T1.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "proxyAlias",
+    "proxyAliasType"
+  ],
+  "properties": {
+    "proxyAlias": {
+      "type": "string",
+      "maxLength": 2048,
+      "description": "PLACEHOLDER – not in available ECB documents. Alias value, e.g. a phone number in E.164 format."
+    },
+    "proxyAliasType": {
+      "type": "string",
+      "maxLength": 4,
+      "description": "PLACEHOLDER – not in available ECB documents. TELE for a phone number (INTERPRETATION A6)."
+    }
+  }
+}

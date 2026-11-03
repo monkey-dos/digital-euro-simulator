@@ -1,0 +1,11 @@
+{
+  "_note": "Configuration of one bank instance (ADR 0006: one template, started once per bank). Fictional bank (INTERPRETATION C9).",
+  "name": "PSP A",
+  "bic": "SIMADEF0XXX",
+  "port": 8001,
+  "seedBank": "A",
+  "despUrl": "http://127.0.0.1:8000",
+  "holdingLimit": "3000.00",
+  "messagePrefix": "PSPA",
+  "appName": "Banking App A"
+}

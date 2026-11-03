@@ -1,0 +1,23 @@
+{
+  "step": 2,
+  "title": "Ben's DEAN, served by PSP B",
+  "placeholder": true,
+  "from": "DESP",
+  "to": "PSP A",
+  "interface": "I3 (placeholder)",
+  "specRef": "Rulebook §4.4.3 p.99 (Alias Lookup Service). Message not specified in the documents available (INTERPRETATION T5).",
+  "schema": "contracts/i3-psp-desp/schemas/placeholder/alias-lookup.response-200.schema.json",
+  "http": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json",
+      "Request-Id": "0b9dbc67-03a1-40c7-9a4b-ad0cf97f60ae",
+      "Response-Timestamp": "2026-11-02T10:15:00.200Z"
+    }
+  },
+  "body": {
+    "DEAN": "EU9200000000000003",
+    "digitalEuroPspId": "SIMBDEF0XXX"
+  },
+  "explanation": "PLACEHOLDER. The payee's DEAN and bank. Access Management knows DEANs and banks, never names. An unknown alias is answered with 404 application/problem+json, reason code XALI."
+}

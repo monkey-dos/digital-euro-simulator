@@ -1,6 +1,6 @@
 # Contracts
 
-Contract version: **0.2.0** (draft)
+Contract version: **0.3.0** (draft). 0.3.0 adds the `Sim-User-DEAN` header on I1 (A12), I1 error handling (A13), the payee `Name` in a payment initiation (A14), the placeholder alias lookup (T5, now two example steps: request and 200 response, so later example files were renumbered), problem+json errors (T10), the split of DESP checks between 201 and settlement (T11), the `settlementBusinessDay` choice (T12) and the table of placeholder reason codes.
 
 This folder defines how the apps talk to each other. An app is compatible if every message it sends validates against these schemas and it accepts every message described here.
 
@@ -28,6 +28,8 @@ Schemas are JSON Schema 2020-12. Their `$id`s use the placeholder host `digital-
 | Online funding / defunding request | app → bank | `i1-app-psp/schemas/funding-defunding-request.request.schema.json` |
 | `POST /v1/fundings`, `POST /v1/defundings` | bank → DESP | `i3-psp-desp/schemas/desp-api/post-fundings…`, `post-defundings…` (request + 201) |
 | `POST /v1/fundings/{id}/status`, `POST /v1/defundings/{id}/status` | DESP → bank | `i3-psp-desp/schemas/psp-api/post-funding-status…`, `post-defunding-status…` |
+| `POST /v1/sim/alias-lookup` (**placeholder**, T5) | bank → DESP | `i3-psp-desp/schemas/placeholder/alias-lookup.request…` + `…response-200…` |
+| Technical error (`application/problem+json`, T10) | any API → caller | `common/problem.schema.json` |
 
 ## Next
 

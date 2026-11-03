@@ -10,7 +10,8 @@
     "method": "POST",
     "path": "/i1/messages",
     "headers": {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Sim-User-DEAN": "EU2200000000000002"
     }
   },
   "body": {
@@ -27,5 +28,5 @@
     "Amount": 200.0,
     "UnstructuredRemittanceInformation": "Top-up for the weekend"
   },
-  "explanation": "Funding: debited account is the giro account (CBMA), credited account the digital euro account (DEUR). Transport (POST /i1/messages) is our choice; content per D1-1."
+  "explanation": "Funding: debited account is the giro account (CBMA), credited account the digital euro account (DEUR). Transport (POST /i1/messages) is our choice; content per D1-1. Sim-User-DEAN is a placeholder for the app's authentication (INTERPRETATION A12)."
 }

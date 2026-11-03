@@ -58,6 +58,23 @@ python3 tools/validate.py            # checks every example against the schemas
 python3 tools/build_observer.py      # bundles the examples for the observer
 ```
 
+## Run the apps
+
+The first apps run on your computer without Docker: the central platform (DESP) and two banks (PSP A, PSP B). You need Python 3.11 or newer.
+
+```bash
+pip install -r apps/desp/requirements.txt -r apps/psp/requirements.txt
+python3 tools/run_local.py        # DESP :8000, PSP A :8001, PSP B :8002; Ctrl+C stops all
+```
+
+Each app prints one line per message it sends or receives. In a second terminal, play the six example flows live and check them against `examples/`:
+
+```bash
+python3 tools/e2e_flows.py        # or, without run_local.py:  python3 tools/e2e_flows.py --start
+```
+
+It prints what happened and the balances after each flow and ends with `12 of 12 passed.` (11 without `--start`: the "DESP down" check needs it). See [apps/desp](apps/desp/README.md), [apps/psp](apps/psp/README.md) and [ADR 0007](docs/decisions/0007-first-apps-python.md).
+
 ## Sources
 
 ECB, digital euro scheme rulebook v0.91 and annexes (draft, 2 July 2026), published at ecb.europa.eu. Reading notes are in `docs/spec-notes/`; always check against the original before relying on a field name.

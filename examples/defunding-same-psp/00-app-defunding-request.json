@@ -10,7 +10,8 @@
     "method": "POST",
     "path": "/i1/messages",
     "headers": {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
+      "Sim-User-DEAN": "EU9200000000000003"
     }
   },
   "body": {
@@ -27,5 +28,5 @@
     "Amount": 60.0,
     "UnstructuredRemittanceInformation": "Back to giro"
   },
-  "explanation": "Defunding: debited account is the digital euro account (DEUR), credited account the giro account (CBMA). Transport (POST /i1/messages) is our choice; content per D1-1."
+  "explanation": "Defunding: debited account is the digital euro account (DEUR), credited account the giro account (CBMA). Transport (POST /i1/messages) is our choice; content per D1-1. Sim-User-DEAN is a placeholder for the app's authentication (INTERPRETATION A12)."
 }
