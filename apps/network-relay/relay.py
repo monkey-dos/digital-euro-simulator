@@ -26,6 +26,7 @@ import asyncio
 import json
 import os
 import sys
+from decimal import Decimal, InvalidOperation
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -87,6 +88,7 @@ gate = Gate(mode=os.environ.get("RELAY_MODE", CFG.get("start", {}).get("mode", "
 scenarios = Scenarios(EXAMPLES_DIR, APPS)
 _msg_counter = 0
 _running: set[asyncio.Task] = set()
+_holding_limit = {"amount": scenarios.test_data.get("holdingLimit", "3000.00")}  # as last set by the game master
 
 
 def _control_event():
@@ -173,7 +175,11 @@ async def relay_message(frm: str, to: str, method: str, path: str, headers: dict
 
 async def relay_route(request: Request) -> Response:
     frm, to = request.path_params["frm"], request.path_params["to"]
-    path = "/" + request.path_params["rest"]
+    # Use the path exactly as it arrived (still percent-encoded), so the relay never changes an address.
+    raw = request.scope.get("raw_path", b"").decode("latin-1") or request.url.path
+    prefix = f"/r/{frm}/{to}"
+    path = raw[len(prefix):] if raw.startswith(prefix) else "/" + request.path_params["rest"]
+    path = path or "/"
     if request.url.query:
         path += "?" + request.url.query
     status, headers, content = await relay_message(frm, to, request.method, path,
@@ -183,14 +189,21 @@ async def relay_route(request: Request) -> Response:
 
 # ---------------------------------------------------------------- control room feed
 
+def _since(request: Request) -> int:
+    try:
+        return max(0, int(request.query_params.get("since", "0")))
+    except ValueError:
+        return 0
+
+
 async def history(request: Request):
-    since = int(request.query_params.get("since", "0"))
+    since = _since(request)
     return JSONResponse({"events": feed.since(since), "control": gate.status(),
                          "apps": {k: {"name": v["name"], "kind": v["kind"]} for k, v in APPS.items()}})
 
 
 async def events(request: Request):
-    since = int(request.query_params.get("since", "0"))
+    since = _since(request)
     q = feed.subscribe()
 
     async def stream():
@@ -249,13 +262,17 @@ async def set_delay(request: Request):
 async def step(request: Request):
     if gate.mode != "pause":
         return bad("Step works in pause mode", 409)
-    return JSONResponse({"ok": gate.step(), **gate.status()})
+    if not gate.step():
+        return JSONResponse({"ok": False, "error": "Nothing is waiting", **gate.status()})
+    return JSONResponse({"ok": True, **gate.status()})
 
 
 async def reset(request: Request):
     if _running:
-        return bad("A scenario is still running. Let it finish (play), then reset.", 409)
-    gate.release_all()
+        return bad("A scenario is still running. Let it finish (press Play), then reset.", 409)
+    if gate.queue:
+        # Releasing them now would let old messages reach freshly reset apps and the books would disagree.
+        return bad("Messages are still on their way. Let them arrive (press Play), then reset.", 409)
     results = {}
     for slug, a in APPS.items():
         if a.get("url"):
@@ -272,6 +289,17 @@ async def reset(request: Request):
     return JSONResponse({"ok": all(results.values()), "apps": results})
 
 
+def _limit(value) -> str | None:
+    """A holding limit as the banks accept it: a finite amount 0–1,000,000 with at most two decimals."""
+    try:
+        d = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    if not d.is_finite() or d < 0 or d > Decimal("1000000") or d != d.quantize(Decimal("0.01")):
+        return None
+    return f"{d:.2f}"
+
+
 async def _set_holding_limit(amount: str) -> dict:
     out = {}
     body = {"command": "SET_HOLDING_LIMIT", "amount": {"currency": "EUR", "amount": amount}}
@@ -282,21 +310,27 @@ async def _set_holding_limit(amount: str) -> dict:
                 out[a["name"]] = r.status_code == 200
             except httpx.HTTPError:
                 out[a["name"]] = False
-    feed.publish("control", **gate.status(), gameMaster=f"Holding limit set to {amount} EUR at every bank",
-                 holdingLimit=amount)
+    if all(out.values()):
+        feed.publish("control", **gate.status(), gameMaster=f"Holding limit set to {amount} EUR at every bank",
+                     holdingLimit=amount)
+    else:
+        refused = ", ".join(k for k, v in out.items() if not v)
+        feed.publish("error", text=f"Holding limit {amount} EUR not accepted by: {refused}")
     feed.refresh_state_soon()
     return out
 
 
 async def holding_limit(request: Request):
-    amount = str((await _json(request)).get("amount", ""))
-    try:
-        ok = float(amount) >= 0
-    except ValueError:
-        ok = False
-    if not ok:
-        return bad('Expected {"amount": "100.00"}')
-    return JSONResponse({"ok": True, "banks": await _set_holding_limit(amount)})
+    if _running:
+        return bad("A scenario is still running. Change the holding limit when it has finished.", 409)
+    amount = _limit((await _json(request)).get("amount"))
+    if amount is None:
+        return bad('Expected {"amount": "100.00"}: 0 to 1,000,000 EUR, at most two decimals')
+    banks = await _set_holding_limit(amount)
+    if all(banks.values()):
+        _holding_limit["amount"] = amount
+    return JSONResponse({"ok": all(banks.values()), "banks": banks,
+                         **({} if all(banks.values()) else {"error": "Not every bank accepted the new limit"})})
 
 
 async def list_scenarios(request: Request):
@@ -311,7 +345,7 @@ async def _run(call: dict):
     try:
         for gm in call["gameMaster"]:
             if gm["body"].get("command") == "SET_HOLDING_LIMIT":
-                restore = scenarios.test_data.get("holdingLimit")
+                restore = _holding_limit["amount"]  # the limit the game master had set before
                 await _set_holding_limit(gm["body"]["amount"]["amount"])
         status, _, content = await relay_message(call["from"], call["to"], "POST", call["path"], call["headers"],
                                                  json.dumps(call["body"], ensure_ascii=False).encode(), stand_in=True)
@@ -330,6 +364,8 @@ async def _run(call: dict):
 
 
 def _start(call: dict) -> JSONResponse:
+    if _running:
+        return bad("A scenario is still running. Let it finish first.", 409)
     task = asyncio.create_task(_run(call))
     _running.add(task)
     task.add_done_callback(_running.discard)

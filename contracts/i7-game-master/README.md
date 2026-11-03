@@ -8,14 +8,14 @@ All commands are JSON `POST`s to the relay (default `http://127.0.0.1:8100`). An
 |---|---|---|
 | `POST /control/mode` | `{"mode": "play"}` or `{"mode": "pause"}` | play: every message waits `delaySeconds`, one after the other. pause: messages wait for a step |
 | `POST /control/delay` | `{"seconds": 1.5}` (0–60) | slow-motion speed; 0 = no waiting |
-| `POST /control/step` | – | pause mode only: lets exactly one waiting message continue (the oldest) |
-| `POST /control/reset` | – | every app back to the test data (`POST /sim/reset` on each); refused (409) while a scenario is running |
-| `POST /control/holding-limit` | `{"amount": "100.00"}` | sets the holding limit at every bank (`SET_HOLDING_LIMIT`, ADR 0005) |
+| `POST /control/step` | – | pause mode only (409 otherwise): lets exactly one waiting message continue (the oldest); `ok: false` with `error` "Nothing is waiting" if none waits |
+| `POST /control/reset` | – | every app back to the test data (`POST /sim/reset` on each); refused (409) while a scenario is running or a message is still waiting |
+| `POST /control/holding-limit` | `{"amount": "100.00"}` (0–1,000,000, at most two decimals) | sets the holding limit at every bank (`SET_HOLDING_LIMIT`, ADR 0005); `ok: false` if a bank refused; refused (409) while a scenario runs |
 | `GET /control/scenarios` | – | `{"examples": [{"id", "title"}], "people": [{"id", "name", "bank"}], "actions": ["pay", "fund", "defund"]}` |
-| `POST /control/scenarios/<id>` | – | plays an example flow from `/examples`: the relay sends the example's first banking-app message with fresh IDs and timestamps; a holding limit the example sets is restored afterwards |
+| `POST /control/scenarios/<id>` | – | plays an example flow from `/examples`: the relay sends the example's first banking-app message with fresh IDs and timestamps; a holding limit the example sets is put back afterwards to what the game master had set before |
 | `POST /control/actions` | `{"action": "pay", "payer": "anna", "payee": "ben", "amount": "50.00", "text": "Pizza"}`; `fund` / `defund` need only `payer` and `amount` | a free action, built from the example messages with these values |
 
-Scenarios answer `202` at once; progress and the result arrive in the feed (I6, `scenario` events).
+Scenarios answer `202` at once; progress and the result arrive in the feed (I6, `scenario` events). Only one scenario runs at a time: starting another one while it runs is refused with 409.
 
 The relay plays the banking app until real banking apps exist. Every message it sends that way is marked `standIn: true` in the feed.
 

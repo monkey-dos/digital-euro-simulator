@@ -15,4 +15,4 @@ The relay is the one place that sees every message, so the apps stay free of sim
 - While a message waits on pause, the apps wait too. `--control-room` raises their timeouts to one hour.
 - If the relay cannot reach an app it answers 502 with reason code `XNET`, as if the network had failed.
 - Game-master top-ups (ADR 0002) still need commands in the DESP and the banks; the control room shows the button as "coming later".
-- `tools/e2e_flows.py --via-relay` and `tools/relay_checks.py` check that the relay changes nothing and that pause and step work.
+- `tools/e2e_flows.py --via-relay` checks that every message arrives unchanged; `tools/relay_checks.py` checks pause, step, slow motion and the game master commands.

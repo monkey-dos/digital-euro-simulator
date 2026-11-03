@@ -9,7 +9,7 @@ Checks:
   1. pause: a started scenario stops at its first message; nothing reaches the bank;
   2. step: each step lets exactly one message through, oldest first, until the
      scenario finishes with ReturnCode 0; every message is released exactly once;
-  3. reset is refused while a scenario runs, and works afterwards;
+  3. reset and a second scenario are refused while a scenario runs; reset works afterwards;
   4. play with a delay: messages really wait (slow motion);
   5. free actions (pay, fund, defund) settle and change the balances as expected;
   6. inside-the-app steps (ledger booking, giro) appear in the feed, before the
@@ -101,6 +101,9 @@ def check_pause_and_step():
     status, r = http("POST", "/control/reset")
     if status != 409:
         problems.append(f"reset during a running scenario: expected 409, got {status}")
+    status, r = http("POST", "/control/scenarios/p2p-two-psps")
+    if status != 409:
+        problems.append(f"second scenario while one runs: expected 409, got {status}")
     steps = 0
     while not finished() and steps < 40:
         n_rel = len(events(["released"]))
@@ -133,6 +136,41 @@ def check_pause_and_step():
     if after.get("anna", (0,))[0] != before["anna"][0] - 25 or after.get("clara", (0,))[0] != before["clara"][0] + 25:
         problems.append(f"balances after Anna pays Clara 25: {after}")
     print(f"   pause/step: {steps} steps, {len(msg_ids)} messages")
+    return problems
+
+
+def check_reset_while_waiting():
+    """A message sent by someone else than the scenario runner (a future real app) waits on pause:
+    reset must be refused, so the old message cannot reach freshly reset apps."""
+    import threading
+    problems = []
+    fresh("pause")
+    ex = json.load(open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                     "examples", "p2p-same-psp", "00-app-payment-initiation.json"), encoding="utf-8"))
+    body = dict(ex["body"], MessageIdentification="APPA-RELAYCHECK-0001")
+    answer = {}
+
+    def send():
+        req = urllib.request.Request(RELAY + "/r/app-a/psp-a/i1/messages", data=json.dumps(body).encode(), method="POST",
+                                     headers={"Content-Type": "application/json", **ex["http"]["headers"]})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                answer["r"] = (r.status, json.loads(r.read()))
+        except Exception as e:  # reported below
+            answer["r"] = repr(e)
+
+    t = threading.Thread(target=send)
+    t.start()
+    if not wait_for(lambda: http("GET", "/control/history")[1]["control"]["waiting"], 5):
+        problems.append("the app's message did not arrive at the relay")
+    status, r = http("POST", "/control/reset")
+    if status != 409:
+        problems.append(f"reset while a message waits: expected 409, got {status} {r}")
+    http("POST", "/control/delay", {"seconds": 0})
+    http("POST", "/control/mode", {"mode": "play"})
+    t.join(30)
+    if not (isinstance(answer.get("r"), tuple) and answer["r"][1].get("ReturnCode") == 0):
+        problems.append(f"the waiting payment should still go through after play: {answer.get('r')}")
     return problems
 
 
@@ -198,7 +236,9 @@ def check_refusals():
             problems.append(f"{body} should be refused, got {status} {r}")
     for path, body, code in (("/control/mode", {"mode": "fast"}, 400), ("/control/delay", {"seconds": 99}, 400),
                              ("/control/step", None, 409), ("/control/scenarios/nope", None, 404),
-                             ("/control/holding-limit", {"amount": "lots"}, 400)):
+                             ("/control/holding-limit", {"amount": "lots"}, 400),
+                             ("/control/holding-limit", {"amount": "inf"}, 400),
+                             ("/control/holding-limit", {"amount": "99999999999999999999"}, 400)):
         status, _ = http("POST", path, body)
         if status != code:
             problems.append(f"POST {path} {body}: expected {code}, got {status}")
@@ -228,7 +268,8 @@ def main():
             raise SystemExit("The relay is not running. Start  python3 tools/run_local.py --control-room  or use --start.")
     results = []
     try:
-        for name, fn in (("pause and step", check_pause_and_step), ("play with a delay", check_play_delay),
+        for name, fn in (("pause and step", check_pause_and_step), ("reset while a message waits", check_reset_while_waiting),
+                         ("play with a delay", check_play_delay),
                          ("free actions", check_actions), ("refusals", check_refusals)):
             print(f"── {name}")
             try:

@@ -508,6 +508,11 @@ def main():
         print(f"Started {', '.join(p.sim_name for p in procs)} (logs in {log_dir})")
     elif apps_up():
         raise SystemExit(f"{apps_up()} is not running. Start the apps with  python3 tools/run_local.py  or use --start.")
+    elif args.via_relay:
+        try:
+            urllib.request.urlopen("http://127.0.0.1:8100/health", timeout=2).close()
+        except (urllib.error.URLError, OSError):
+            raise SystemExit("The relay is not running. Start  python3 tools/run_local.py --control-room  or use --start.")
     results = []
     try:
         for folder in FLOWS:

@@ -34,6 +34,8 @@ Names: `app-a`, `app-b` (banking apps), `psp-a`, `psp-b`, `desp`.
 - **play:** each message waits the set time (0–60 s), one after the other, oldest first.
 - **pause:** messages wait until the game master clicks "step"; each step lets exactly one through.
 
+One scenario runs at a time. Reset is refused while a scenario runs or a message is still waiting, so old messages never reach freshly reset apps.
+
 Because a paused message can wait a long time, `--control-room` raises the apps' waiting times to one hour.
 
 If the relay cannot reach an app, it answers the caller with HTTP 502, problem+json and reason code `XNET`, as if the network had failed.
@@ -44,6 +46,8 @@ There is no banking app yet. When the game master starts a scenario, the relay s
 
 ## Settings
 
-`config/relay.json`, or environment variables: `RELAY_PORT`, `RELAY_MODE` (`play`/`pause`), `RELAY_DELAY` (seconds), `RELAY_APP_URLS` (JSON `{"desp": "http://…"}`), `RELAY_FORWARD_TIMEOUT`.
+`config/relay.json`, or environment variables: `RELAY_MODE` (`play`/`pause`), `RELAY_DELAY` (seconds), `RELAY_APP_URLS` (JSON `{"desp": "http://…"}`), `RELAY_FORWARD_TIMEOUT`, `RELAY_PORT`. The start and test scripts in `tools/` expect the relay on port 8100.
+
+The relay listens only on your own computer (127.0.0.1). Its control commands accept calls from any web page open in your browser (so the control room also works when opened as a file); with fictional data that is acceptable, but do not run it on a shared server.
 
 Contracts: [`contracts/i6-observer-events`](../../contracts/i6-observer-events/README.md), [`contracts/i7-game-master`](../../contracts/i7-game-master/README.md).

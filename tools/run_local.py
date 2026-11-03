@@ -62,10 +62,9 @@ def use_relay(mode: str = "play", delay: str = "1.5") -> None:
 
 
 def _tmp_dir() -> str:
+    """A fresh private folder per run (works for several users on one machine)."""
     import tempfile
-    d = os.path.join(tempfile.gettempdir(), "digital-euro-simulator")
-    os.makedirs(d, exist_ok=True)
-    return d
+    return tempfile.mkdtemp(prefix="digital-euro-simulator-")
 
 
 def healthy(port: int) -> bool:
@@ -145,6 +144,8 @@ def main():
                     help="also start the network relay and send all traffic through it (control room on port 8100)")
     ap.add_argument("--pause", action="store_true", help="with --control-room: start paused (step by step)")
     args = ap.parse_args()
+    if args.pause and not args.control_room:
+        ap.error("--pause only works together with --control-room")
     signal.signal(signal.SIGTERM, _stop_on_sigterm)
     signal.signal(signal.SIGINT, signal.default_int_handler)  # Ctrl+C, also when started in the background
     if args.control_room:
