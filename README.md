@@ -1,4 +1,4 @@
-# Digital Euro Simulator
+# Banana Ledger – Digital Euro Simulator
 
 An educational simulation of the ECB **digital euro**. It shows what happens between the central platform (DESP), banks (PSPs), banking apps and, later, merchants when people pay each other in digital euro. Every message follows the ECB's published specification where one exists.
 
@@ -45,9 +45,18 @@ Two apps that respect the same contract can replace each other. For example, a b
 2. **Merchants:** business accounts, QR payments in a shop, pay-by-link, refunds, pre-authorisation.
 3. **Scheme depth:** fraud scoring, disputes, reports, switching banks, standing orders, offline.
 
+## Watch it live: the control room
+
+```bash
+pip install -r apps/desp/requirements.txt -r apps/psp/requirements.txt -r apps/network-relay/requirements.txt
+python3 tools/run_local.py --control-room          # add --pause to start step by step
+```
+
+Then open http://127.0.0.1:8100 in your browser. Pick a scenario (for example "Anna pays Ben 50 EUR") or set up your own payment, and watch every message travel between the apps: in slow motion, or one step at a time while you explain it. Switch between the map and the timeline view, and look at it through the eyes of the central platform, one bank, or the public. All traffic passes through the [network relay](apps/network-relay/README.md); the apps themselves are unchanged.
+
 ## Try the examples
 
-**Watch them:** open `apps/observer/index.html` in a browser. The observer plays every example step by step, with live balances.
+**Watch them:** open `apps/observer/index.html` in a browser. Without the running apps, the control room replays the recorded examples step by step, with balances.
 
 **Check them:**
 
@@ -73,7 +82,7 @@ Each app prints one line per message it sends or receives. In a second terminal,
 python3 tools/e2e_flows.py        # or, without run_local.py:  python3 tools/e2e_flows.py --start
 ```
 
-It prints what happened and the balances after each flow and ends with `12 of 12 passed.` (11 without `--start`: the "DESP down" check needs it). See [apps/desp](apps/desp/README.md), [apps/psp](apps/psp/README.md) and [ADR 0007](docs/decisions/0007-first-apps-python.md).
+It prints what happened and the balances after each flow and ends with `12 of 12 passed.` (11 without `--start`: the "DESP down" check needs it). Add `--via-relay` to send all traffic through the network relay, as in the control room. `python3 tools/relay_checks.py --start` checks the relay itself (pause, step, slow motion, scenarios). See [apps/desp](apps/desp/README.md), [apps/psp](apps/psp/README.md) and [ADR 0007](docs/decisions/0007-first-apps-python.md).
 
 ## Sources
 
