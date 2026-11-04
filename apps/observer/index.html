@@ -2,503 +2,1663 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Digital Euro Observer</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Banana Ledger – Digital euro control room</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Ccircle cx='60' cy='60' r='57' fill='%231D4C99'/%3E%3Ccircle cx='60' cy='60' r='51' fill='none' stroke='%23F2C230' stroke-width='2.5' stroke-dasharray='2 5' stroke-linecap='round'/%3E%3Ccircle cx='37' cy='44' r='8' fill='%236B4A34'/%3E%3Ccircle cx='83' cy='44' r='8' fill='%236B4A34'/%3E%3Ccircle cx='60' cy='44' r='22' fill='%236B4A34'/%3E%3Ccircle cx='53' cy='42' r='7.5' fill='%23EBCBA3'/%3E%3Ccircle cx='67' cy='42' r='7.5' fill='%23EBCBA3'/%3E%3Cellipse cx='60' cy='51' rx='12' ry='9' fill='%23EBCBA3'/%3E%3Ccircle cx='53.5' cy='42.5' r='2.4' fill='%2313202D'/%3E%3Ccircle cx='66.5' cy='42.5' r='2.4' fill='%2313202D'/%3E%3Cpath d='M70.6 77.4A15 15 0 1 0 70.6 98.6' stroke='%23F2C230' stroke-width='8' stroke-linecap='round' fill='none'/%3E%3Cpath d='M40 85H62M40 92H60' stroke='%23F2C230' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
-/* Layout: control strip on top, stage (the network of apps) beside the message inspector, ledger and timeline below. */
 :root{
-  --bg:#F2F4F7; --surface:#FFFFFF; --ink:#13202D; --muted:#566576; --line:#CBD3DD; --grid:#E4E9EF;
-  --central:#1D4C99; --central-t:#E5ECF8;
-  --psp:#0E7566; --psp-t:#E1F1ED;
-  --front:#A85F0A; --front-t:#FAEEDD;
-  --sim:#6A4C9E; --sim-t:#EEE8F6;
-  --ok:#1E7B3C; --bad:#B3261E; --enc:#7A3E00; --enc-t:#FFF1DE;
+  --bg:#F2F4F7; --surface:#FFFFFF; --ink:#13202D; --ink2:#3B4A5A; --muted:#566576; --faint:#5F6E7E; --line:#CBD3DD; --grid:#E4E9EF; --line-strong:#8E9BAA;
+  --blue:#1D4C99; --blue-t:#E5ECF8; --blue-l:#BFD0EE; --blue-bg:#F6F9FE;
+  --teal:#0E7566; --teal-t:#E1F1ED; --amber:#A85F0A; --amber-t:#FAEEDD; --amber-l:#E7CFA9;
+  --violet:#6A4C9E; --violet-t:#EEE8F6; --violet-l:#D9CDEB;
+  --ok:#1E7B3C; --bad:#B3261E; --bad-t:#FCECEA; --enc:#7A3E00; --enc-t:#FFF1DE; --enc-l:#F3D9B5; --banana:#F2C230;
   --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
   color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E141B; --surface:#16202A; --ink:#E4EAF1; --muted:#97A5B4; --line:#2E3C4A; --grid:#1B2631;
-  --central:#86AAEA; --central-t:#18294A; --psp:#5FC4B1; --psp-t:#123029;
-  --front:#E4A75C; --front-t:#352812; --sim:#B9A0E4; --sim-t:#28213C;
-  --ok:#6FCF8A; --bad:#FF8A80; --enc:#F2B66B; --enc-t:#33240F; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0E141B; --surface:#16202A; --ink:#E4EAF1; --muted:#97A5B4; --line:#2E3C4A; --grid:#1B2631;
-  --central:#86AAEA; --central-t:#18294A; --psp:#5FC4B1; --psp-t:#123029;
-  --front:#E4A75C; --front-t:#352812; --sim:#B9A0E4; --sim-t:#28213C;
-  --ok:#6FCF8A; --bad:#FF8A80; --enc:#F2B66B; --enc-t:#33240F; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14.5px;line-height:1.5;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
-.wrap{max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-h1,h2,h3{font-family:var(--f-display);font-stretch:85%;margin:0;letter-spacing:-.01em;text-wrap:balance}
-h1{font-size:clamp(24px,3.4vw,34px);font-weight:750;line-height:1.05}
-h2{font-size:19px;font-weight:700}
-.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+body{background:var(--bg);color:var(--ink);font:400 14.5px/1.5 var(--f-body);overflow-x:hidden}
+button,select,input{font-family:inherit}
+a{color:var(--blue)}
+code{font-family:var(--f-mono);font-size:.92em;background:rgba(19,32,45,.07);padding:1px 5px;border-radius:5px}
+:focus-visible{outline:3px solid #2F6FDB;outline-offset:2px}
+[hidden]{display:none!important}
+svg{flex:none}
+.app{max-width:1440px;margin:0 auto;padding:20px 24px 28px;display:flex;flex-direction:column;gap:16px}
 .mono{font-family:var(--f-mono)}
-header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
-header p{margin:4px 0 0;color:var(--muted);max-width:70ch}
+.eyebrow{font:500 11.5px/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:500 14px/1 var(--f-body);cursor:pointer;white-space:nowrap}
+.btn:hover:not(:disabled):not([aria-disabled=true]){border-color:var(--line-strong)}
+.btn svg{width:20px;height:20px}
+.btn:disabled,.btn[aria-disabled=true]{opacity:.55;cursor:not-allowed}
+.btn.icon{width:44px;padding:0;justify-content:center}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary:hover:not(:disabled){background:#243649}
+.btn.small{min-height:38px;font-size:13px;padding:0 12px}
+.btn.on{background:var(--blue-t);border-color:var(--blue);color:var(--blue)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.seg button{min-height:42px;padding:0 9px;border:0;border-right:1px solid var(--grid);background:transparent;color:var(--muted);font:500 13px/1 var(--f-body);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--blue-t);color:var(--blue)}
+.seg button:hover{color:var(--ink)}
+.seg button svg{width:18px;height:18px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font:500 12px/1.4 var(--f-mono);max-width:100%}
 
-.card{background:var(--surface);border:1px solid var(--line);border-radius:8px}
-.controls{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;padding:12px 14px}
-.controls label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:4px;min-width:0;max-width:100%}
-.controls label select{width:100%}
-select,button,input[type=range]{font:inherit}
-select{text-overflow:ellipsis;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);min-width:0;max-width:100%}
-.btns{display:flex;gap:6px}
-button{padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer}
-button.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);min-width:84px}
-button:disabled{opacity:.4;cursor:default}
-button:focus-visible,select:focus-visible,input:focus-visible,.tl button:focus-visible{outline:2px solid var(--central);outline-offset:2px}
-.speed{display:flex;align-items:center;gap:8px}
-.speed output{font-family:var(--f-mono);font-size:12px;color:var(--ink);min-width:44px}
-.stepcount{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-left:auto}
+/* header */
+.hdr{display:flex;flex-wrap:wrap;align-items:center;gap:12px 24px}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand .t{font-family:var(--f-display);font-stretch:85%;font-weight:800;font-size:24px;line-height:1.1;letter-spacing:-.01em}
+.brand .s{font-size:13px;color:var(--muted)}
+.picker{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.picker select{min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font:500 14px var(--f-body);color:var(--ink);min-width:240px;max-width:340px}
+.dots{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.dots span{display:inline-flex;align-items:center;gap:6px}
+.dots i{width:9px;height:9px;border-radius:50%;background:#9AA7B5;display:inline-block}
+.dots i.ok{background:var(--ok)} .dots i.bad{background:var(--bad)}
+.banner{display:flex;gap:12px;align-items:center;padding:12px 16px;border-radius:14px;background:var(--amber-t);border:1px solid var(--amber-l);color:#5E3600}
+.banner.warn{background:var(--bad-t);border-color:#F0B8B3;color:#7D1B15}
+.banner svg{width:22px;height:22px}
 
-.main{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
-@media (max-width:980px){.main{grid-template-columns:minmax(0,1fr)}}
-.col{display:flex;flex-direction:column;gap:16px;min-width:0}
-.stage{overflow-x:auto;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
-.stage svg{display:block;width:100%;min-width:560px;height:auto}
-svg text{font-family:var(--f-body);fill:var(--ink)}
-.node rect{stroke-width:1.6;transition:stroke-width .2s,opacity .25s}
-.node .t{font-weight:600;font-size:15px}
-.node .s{font-size:12px;fill:var(--muted)}
-.node.k-central rect{fill:var(--central-t);stroke:var(--central)}
-.node.k-psp rect{fill:var(--psp-t);stroke:var(--psp)}
-.node.k-front rect{fill:var(--front-t);stroke:var(--front)}
-.node.k-sim rect{fill:var(--sim-t);stroke:var(--sim)}
-.node.inner rect{fill:var(--surface)}
-.node.active rect{stroke-width:3.2}
-.node.flash rect{animation:flash .6s ease-out}
-@keyframes flash{0%{stroke-width:5}100%{stroke-width:1.6}}
-.node.dim{opacity:.35}
-.wire{stroke:var(--line);stroke-width:2;fill:none}
-.wire.hot{stroke:var(--ink)}
-.msg circle{fill:var(--ink)}
-.msg.hidden circle{fill:var(--muted)}
-.msg text{font-family:var(--f-mono);font-size:11.5px;fill:var(--ink);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
-.legend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+/* control bar */
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:10px 12px;position:relative}
+.bar .grp{display:flex;align-items:center;gap:6px}.bar .grp.l{gap:5px}
+.bar .stepcount{font:400 12.5px/1.2 var(--f-mono);color:var(--muted);margin-left:4px;white-space:nowrap}
+.bar .speed{display:flex;align-items:center;gap:8px}
+.bar .speed input{width:84px;accent-color:var(--blue)}
+.bar .speed output{font:400 13px var(--f-mono);white-space:nowrap;min-width:58px}
+.btn.play{min-width:98px;justify-content:center;background:var(--blue-t);border-color:var(--blue);color:var(--blue)}
+.pop{position:absolute;right:14px;top:calc(100% + 6px);z-index:30;width:300px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 10px 30px rgba(19,32,45,.16)}
+.pop label{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+.pop .row{display:flex;gap:8px}
+.pop input,.dlgform input,.dlgform select{min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius:10px;font-size:14px;width:100%;background:#fff;color:var(--ink)}
+.pop p{margin:8px 0 0;font-size:12.5px;color:var(--muted)}
+.livechip{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 12px;border-radius:999px;background:var(--ink);color:#fff;border:0;font:500 13px var(--f-body);cursor:pointer}
+.livechip:hover{background:#243649}
 
-.inspector{padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.inspector .route{font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
-.badges{display:flex;flex-wrap:wrap;gap:6px}
-.badge{font-family:var(--f-mono);font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.badge.ph{color:var(--front);border-color:currentColor}
-.badge.if{color:var(--central);border-color:currentColor}
-.explain{margin:0}
-.http{font-family:var(--f-mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;overflow-x:auto;white-space:pre}
-.json{font-family:var(--f-mono);font-size:12px;line-height:1.55;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow:auto;max-height:420px;white-space:pre;margin:0}
-.json .k{color:var(--central)} .json .s{color:var(--psp)} .json .n{color:var(--front)} .json .b{color:var(--sim)}
-.json .enc{color:var(--enc);background:var(--enc-t);border-radius:3px;padding:0 3px}
+/* map */
+.mainrow{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+.stagecol{flex:999 1 640px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.stage{position:relative;height:560px;overflow:hidden;background:#FBFCFD}
+.stage .dots-bg{position:absolute;inset:0;background-image:radial-gradient(var(--grid) 1px,transparent 1px);background-size:22px 22px}
+.stage svg.wires{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.wire{stroke:var(--line);stroke-width:3;fill:none}
+.wire.hot{stroke:var(--blue);stroke-width:4;stroke-dasharray:6 7;animation:dash 1.2s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-26}}
+.node{position:absolute;transform:translateX(-50%);background:var(--surface);border-radius:16px;box-shadow:0 1px 2px rgba(19,32,45,.06),0 6px 18px rgba(19,32,45,.06);transition:box-shadow .25s,border-color .25s}
+.node.rcv{box-shadow:0 0 0 6px rgba(29,76,153,.12),0 6px 18px rgba(19,32,45,.08)}
+.node.snd{border-color:var(--blue)!important}
+.node.dim{opacity:.55}
+.node .hd{display:flex;align-items:center;gap:10px}
+.node .ic{display:grid;place-items:center;border-radius:10px;flex:none}
+.node .nt{font-weight:600;line-height:1.25}
+.node .ns{font-size:12px;color:var(--muted);line-height:1.3}
+.node .st{margin-top:8px;font-size:12.5px;display:flex;align-items:center;gap:6px;line-height:1.3}
+.node .st svg{width:16px;height:16px}
+.node .giro{margin-top:8px;padding:5px 8px;border-radius:8px;background:var(--teal-t);color:#0A5A4E;font-size:12px;line-height:1.35}
+.node .giro.new{animation:pulse 1.2s ease-out}
+.ledger{margin-top:10px;border-top:1px solid var(--grid);padding-top:8px}
+.ledger .g{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font:400 12.5px/1.5 var(--f-mono)}
+.ledger .g span:nth-child(odd){color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ledger .g span:nth-child(even){text-align:right;font-variant-numeric:tabular-nums}
+.ledger .g .chg{color:var(--ink);font-weight:500}
+.ledger .g .chg.up{color:var(--ok)} .ledger .g .chg.down{color:var(--bad)}
+.ledger .book{margin-top:8px;padding:6px 8px;border-radius:8px;background:var(--enc-t);border:1px solid var(--enc-l);color:var(--enc);font-size:12px;line-height:1.35;animation:pulse 1.4s ease-out}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(242,194,48,.8)}100%{box-shadow:0 0 0 10px rgba(242,194,48,0)}}
+.pill{position:absolute;left:0;top:0;z-index:5;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;background:var(--blue);color:#fff;box-shadow:0 6px 16px rgba(29,76,153,.3);white-space:nowrap;pointer-events:none}
+.pill .num{display:grid;place-items:center;min-width:26px;height:26px;border-radius:13px;background:#fff;color:var(--blue);font:600 12px var(--f-mono);padding:0 5px}
+.pill .lb{font:400 12px var(--f-mono)}
+.pill svg{width:16px;height:16px}
+.pillwrap{position:absolute;inset:0;z-index:5;pointer-events:none}
+.pillhint{position:absolute;z-index:6;transform:translate(-50%,0);padding:3px 10px;border-radius:999px;background:#fff;border:1px solid var(--blue-l);color:var(--blue);font-size:12px;font-weight:500;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(19,32,45,.08)}
+.relaybadge{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--violet-t);color:#5A3E8C;font-size:12.5px;white-space:nowrap}
+.relaybadge svg{width:16px;height:16px}
+
+.narr{padding:16px 20px;display:flex;gap:16px;align-items:flex-start;border-color:var(--blue-l);background:var(--blue-bg)}
+.narr .ic{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--blue)}
+.narr .hl{font-family:var(--f-display);font-stretch:90%;font-weight:700;font-size:20px;line-height:1.3}
+.narr .tx{margin-top:4px;color:var(--ink2);font-size:15px}
+.narr .before{margin-top:8px;font-size:13px;color:var(--muted)}
+.narr .result{margin-top:10px;display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:10px;font-weight:600;font-size:14px}
+.narr .result.ok{background:#E3F3E8;color:#14602D}
+.narr .result.bad{background:var(--bad-t);color:#8E1C15}
+.steps{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px}
+.step{flex:none;width:136px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);text-align:left;font:400 12.5px/1.35 var(--f-body);color:var(--ink);cursor:pointer}
+.step .n{display:block;font:500 11px/1.4 var(--f-mono);color:var(--muted);margin-bottom:4px}
+.step.done{background:#F7F9FB;color:var(--muted)}
+.step.now{border:2px solid var(--blue);background:var(--blue-t);padding:9px 11px}
+.step.now .n{color:var(--blue)}
+.step.wait{border-style:dotted;border-color:var(--blue);background:#fff}
+.step.future{border-style:dashed;color:var(--faint)}
+.step.hid{color:var(--faint)}
+
+.inspector{flex:1 1 380px;min-width:0;padding:18px;display:flex;flex-direction:column;gap:14px}
+.inspector h2{margin:4px 0 2px;font-family:var(--f-display);font-stretch:85%;font-weight:700;font-size:22px;line-height:1.2}
+.inspector .route{font:400 12.5px/1.5 var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip.if{background:var(--blue-t);color:var(--blue)}
+.chip.ref{background:var(--bg);color:var(--muted);border-radius:12px;white-space:normal}
+.chip.ph{background:var(--amber-t);color:#7A4300}
+.chip.live{background:#E3F3E8;color:#14602D}
+.chip.sample{background:var(--bg);color:var(--muted)}
+.readers{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;font-size:13.5px;align-items:start}
+.readers svg{width:20px;height:20px}
+.json{margin:0;padding:12px 14px;border-radius:12px;background:var(--bg);border:1px solid var(--grid);font:400 12px/1.6 var(--f-mono);color:var(--ink);white-space:pre;overflow:auto;max-height:340px}
+.json .k{color:var(--blue)} .json .s{color:#0A5A4E} .json .n{color:#8A4A00} .json .b{color:var(--violet)}
+.json .enc{color:var(--enc);background:var(--enc-t);border-radius:4px;padding:0 4px}
 .json .red{color:var(--muted);font-style:italic}
-.decrypt{display:flex;flex-direction:column;gap:8px;border:1px dashed var(--enc);border-radius:6px;padding:10px;background:var(--enc-t)}
-.decrypt p{margin:0;font-size:13px}
-.hiddenmsg{border:1px dashed var(--line);border-radius:6px;padding:14px;color:var(--muted)}
-.ref{font-size:12px;color:var(--muted)}
-.ref a{color:var(--central)}
+.json.sealed{background:var(--enc-t);border-color:var(--enc-l)}
+.hdrs{font:400 12px/1.55 var(--f-mono);color:var(--ink2);margin:0 0 8px;overflow-wrap:anywhere}
+.hdrs b{font-weight:500;color:var(--muted)}
+.insrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:6px;gap:6px 8px}.insrow .eyebrow{white-space:nowrap}
+.hiddenmsg{border:1px dashed var(--line);border-radius:12px;padding:14px;color:var(--muted)}
 
-.ledger{padding:14px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
-.tblwrap{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:440px}
-th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
-th{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
-td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono)}
-tr.changed td{animation:hl 1.4s ease-out}
-@keyframes hl{0%{background:var(--enc-t)}100%{background:transparent}}
-.delta{font-size:11px;margin-left:6px}
-.delta.up{color:var(--ok)} .delta.down{color:var(--bad)}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.tile{border:1px solid var(--line);border-radius:6px;padding:10px 12px}
-.tile .v{font-family:var(--f-mono);font-size:18px;font-variant-numeric:tabular-nums}
-.tile .l{font-size:12px;color:var(--muted)}
-.check{font-size:13px}
-.check.ok{color:var(--ok)} .check.bad{color:var(--bad)}
-.tl{padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
-.tl ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:360px;overflow:auto}
-.tl button{width:100%;text-align:left;border:0;border-radius:4px;padding:5px 8px;background:transparent;display:grid;grid-template-columns:28px minmax(0,1fr);gap:6px;font-size:13px}
-.tl button .n{font-family:var(--f-mono);color:var(--muted)}
-.tl button.cur{background:var(--central-t)}
-.tl button.done .n{color:var(--ok)}
-.tl button.hid{color:var(--muted)}
-.summary{color:var(--muted);margin:0;font-size:13.5px}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.money{display:flex;flex-direction:column;gap:8px}
+.money .top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tiles{display:flex;flex-wrap:wrap;gap:10px}
+.tile{flex:1 1 168px;min-width:0;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.tile .v{font:500 18px/1.3 var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tile .s{font-size:12.5px;line-height:1.4;color:var(--muted)}
+.tile.circ{border-color:var(--blue-l)}
+.tile.gm{background:#F8F5FC;border-color:var(--violet-l)}
+.tile.gm .v{color:var(--violet)}
+.tile .dl{font-size:12px;margin-left:6px;font-weight:500}
+.dl.up{color:var(--ok)} .dl.down{color:var(--bad)}
+.tile.bump{animation:bump 1.2s ease-out}
+@keyframes bump{0%{background:var(--enc-t);border-color:var(--banana)}100%{background:var(--surface)}}
+
+/* timeline */
+.tlmain{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+.seq{flex:999 1 720px;min-width:0;padding:18px 18px 10px;position:relative;overflow-x:auto}
+.seqin{min-width:720px;position:relative}
+.lanelines{position:absolute;top:76px;bottom:0;left:44px;right:0;pointer-events:none}
+.lanelines i{position:absolute;top:0;bottom:0;border-left:2px solid}
+.trow{display:grid;grid-template-columns:44px repeat(10,minmax(0,1fr));align-items:center;min-height:50px;width:100%;border:0;background:transparent;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer;border-radius:10px;position:relative}
+.trow:hover{background:rgba(29,76,153,.04)}
+.trow.sel{background:var(--blue-bg)}
+.trow.head{min-height:76px;align-items:start;cursor:default}
+.trow.head:hover{background:transparent}
+.lanehead{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;font-weight:600;font-size:14px}
+.lanehead .ic{display:grid;place-items:center;width:40px;height:40px;border-radius:12px}
+.tnum{font:500 12px/1 var(--f-mono);color:var(--muted);text-align:center}
+.arrow{position:relative;height:30px;display:flex;align-items:flex-end}
+.arrow .lbl{position:absolute;left:0;right:0;top:-2px;text-align:center;font:500 12px/1.3 var(--f-mono);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px}
+.arrow .ln{flex:1;height:0;border-top:2px solid var(--line-strong);margin-bottom:6px}
+.arrow svg{width:12px;height:12px;margin-bottom:1px}
+.past .lbl{color:var(--muted)} .past .ln{border-color:var(--line)}
+.cur .ln{border-top:3px dashed var(--blue)} .cur .lbl{color:var(--blue);font-weight:600}
+.waitrow .ln{border-top:2px dotted var(--blue)} .waitrow .lbl{color:var(--blue)}
+.next .lbl{color:var(--faint)} .next .ln{border-top:2px dotted var(--line)}
+.sbox{justify-self:center;padding:6px 12px;border-radius:10px;border:1px solid var(--line);font:500 12px/1.3 var(--f-mono);color:var(--muted);background:#fff;white-space:nowrap;position:relative;z-index:1}
+.sbox.cur{border:2px dashed var(--blue);color:var(--blue);background:#fff}
+.sbox.next{border-style:dashed;border-color:var(--blue-l);color:var(--faint)}
+.sbox.past{background:#F7F9FB}
+.side{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.side .card{padding:16px 18px}
+.narrbox{padding:18px;border-color:var(--blue-l)!important;background:var(--blue-bg)!important}
+.narrbox .hl{font-family:var(--f-display);font-stretch:90%;font-weight:700;font-size:20px;line-height:1.3}
+.narrbox .tx{margin-top:6px;color:var(--ink2)}
+.narrbox .before{margin-top:8px;font-size:13px;color:var(--muted)}
+.narrbox .result{margin-top:10px;display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:10px;font-weight:600;font-size:14px}
+.narrbox .result.ok{background:#E3F3E8;color:#14602D}
+.narrbox .result.bad{background:var(--bad-t);color:#8E1C15}
+.mlist .tl{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--grid);font-size:13.5px}
+.mlist .tl:last-child{border-bottom:0}
+.mlist .dl{margin-left:6px;font-size:12px}.mlist .v{font:500 14px/1.3 var(--f-mono);font-variant-numeric:tabular-nums}
+
+.empty{padding:40px 24px;text-align:center;color:var(--muted)}
+.empty h2{font-family:var(--f-display);color:var(--ink);margin:8px 0}
+
+/* dialogs & toasts */
+dialog{border:1px solid var(--line);border-radius:16px;padding:0;max-width:min(720px,94vw);width:720px;color:var(--ink);box-shadow:0 20px 60px rgba(19,32,45,.3)}
+dialog::backdrop{background:rgba(19,32,45,.4)}
+dialog .dh{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--grid)}
+dialog .dh h2{margin:0;font-family:var(--f-display);font-stretch:90%;font-size:19px}
+dialog .db{padding:16px 18px;display:flex;flex-direction:column;gap:12px;max-height:70vh;overflow:auto}
+.dlgform{width:440px}
+.dlgform label{font-size:13px;font-weight:500;display:block;margin-bottom:4px}
+.dlgform .f{display:flex;flex-direction:column}
+.dlgform .err{color:var(--bad);font-size:13px;min-height:1.2em}
+.toasts{position:fixed;right:16px;bottom:16px;z-index:50;display:flex;flex-direction:column;gap:8px;max-width:min(420px,calc(100vw - 32px))}
+.toast{padding:12px 16px;border-radius:12px;background:var(--ink);color:#fff;font-size:14px;box-shadow:0 8px 24px rgba(19,32,45,.3);animation:tin .25s ease-out}
+.toast.ok{background:#14602D} .toast.bad{background:#8E1C15}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.foot{font-size:12.5px;color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.wire.hot{stroke-dasharray:none}}
+@media (max-width:760px){.app{padding:14px 12px}.stage{height:600px}.node{transform:translateX(-50%)}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
+<div class="app" id="app">
+
+<header class="hdr">
+  <div class="brand">
+    <svg viewBox="0 0 120 120" width="48" height="48" role="img" aria-label="Banana Ledger logo: a coin with a chimpanzee holding a banana bent into a euro sign">
+      <circle cx="60" cy="60" r="57" fill="#1D4C99"/>
+      <circle cx="60" cy="60" r="51" fill="none" stroke="#F2C230" stroke-width="2.5" stroke-dasharray="2 5" stroke-linecap="round"/>
+      <circle cx="37" cy="44" r="8" fill="#6B4A34"/><circle cx="83" cy="44" r="8" fill="#6B4A34"/>
+      <circle cx="60" cy="44" r="22" fill="#6B4A34"/>
+      <circle cx="53" cy="42" r="7.5" fill="#EBCBA3"/><circle cx="67" cy="42" r="7.5" fill="#EBCBA3"/>
+      <ellipse cx="60" cy="51" rx="12" ry="9" fill="#EBCBA3"/>
+      <circle cx="53.5" cy="42.5" r="2.4" fill="#13202D"/><circle cx="66.5" cy="42.5" r="2.4" fill="#13202D"/>
+      <path d="M70.6 77.4 A15 15 0 1 0 70.6 98.6" stroke="#F2C230" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M40 85 H62 M40 92 H60" stroke="#F2C230" stroke-width="3.5" stroke-linecap="round"/>
+      <ellipse cx="48" cy="101" rx="6" ry="5" fill="#5A3D2B"/><ellipse cx="74" cy="94" rx="5" ry="5" fill="#5A3D2B"/>
+    </svg>
     <div>
-      <div class="eyebrow">Digital euro simulator · transparency observer</div>
-      <h1>Digital Euro Observer</h1>
-      <p>Watch every message travel between the apps, step by step, and see the ledger change. All people, banks and amounts are fictional. Messages follow the ECB's draft specification v0.91.</p>
+      <div class="t">Banana Ledger</div>
+      <div class="s">Digital euro simulator · Control room</div>
     </div>
-  </header>
-
-  <section class="card controls" aria-label="Playback controls">
-    <label>Scenario <select id="scenario"></select></label>
-    <label>Whose view
-      <select id="lens">
-        <option value="all">Everything (game master)</option>
-        <option value="desp">What the central platform sees</option>
-        <option value="A">What PSP A sees</option>
-        <option value="B">What PSP B sees</option>
-        <option value="public">What the public sees</option>
-      </select>
-    </label>
-    <div class="btns">
-      <button type="button" id="restart" title="Back to the start">Restart</button>
-      <button type="button" id="prev" title="Previous step (←)">◀ Step</button>
-      <button type="button" id="play" class="primary" title="Play / pause (space)">Play</button>
-      <button type="button" id="next" title="Next step (→)">Step ▶</button>
-    </div>
-    <label>Speed
-      <span class="speed"><input type="range" id="speed" min="0.5" max="5" step="0.5" value="2" aria-label="Seconds per message"><output id="speedOut">2.0 s</output></span>
-    </label>
-    <span class="stepcount" id="stepcount"></span>
-  </section>
-  <p class="summary" id="summary"></p>
-
-  <div class="main">
-   <div class="col">
-    <section class="card" aria-label="Network of apps">
-      <div class="stage"><svg id="stage" viewBox="0 0 1000 540" role="img" aria-label="Apps and the messages between them"></svg></div>
-      <div class="legend">
-        <span>● message in transit</span><span>Blue: central platform (ECB)</span><span>Green: banks</span><span>Amber: banking apps</span><span>Violet: game master (simulation only)</span>
-      </div>
-    </section>
-    <section class="card ledger" id="ledger" aria-label="Balances"></section>
-   </div>
-   <div class="col">
-    <section class="card inspector" id="inspector" aria-live="polite"></section>
-    <section class="card tl" aria-label="Steps">
-      <h2>Steps</h2>
-      <ol id="timeline"></ol>
-    </section>
-   </div>
   </div>
-  <p class="ref">Source, interface contracts and example messages: <a href="https://github.com/monkey-dos/digital-euro-simulator" target="_blank" rel="noopener">github.com/monkey-dos/digital-euro-simulator</a> · MIT license · Keyboard: space = play/pause, ← → = step.</p>
+
+  <div class="seg" role="group" aria-label="Layout">
+    <button type="button" id="vMap" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="17" r="2.5"/><circle cx="18" cy="17" r="2.5"/><circle cx="12" cy="6" r="2.5"/><path d="M8 15.5l3-7M16 15.5l-3-7"/></svg>Map</button>
+    <button type="button" id="vTl" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3v18M12 3v18M19 3v18M5 8h7M12 13h7M19 18h-7"/></svg>Timeline</button>
+  </div>
+
+  <div class="picker">
+    <label for="scenario" class="eyebrow">Scenario</label>
+    <select id="scenario"></select>
+    <button class="btn primary" type="button" id="run"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 15c4 4 11 3 14-4 1-2 1-5 0-7l-1 .5c0 3-2 6-5 8-3 1.5-6 1.5-8 2.5z" fill="#F2C230" stroke="#F2C230" stroke-width="1" stroke-linejoin="round"/></svg><span id="runLbl">Run scenario</span></button>
+  </div>
+
+  <div class="dots" id="dots" aria-label="Connection status of the apps"></div>
+</header>
+
+<div class="banner" id="banner" hidden role="status"></div>
+
+<div class="card bar" id="bar" role="region" aria-label="Playback controls">
+  <div class="grp">
+    <button class="btn icon" type="button" id="bStart" aria-label="Back to start"><svg viewBox="0 0 24 24" fill="none" stroke="#13202D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 5v14M19 5l-9 7 9 7z"/></svg></button>
+    <button class="btn icon" type="button" id="bBack" aria-label="One step back"><svg viewBox="0 0 24 24" fill="none" stroke="#13202D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <button class="btn play" type="button" id="bPlay"></button>
+    <button class="btn icon" type="button" id="bFwd" aria-label="One step forward"><svg viewBox="0 0 24 24" fill="none" stroke="#13202D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+    <span class="stepcount" id="stepcount" aria-live="polite"></span>
+    <button class="livechip" type="button" id="backLive" hidden><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6M17 5v14"/></svg>Back to live</button>
+  </div>
+  <div class="speed">
+    <label for="speed" class="eyebrow">Speed</label>
+    <input id="speed" type="range" min="0" max="5" step="0.5" value="1.5" title="Seconds each message is held at the gate (0 = no waiting)">
+    <output id="speedOut" for="speed">1.5 s</output>
+  </div>
+  <div class="grp">
+    <span class="eyebrow">Whose view</span>
+    <div class="seg" role="group" aria-label="Whose view" id="lensBar"></div>
+  </div>
+  <div class="grp" style="margin-left:auto">
+    <button class="btn" type="button" id="bTop" aria-disabled="true" title="Coming later (money creation, ADR 0002)" style="color:var(--violet);border-color:var(--violet-l)"><svg viewBox="0 0 24 24" fill="none" stroke="#6A4C9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20L15 9M14 4v3M19 9h-3M17.5 5.5l-2 2M18 14l.8 1.7 1.7.8-1.7.8L18 19l-.8-1.7-1.7-.8 1.7-.8zM8 3l.6 1.4L10 5l-1.4.6L8 7l-.6-1.4L6 5l1.4-.6z"/></svg>Top up</button>
+    <button class="btn" type="button" id="bSet" aria-expanded="false" aria-controls="pop"><svg viewBox="0 0 24 24" fill="none" stroke="#13202D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</button>
+  </div>
+  <div class="pop" id="pop" hidden>
+    <label for="limit">Holding limit per person (EUR)</label>
+    <div class="row"><input id="limit" inputmode="decimal" placeholder="3000.00" autocomplete="off"><button class="btn small primary" type="button" id="limitGo">Set</button></div>
+    <p id="limitNote">Applies to every bank at once (game master command).</p>
+  </div>
 </div>
 
+<!-- MAP VIEW -->
+<div id="viewMap" class="mainrow">
+  <section class="stagecol">
+    <div class="card stage" id="stage" aria-label="Map of the apps and the message travelling between them">
+      <div class="dots-bg"></div>
+      <svg class="wires" id="wires" aria-hidden="true"></svg>
+
+      <div class="node" id="nDesp" style="left:50%;top:22px;width:330px;border:2px solid var(--blue);padding:14px 16px">
+        <div class="hd">
+          <span class="ic" style="width:36px;height:36px;background:var(--blue-t)"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1D4C99" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/></svg></span>
+          <div><div class="nt" style="font-size:15px">Central platform (DESP)</div><div class="ns" style="font-size:12.5px">Eurosystem · checks and settles</div></div>
+        </div>
+        <div class="ledger" id="ledgerCard"></div>
+      </div>
+
+      <div class="node" id="nPspA" style="left:26%;top:288px;width:200px;border:1.5px solid var(--teal);padding:12px 14px"></div>
+      <div class="node" id="nPspB" style="left:74%;top:288px;width:200px;border:1.5px solid var(--teal);padding:12px 14px"></div>
+      <div class="node" id="nAppA" style="left:11%;top:418px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
+      <div class="node" id="nAppB" style="left:89%;top:418px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
+
+      <div class="pillwrap" id="pillwrap"></div>
+
+      <div class="relaybadge"><svg viewBox="0 0 24 24" fill="none" stroke="#6A4C9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Simulation slows every message down so you can follow it</div>
+    </div>
+
+    <div class="card narr" id="narr" aria-live="polite"></div>
+    <div class="steps" id="steps" role="list" aria-label="Steps"></div>
+  </section>
+
+  <aside class="card inspector" id="inspector" aria-label="Message inspector"></aside>
+  <section class="money" id="moneyRow" style="flex:1 1 100%" aria-label="Money right now"></section>
+</div>
+
+<!-- TIMELINE VIEW -->
+<div id="viewTl" class="tlmain" hidden>
+  <section class="card seq" id="seq" aria-label="Sequence diagram"></section>
+  <aside class="side">
+    <div class="card narrbox" id="narrT" aria-live="polite"></div>
+    <div class="card" id="moneyT"></div>
+    <div class="card" id="lensT"></div>
+  </aside>
+</div>
+
+<p class="foot" id="foot">All people, banks and amounts are fictional. Messages follow the ECB's draft specification v0.91 where it exists; placeholders are marked. Source: <a href="https://github.com/monkey-dos/digital-euro-simulator" target="_blank" rel="noopener">github.com/monkey-dos/digital-euro-simulator</a></p>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<dialog id="dlg" aria-labelledby="dlgT">
+  <div class="dh"><h2 id="dlgT"></h2><button class="btn icon" type="button" id="dlgX" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="#13202D" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="db" id="dlgB"></div>
+</dialog>
+
+<dialog id="dlgC" class="dlgform" aria-labelledby="dlgCT">
+  <form method="dialog" id="cform">
+    <div class="dh"><h2 id="dlgCT">Custom action</h2><button class="btn icon" type="button" id="dlgCX" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="#13202D" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="db">
+      <div class="f"><label for="cAct">Action</label><select id="cAct"><option value="pay">Pay (digital euro to digital euro)</option><option value="fund">Fund (giro account to digital euro)</option><option value="defund">Defund (digital euro to giro account)</option></select></div>
+      <div class="f"><label for="cPer" id="cPerL">Who pays</label><select id="cPer"></select></div>
+      <div class="f" id="cPayeeW"><label for="cPayee">Payee</label><select id="cPayee"></select></div>
+      <div class="f"><label for="cAmt">Amount (EUR)</label><input id="cAmt" inputmode="decimal" value="10.00" autocomplete="off" required></div>
+      <div class="f" id="cTextW"><label for="cText">Payment text (optional)</label><input id="cText" maxlength="60" autocomplete="off" placeholder="Pizza"></div>
+      <div class="err" id="cErr" role="alert"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" type="button" id="cCancel">Cancel</button><button class="btn primary" type="submit" id="cGo">Send</button></div>
+    </div>
+  </form>
+</dialog>
 <script src="scenarios.js"></script>
 <script>
 (function(){
 "use strict";
-var DATA = window.OBSERVER_DATA;
-var ins = document.getElementById("inspector");
-if(!DATA || !DATA.scenarios || !DATA.scenarios.length){
-  ins.innerHTML = '<h2>No scenarios loaded</h2><p class="explain">The file <code>scenarios.js</code> is missing. Run <code>python3 tools/build_observer.py</code> in the repository and reload.</p>';
-  return;
-}
-var TD = DATA.testData;
-var SVGNS = "http://www.w3.org/2000/svg";
+/* ============================================================
+   Banana Ledger control room
+   Two data sources (live relay feed, recorded replay) are turned into one list of
+   "items" (message request/response, ledger booking, giro step, note) plus balance
+   snapshots. Everything below the "normalise" section does not care where data came from.
+   ============================================================ */
 
-/* ---------- stage layout ---------- */
-var NODES = {
-  "Game Master":        {x:30,  y:24,  w:200, h:58,  k:"sim",     t:"Game master",            s:"simulation only"},
-  "DESP":               {x:350, y:18,  w:300, h:168, k:"central", t:"DESP",                   s:"ECB digital euro platform"},
-  "DESP ledger":        {x:372, y:92,  w:256, h:76,  k:"central", t:"Central ledger",         s:"all digital euro live here", inner:true},
-  "PSP A":              {x:50,  y:236, w:270, h:84,  k:"psp",     t:"PSP A",                  s:"retail bank"},
-  "PSP B":              {x:680, y:236, w:270, h:84,  k:"psp",     t:"PSP B",                  s:"bank + merchant acquiring"},
-  "PSP A core banking": {x:50,  y:336, w:270, h:50,  k:"psp",     t:"Giro accounts A",        s:"", inner:true},
-  "PSP B core banking": {x:680, y:336, w:270, h:50,  k:"psp",     t:"Giro accounts B",        s:"", inner:true},
-  "Banking App A":      {x:85,  y:446, w:200, h:66,  k:"front",   t:"Banking App A",          s:"Anna, Clara"},
-  "Banking App B":      {x:715, y:446, w:200, h:66,  k:"front",   t:"Banking App B",          s:"Ben"}
+/* ---------- small helpers ---------- */
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function cap(x){return x?x.charAt(0).toUpperCase()+x.slice(1):x;}
+function dec(x){var n=parseFloat(x);return isFinite(n)?Math.round(n*100):0;}
+function eur(c){var neg=c<0;c=Math.abs(c);return (neg?"−":"")+Math.floor(c/100).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",")+"."+String(c%100).padStart(2,"0");}
+function sgn(c){return (c>0?"+":c<0?"−":"")+eur(Math.abs(c));}
+function safe(fn,fallback){try{return fn();}catch(e){return fallback;}}
+function store(k,v){try{if(v===undefined)return window.localStorage.getItem(k);window.localStorage.setItem(k,v);}catch(e){}return null;}
+var UUID=/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+function pathPattern(p){return String(p||"").split("?")[0].replace(UUID,"*");}
+var reduced=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+var IC={
+  mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="contains a sealed part" role="img"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  lockO:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>',
+  eye:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="readable"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h12M12 6l6 6-6 6"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></svg>',
+  bank:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#0E7566" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M10 21v-4h4v4"/></svg>',
+  phone:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#A85F0A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>',
+  gov:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1D4C99" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 21h18"/></svg>',
+  speech:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>',
+  open:'<svg viewBox="0 0 24 24" fill="none" stroke="#13202D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4H4v16h16v-4M14 4h6v6M10 14L20 4"/></svg>',
+  play:'<svg viewBox="0 0 24 24" fill="#1D4C99" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>',
+  pause:'<svg viewBox="0 0 24 24" fill="#1D4C99" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>',
+  tri:function(dir,color){return '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="'+(dir>0?'M1 1l10 5-10 5z':'M11 1L1 6l10 5z')+'" fill="'+color+'"/></svg>';}
 };
-var WIRES = [["Banking App A","PSP A"],["Banking App B","PSP B"],["PSP A","DESP"],["PSP B","DESP"],["PSP A","PSP A core banking"],["PSP B","PSP B core banking"]];
-var stage = document.getElementById("stage");
-function el(n,a,p){var e=document.createElementNS(SVGNS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
-function center(n){var r=NODES[n];return [r.x+r.w/2,r.y+r.h/2];}
-function edge(n,toward){ // point on the rectangle border of n in the direction of `toward`
-  var r=NODES[n], c=center(n), dx=toward[0]-c[0], dy=toward[1]-c[1];
-  if(!dx&&!dy) return c;
-  var sx=dx?(r.w/2)/Math.abs(dx):Infinity, sy=dy?(r.h/2)/Math.abs(dy):Infinity, s=Math.min(sx,sy);
-  return [c[0]+dx*s, c[1]+dy*s];
+
+/* ---------- global state ---------- */
+var DATA=window.OBSERVER_DATA||null;
+var TD=(DATA&&DATA.testData)||null;
+var S={
+  mode:"init",          // init | live | replay | none
+  base:"",
+  items:[], byId:{},
+  lens:"all", view:"map",
+  sel:null,             // live: reviewed item index (null = follow the live run)
+  rIdx:-1, rSc:0, rPlaying:false, rTransit:false, rTimer:null,   // replay
+  scen:null,            // live: {id,title,steps,used:[],status}
+  result:null,
+  ctrl:{mode:"play",delaySeconds:1.5,waiting:0,next:null},
+  states:[],            // live: [{n, snap}]
+  lastSeq:0, online:false, es:null, retry:0,
+  people:{},            // entry id -> {name, dean, bank, phone}
+  banks:{},             // BIC -> "A"
+  lists:null,           // GET /control/scenarios
+  recent:null,          // {item, until} an inside-the-app step shown on its node
+  appsKnown:null,
+  pill:{id:null,mode:null}, dropped:0
+};
+
+/* ---------- lanes / nodes ---------- */
+function nodeKey(name){
+  var m=/^Banking App ([A-Z])$/.exec(name||""); if(m) return "app"+m[1];
+  m=/^PSP ([A-Z])(?: core banking)?$/.exec(name||""); if(m) return "psp"+m[1];
+  if(/^DESP/.test(name||"")) return "desp";
+  return null;
 }
-var wireEls={};
-WIRES.forEach(function(w){
-  var a=edge(w[0],center(w[1])), b=edge(w[1],center(w[0]));
-  wireEls[w.join("|")]=el("line",{x1:a[0],y1:a[1],x2:b[0],y2:b[1],class:"wire"},stage);
-});
-var nodeEls={};
-Object.keys(NODES).forEach(function(name){
-  var r=NODES[name];
-  var g=el("g",{class:"node k-"+r.k+(r.inner?" inner":"")},stage);
-  el("rect",{x:r.x,y:r.y,width:r.w,height:r.h,rx:7},g);
-  var t=el("text",{class:"t",x:r.x+12,y:r.y+(r.h<60?22:26)},g); t.textContent=r.t;
-  if(r.s){var s=el("text",{class:"s",x:r.x+12,y:r.y+(r.h<60?38:44)},g); s.textContent=r.s;}
-  nodeEls[name]=g;
-});
-var msg=el("g",{class:"msg",visibility:"hidden"},stage);
-el("circle",{r:8},msg);
-var msgLabel=el("text",{x:12,y:-10},msg);
+var LANES=["appA","pspA","desp","pspB","appB"];
+function bankOf(name){var m=/(?:PSP|Banking App) ([A-Z])/.exec(name||"");return m?m[1]:null;}
 
-/* ---------- state ---------- */
-var S={sc:0,idx:-1,playing:false,lens:"all",timer:null,anim:null};
-function sc(){return DATA.scenarios[S.sc];}
-function userByEntry(id){for(var k in TD.users){if(TD.users[k].entry===id)return k;}return null;}
-function userByName(n){for(var k in TD.users){if(TD.users[k].name===n)return k;}return null;}
-function dec(x){return Math.round(parseFloat(x)*100);} // cents
-function eur(c){var neg=c<0;c=Math.abs(c);var s=(Math.floor(c/100)).toString().replace(/\B(?=(\d{3})+(?!\d))/g,",")+"."+String(c%100).padStart(2,"0");return (neg?"−":"")+s;}
+/* ---------- people (names for entries / DEANs / phone numbers) ---------- */
+function learnPerson(p){
+  if(!p||typeof p.name!=="string"||!p.name) return;
+  [p.entry,p.dean,p.phone,p.name].forEach(function(k){if(k) S.people[k]=p;});
+}
+function person(key){return key?S.people[key]||null:null;}
+if(TD&&TD.users){Object.keys(TD.users).forEach(function(k){var u=TD.users[k];learnPerson({name:u.name,bank:u.bank,dean:u.dean,entry:u.entry,phone:u.phone});});}
+function first(p){return p&&p.name?String(p.name).split(" ")[0]:"someone";}
+function pname(p,lens,short){
+  if(!p) return "someone";
+  var n=short?first(p):p.name;
+  if(lens==="all") return n;
+  if((lens==="A"||lens==="B")&&p.bank===lens) return n;
+  return "a customer of PSP "+p.bank;
+}
+function anon(text,lens){
+  if(lens==="all"||!text) return text;
+  var seen={},out=text;
+  Object.keys(S.people).forEach(function(k){
+    var p=S.people[k]; if(!p||seen[p.name]) return; seen[p.name]=1;
+    if((lens==="A"||lens==="B")&&p.bank===lens) return;
+    var repl="a customer of PSP "+p.bank, parts=p.name.split(" ");
+    out=out.split(p.name).join(repl).replace(new RegExp("\\b"+first(p)+"(?:'s)?\\b","g"),function(m){return /'s$/.test(m)?"the customer's":"the customer";});
+    if(parts.length>1&&parts[parts.length-1].length>2) out=out.split(parts[parts.length-1]).join("");
+  });
+  return (text.charAt(0)!==out.charAt(0)&&/[A-Z]/.test(text.charAt(0)))?cap(out):out;
+}
 
-function initialState(){
+/* ---------- SIMENC ---------- */
+function decodeSimenc(s){
+  try{
+    var b=String(s).replace(/^SIMENC:/,"").replace(/-/g,"+").replace(/_/g,"/").replace(/\s+/g,"");
+    while(b.length%4) b+="=";
+    var bin=atob(b), bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+    var txt=(typeof TextDecoder!=="undefined")?new TextDecoder("utf-8").decode(bytes):decodeURIComponent(escape(bin));
+    return JSON.parse(txt);
+  }catch(e){return null;}
+}
+function findSealed(v,path,out){
+  out=out||[]; path=path||"";
+  if(typeof v==="string"){ if(v.indexOf("SIMENC:")===0) out.push({path:path,value:v,decoded:decodeSimenc(v)}); }
+  else if(Array.isArray(v)){v.forEach(function(x,i){findSealed(x,path+"["+i+"]",out);});}
+  else if(v&&typeof v==="object"){Object.keys(v).forEach(function(k){findSealed(v[k],path?path+"."+k:k,out);});}
+  return out;
+}
+function sealedOf(item){
+  if(item._sealed===undefined){
+    var s=safe(function(){return findSealed(item.body);},[]);
+    if(item.decryptedView&&item.decryptedView.content&&s.length&&!s[0].decoded) s[0].decoded=item.decryptedView.content;
+    item._sealed=s;
+  }
+  return item._sealed;
+}
+function findAmount(v){
+  if(!v||typeof v!=="object") return null;
+  if(v.amount!=null&&v.currency&&typeof v.amount!=="object") return String(v.amount);
+  var ks=Object.keys(v);
+  for(var i=0;i<ks.length;i++){var r=findAmount(v[ks[i]]);if(r) return r;}
+  return null;
+}
+function amountOf(item){
+  var b=item.body; if(!b||typeof b!=="object") return null;
+  if(b.Amount!=null&&isFinite(b.Amount)) return Number(b.Amount).toFixed(2);
+  return findAmount(b);
+}
+
+/* ============================================================
+   NORMALISE
+   ============================================================ */
+function kindOfExample(st){
+  var h=st.http||{};
+  if(h.method) return "request";
+  if(h.status) return "response";
+  if(/DESP ledger$/.test(st.to||"")) return "ledger";
+  if(/core banking$/.test(st.to||"")) return "giro";
+  return "note";
+}
+function isMsg(it){return it.kind==="request"||it.kind==="response";}
+function fromExample(st,i){
+  var h=st.http||{};
+  return {key:"r"+i,live:false,kind:kindOfExample(st),from:st.from,to:st.to,iface:st.interface||"",method:h.method||null,path:h.path||null,
+    status:h.status||null,headers:h.headers||{},body:st.body===undefined?null:st.body,title:st.title,explanation:st.explanation,
+    specRef:st.specRef,placeholder:!!st.placeholder,schema:st.schema,decryptedView:st.decryptedView,matched:true,released:true,waiting:false,standIn:false};
+}
+function fromMessage(e){
+  return {key:e.id,id:e.id,seq:e.seq,live:true,kind:e.kind==="response"?"response":"request",from:e.from,to:e.to,fromId:e.fromId,toId:e.toId,
+    iface:e.interface||"",method:e.method||null,path:e.path||null,status:e.status||null,headers:e.headers||{},body:e.body===undefined?null:e.body,
+    inReplyTo:e.inReplyTo,standIn:!!e.standIn,released:false,waiting:true,time:e.time};
+}
+function fromInternal(e){
+  var k=e.kind==="ledger"||e.kind==="giro"?e.kind:"note";
+  return {key:"i"+e.seq,seq:e.seq,live:true,kind:k,from:e.from||e.app,to:e.to||e.app,iface:e.interface||"",body:e.body===undefined?null:e.body,
+    note:e.note,app:e.app,headers:{},released:true,waiting:false,standIn:false,time:e.time};
+}
+
+/* match a live item to the next unused step of the running example */
+function giroClass(s){ // release / debit / credit win over block ("debit blocked amount" is a debit)
+  s=String(s||"").toLowerCase();
+  if(/release|unblock/.test(s)) return "release";
+  if(/debit/.test(s)) return "debit";
+  if(/credit/.test(s)) return "credit";
+  if(/block/.test(s)) return "block";
+  return null;
+}
+function matchExample(it){
+  var sc=S.scen; if(!sc||!sc.steps||!sc.steps.length) return;
+  for(var i=0;i<sc.steps.length;i++){
+    if(sc.used[i]) continue;
+    var st=sc.steps[i], ok=false;
+    if(isMsg(it)){
+      if(st.from!==it.from||st.to!==it.to) continue;
+      if(it.kind==="request") ok=!!st.method&&st.method===it.method&&pathPattern(st.path)===pathPattern(it.path);
+      else ok=!st.method&&st.status!=null&&st.status===it.status;
+    }else{
+      var ek=kindOfExample({to:st.to,http:st.method||st.status?{method:st.method,status:st.status}:null});
+      if(ek!==it.kind) continue;
+      ok=st.from===it.from&&st.to===it.to;
+      if(ok&&it.kind==="giro"&&it.body&&st.title&&it.body.action){ // same kind of giro step (block / debit / credit)
+        var ac=giroClass(it.body.action), tc=giroClass(st.title);
+        if(ac&&tc&&ac!==tc) ok=false;
+      }
+    }
+    if(ok){
+      sc.used[i]=true;
+      it.matched=true; it.title=st.title; it.explanation=st.explanation; it.specRef=st.specRef; it.placeholder=!!st.placeholder; it.exStep=st.step;
+      return;
+    }
+  }
+}
+
+/* ============================================================
+   NARRATION (plain English; example text when matched, otherwise generated)
+   ============================================================ */
+function statusWord(s){
+  s=String(s||"");
+  if(/SettlementCompleted/i.test(s)) return "settled";
+  if(/TechnicalValidation/i.test(s)) return "received and technically valid";
+  if(/^Rejected|Rejected/i.test(s)) return "rejected";
+  if(/^Accepted/i.test(s)) return "accepted";
+  return s.replace(/([a-z])([A-Z])/g,"$1 $2").toLowerCase();
+}
+var REASONS={
+  XFMT:"message format error",XHDR:"technical header missing or invalid",XAUT:"no logged-in user",XACC:"account unknown or not at this bank (or ledger entry unknown / held via another bank)",
+  XBAL:"insufficient funds",XLIM:"holding limit would be exceeded",XNSU:"not supported in this simulation",XALI:"alias not registered",
+  XNET:"central platform not reachable",XTMO:"no final status in time",XINT:"internal error",
+  XDCA:"not enough central bank money on the bank's DCA",XFWD:"invalid answer from the other bank",XDUP:"UETR already used",
+  AB03:"no answer from the other bank in time (settlement timeout)",D005:"bank is not a participant",
+  AC05:"account closed or unknown (ECB code)",AC06:"account blocked (ECB code)"};
+function reasonText(code){return code?(REASONS[code]?code+" – "+REASONS[code]:String(code)):"";}
+function bankName(bic){var l=S.banks[bic]; if(!l&&TD&&TD.banks){Object.keys(TD.banks).forEach(function(k){if(TD.banks[k].bic===bic) l=k;});} return l?"PSP "+l:(bic||"a bank");}
+
+function payerOf(it){
+  var b=it.body||{}, h=it.headers||{};
+  return person(h["Sim-User-DEAN"])||person(b.DigitalEuroAccountNumber)||person(b.DebtorAccount)||person(b.CreditorAccount);
+}
+function bookingList(it,lens,short){
+  var bk=it.body&&it.body.bookings; if(!Array.isArray(bk)) return "";
+  return bk.map(function(x){
+    var m=/^DCA of PSP (\w+)$/.exec(x.entry||"");
+    var who=m?(short?"DCA PSP "+m[1]:"PSP "+m[1]+"'s central bank account (DCA)"):(lens==="desp"?(x.entry||"an entry"):pname(person(x.entry),lens,true));
+    return who+" "+String(x.change||"").replace(/-/g,"\u2212");
+  }).join(", ");
+}
+function gen(it,lens){
+  var b=it.body, p=it.path||"", from=it.from, to=it.to, amt=amountOf(it);
+  var e=amt?amt+" €":"";
+  if(it.kind==="ledger"){
+    return {head:"The central ledger books the change: "+bookingList(it,lens)+".",text:"One atomic booking: either everything is booked or nothing. No money travels between the banks – their digital euro already live on the same ledger."};
+  }
+  if(it.kind==="giro"){
+    var a=(b&&b.action)||"", acc=String((b&&b.account)||"").replace(/^giro of /,""), pp=person(acc), who=pname(pp,lens,true), g=e||"the amount";
+    var h2={block:from+" blocks "+g+" on "+who+"'s giro account.","debit blocked amount":from+" takes the blocked "+g+" off "+who+"'s giro account.",credit:from+" credits "+g+" to "+who+"'s giro account.",debit:from+" debits "+g+" from "+who+"'s giro account."};
+    return {head:h2[a]||(from+" does a giro step ("+a+")."),text:"This happens inside the bank's own core banking system – no message goes out. Giro money is ordinary bank money; digital euro live on the central ledger."};
+  }
+  if(it.kind==="note"){
+    var t=it.note||"The app logged a note.", m=/(X[A-Z]{3})/.exec(t);
+    return {head:anon(cap(t),lens),text:m&&REASONS[m[1]]?"Reason: "+reasonText(m[1])+". The bank stops here and tells the banking app.":"An inside-the-app note. No message was sent."};
+  }
+  if(it.kind==="request"){
+    if(it.iface==="I1"&&/^\/i1\//.test(p)){
+      var tt=b&&b.TransactionType, pay=payerOf(it), pn=pname(pay,lens,true), bn=to;
+      if(tt==="FU01") return {head:pn+" asks "+bn+" to move "+e+" from the giro account into digital euro.",text:"The banking app sends a funding request to the bank over interface I1. The bank blocks the money on the giro account, then asks the central platform to credit digital euro."};
+      if(tt==="DF01") return {head:pn+" asks "+bn+" to move "+e+" of digital euro back to the giro account.",text:"The banking app sends a defunding request to the bank over interface I1. The central platform takes the digital euro back and the bank credits the giro account."};
+      var payee=person(b&&b.ProxyAccount)||person(b&&b.Name);
+      return {head:pn+" asks "+bn+" to pay "+(payee?pname(payee,lens,true):(b&&b.Name&&lens==="all"?b.Name:"someone"))+" "+e+".",text:"The banking app sends the payment request to the bank (interface I1). The bank now has to find out who the payee is and ask the central platform to settle the payment."};
+    }
+    if(/alias-lookup/.test(p)) return {head:from+" asks the central platform which bank serves "+((b&&b.proxyAlias)||"that alias")+".",text:"The alias lookup returns the payee's account number and bank – not the name."};
+    if(/\/status$/.test(p)){
+      var sw=statusWord(safe(function(){return (b.paymentTransactionStatus||b.fundingTransactionStatus||b.defundingTransactionStatus).status;},""));
+      return {head:"The central platform tells "+to+" the final status: "+(sw||"update")+".",text:"The platform informs both banks once the booking is done, so each one can update its customer."};
+    }
+    if(/\/v1\/payment-instructions$/.test(p)){
+      if(/^DESP/.test(to)) return {head:from+" hands the payment instruction to the central platform"+(e?" ("+e+")":"")+".",text:"The platform can read the amount and the two banks. Names, account numbers and the payment text travel sealed for the banks only."};
+      return {head:"The central platform forwards the payment"+(e?" ("+e+")":"")+" to "+to+".",text:"It reads the amount and the banks, not the sealed part. "+to+" checks that the payee is allowed to receive it and answers."};
+    }
+    if(/\/v1\/fundings/.test(p)) return {head:from+" sends the funding instruction to the central platform"+(e?" ("+e+")":"")+".",text:"The platform will credit digital euro and take the same amount from the bank's central bank account (DCA)."};
+    if(/\/v1\/defundings/.test(p)) return {head:from+" sends the defunding instruction to the central platform"+(e?" ("+e+")":"")+".",text:"The platform will take digital euro back and credit the bank's central bank account (DCA)."};
+    return {head:from+" sends "+(it.method||"a request")+" "+p+" to "+to+".",text:"Interface "+(it.iface||"unknown")+"."};
+  }
+  // response
+  var st=it.status, bd=b||{};
+  if(it.iface==="I1"&&/^\/i1\//.test(p)){
+    if(bd.ReturnCode===0||(bd.ReturnCode==null&&st<300)) return {head:from+" tells the banking app: done.",text:"The app can now show the new balances."};
+    return {head:from+" tells the banking app it did not work"+(bd.StatusReason?" ("+reasonText(bd.StatusReason)+")":"")+".",text:"Nothing was booked. The reason code is part of the answer."};
+  }
+  if(/alias-lookup/.test(p)&&st<300) return {head:"The central platform answers: that alias is served by "+bankName(bd.digitalEuroPspId)+".",text:"Now the payer's bank knows where to send the payment instruction."};
+  if(st>=400) return {head:from+" rejects it (HTTP "+st+(bd.reasonCode?", "+bd.reasonCode:"")+").",text:bd.detail||bd.title||"The request was not accepted."};
+  var sw2=statusWord(safe(function(){return (bd.paymentTransactionStatus||bd.fundingTransactionStatus||bd.defundingTransactionStatus).status;},""));
+  if(st===204) return {head:from+" confirms: status received.",text:"Nothing more to say – HTTP 204 has no body."};
+  return {head:from+" answers "+to+(sw2?": "+sw2:" ("+st+")")+".",text:"HTTP "+st+"."};
+}
+function dispNameSafe(n){return n==="DESP"?"Central platform":String(n==null?"?":n);}
+function narrate(it,lens){
+  var g=safe(function(){return gen(it,lens);},{head:dispNameSafe(it.from)+" \u2192 "+dispNameSafe(it.to),text:""}), head=g.head, text=g.text;
+  if(it.matched&&it.title){head=it.title; text=it.explanation||g.text;}
+  return {head:anon(head,lens),text:anon(text,lens)};
+}
+function shortLabel(it){
+  var p=it.path||"", b=it.body||{}, tt=b.TransactionType;
+  if(it.kind==="ledger") return "settlement";
+  if(it.kind==="giro") return (b.action||"giro step");
+  if(it.kind==="note") return "note";
+  if(/^\/i1\//.test(p)){
+    if(it.kind==="request") return tt==="FU01"?"funding request":tt==="DF01"?"defunding request":"payment request";
+    return b.ReturnCode===0?"done":"rejected"+(b.StatusReason?" "+b.StatusReason:"");
+  }
+  if(/alias-lookup/.test(p)) return it.kind==="request"?"alias lookup":"bank found";
+  if(/\/status$/.test(p)){ if(it.kind==="request") return "status: "+(statusWord(safe(function(){return (b.paymentTransactionStatus||b.fundingTransactionStatus||b.defundingTransactionStatus).status;},""))||"update"); return it.status+" · got it"; }
+  if(/payment-instructions/.test(p)) return it.kind==="request"?"payment instruction":it.status+" · "+(it.status<300?"accepted":"rejected");
+  if(/fundings/.test(p)) return it.kind==="request"?(/defundings/.test(p)?"defunding":"funding"):it.status+" · "+(it.status<300?"accepted":"rejected");
+  var t=it.kind==="request"?((it.method||"")+" "+p.split("/").pop()).trim():String(it.status||"");
+  return t||(it.kind==="request"?"request":"response");
+}
+function lensLabel(it,lens){ return anon(safe(function(){return chipLabel(it);},"step"),lens); }
+function chipLabel(it){ // short human text for the step chips / timeline rows
+  var n=narrate(it,"all"); var t=it.matched&&it.title?it.title:null;
+  if(t) return t;
+  return shortLabel(it).replace(/^./,function(c){return c.toUpperCase();});
+}
+
+/* ============================================================
+   VISIBILITY LENSES (ported from the earlier observer)
+   ============================================================ */
+function sees(it,lens){
+  if(lens==="all") return true;
+  if(lens==="public") return false;
+  var p=[it.from,it.to];
+  if(lens==="desp") return p.some(function(x){return /^DESP/.test(x||"");});
+  return p.some(function(x){return x==="PSP "+lens||x==="Banking App "+lens||x==="PSP "+lens+" core banking";})||it.from==="Game Master";
+}
+function canOpen(it,lens){
+  if(!sealedOf(it).some(function(s){return s.decoded;})) return false;
+  if(lens==="all") return true;
+  if(lens==="A"||lens==="B") return it.from==="PSP "+lens||it.to==="PSP "+lens;
+  return false;
+}
+var LENS_NAME={all:"the game master",desp:"the central platform",A:"PSP A",B:"PSP B","public":"the public"};
+var LENS_LABEL=[["all","Everything"],["desp","Central platform"],["A","PSP A"],["B","PSP B"],["public","Public"]];
+
+/* ============================================================
+   BALANCE SNAPSHOTS
+   snap = {people:[{name,bank,dean,entry,de,giro,blocked}], dca:{A:cents}, entries:[{entry,bank,bal}], circ, limit, check:{ok,text}, settled, banks:[]}
+   ============================================================ */
+function snapFromApps(apps,prev){
+  var people=[],dca={},entries=[],banks=[],limit=null;
+  Object.keys(apps||{}).forEach(function(slug){
+    var a=apps[slug], m=/^psp-(\w+)$/.exec(slug); if(!a||!m) return;
+    var L=m[1].toUpperCase(); S.banks[a.bic]=L; banks.push(L);
+    if(a.holdingLimit!=null) limit=dec(a.holdingLimit);
+    (a.customers||[]).forEach(function(c){
+      var p={name:(typeof c.name==="string"&&c.name)?c.name:"Customer",bank:L,dean:c.DEAN,entry:c.entryId,phone:c.phone,de:dec(c.digitalEuro),giro:dec(c.giro),blocked:dec(c.giroBlocked)};
+      learnPerson(p); people.push(p);
+    });
+  });
+  if(prev){ // an app that did not answer keeps its last known people
+    prev.banks.forEach(function(L){ if(banks.indexOf(L)<0){banks.push(L); prev.people.forEach(function(p){if(p.bank===L) people.push(p);});} });
+    if(limit==null) limit=prev.limit;
+  }
+  var d=apps&&apps.desp, check=null, circ=0;
+  if(d){
+    (d.entries||[]).forEach(function(en){entries.push({entry:en.entryId,bank:S.banks[en.heldVia]||"?",bal:dec(en.balance)});circ+=dec(en.balance);});
+    Object.keys(d.dcaBalances||{}).forEach(function(bic){dca[S.banks[bic]||bic]=dec(d.dcaBalances[bic]);});
+    var mc=d.moneyCheck; if(mc){check={ok:!!mc.ok,text:mc.rule||"digital euro in circulation = opening balances + net DCA debits"}; if(mc.digitalEuroInCirculation!=null) circ=dec(mc.digitalEuroInCirculation);}
+  }else if(prev){entries=prev.entries;dca=prev.dca;circ=prev.circ;check=prev.check;}
+  banks.sort();
+  return {people:people,dca:dca,entries:entries,circ:circ,limit:limit,check:check,banks:banks,created:0};
+}
+/* replay: rebuild balances from the recorded steps */
+function replayInit(){
   var st={users:{},dca:{},limit:dec(TD.holdingLimit),settled:0,created:0};
   Object.keys(TD.users).forEach(function(k){var u=TD.users[k];st.users[k]={de:dec(u.balance),giro:dec(u.giro),blocked:0};});
   Object.keys(TD.dcaBalances).forEach(function(b){st.dca[b]=dec(TD.dcaBalances[b]);});
   return st;
 }
-function apply(st,step){
-  var b=step.body||{};
-  if(step.to==="DESP ledger" && b.bookings){
+function userBy(field,val){for(var k in TD.users){if(TD.users[k][field]===val)return k;}return null;}
+function replayApply(st,it){
+  var b=it.body||{};
+  if(it.kind==="ledger"&&b.bookings){
     st.settled++;
     b.bookings.forEach(function(bk){
       var m=/^DCA of PSP (\w+)$/.exec(bk.entry);
       if(m){st.dca[m[1]]=dec(bk.after);return;}
-      var u=userByEntry(bk.entry); if(u) st.users[u].de=dec(bk.after);
+      var u=userBy("entry",bk.entry); if(u) st.users[u].de=dec(bk.after);
     });
-  } else if(/core banking$/.test(step.to) && b.action){
-    var u=userByName((b.account||"").replace(/^giro of /,"")), a=dec(b.amount.amount);
-    if(!u) return;
-    var x=st.users[u];
-    if(b.action==="block"){x.blocked+=a;}
+  }else if(it.kind==="giro"&&b.action){
+    var u=userBy("name",(b.account||"").replace(/^giro of /,"")); if(!u||!b.amount) return;
+    var a=dec(b.amount.amount), x=st.users[u];
+    if(b.action==="block") x.blocked+=a;
     else if(b.action==="debit blocked amount"){x.giro-=a;x.blocked-=a;}
-    else if(b.action==="credit"){x.giro+=a;}
-    else if(b.action==="debit"){x.giro-=a;}
-  } else if(step.from==="Game Master" && b.command==="SET_HOLDING_LIMIT"){
-    st.limit=dec(b.amount.amount);
-  }
+    else if(b.action==="credit") x.giro+=a;
+    else if(b.action==="debit") x.giro-=a;
+  }else if(it.from==="Game Master"&&b.command==="SET_HOLDING_LIMIT"){st.limit=dec(b.amount.amount);}
 }
-function stateAt(i){var st=initialState();for(var j=0;j<=i;j++)apply(st,sc().steps[j]);return st;}
+function replaySnap(i){
+  var st=replayInit(); for(var j=0;j<=i&&j<S.items.length;j++) replayApply(st,S.items[j]);
+  var snap={people:[],dca:st.dca,entries:[],circ:0,limit:st.limit,banks:Object.keys(st.dca).sort(),created:st.created,settled:st.settled};
+  Object.keys(TD.users).forEach(function(k){var u=TD.users[k],x=st.users[k];
+    snap.people.push({name:u.name,bank:u.bank,dean:u.dean,entry:u.entry,de:x.de,giro:x.giro,blocked:x.blocked});
+    snap.entries.push({entry:u.entry,bank:u.bank,bal:x.de}); snap.circ+=x.de;});
+  var st0=replayInit(), circ0=0, dca0=0, dcaN=0;
+  Object.keys(st0.users).forEach(function(k){circ0+=st0.users[k].de;});
+  Object.keys(st0.dca).forEach(function(b){dca0+=st0.dca[b];dcaN+=st.dca[b];});
+  var issued=snap.circ-circ0, paid=dca0-dcaN, ok=issued===paid+st.created;
+  snap.check={ok:ok,text:"Digital euro in circulation changed by "+sgn(issued)+" €, the banks' DCAs by "+sgn(-paid)+" €"};
+  return snap;
+}
+/* the snapshot for the displayed item */
+function snapFor(i){
+  if(S.mode==="replay") return replaySnap(i);
+  var last=null;
+  if(S.sel==null||i>=S.items.length-1){ last=S.states.length?S.states[S.states.length-1]:null; }
+  else { for(var k=0;k<S.states.length;k++){ if(S.states[k].n<=i+1) last=S.states[k]; } if(!last&&S.states.length) last=S.states[0]; }
+  if(!last) return null;
+  var s=last.snap, n=0; for(var j=0;j<=Math.min(i,S.items.length-1);j++){ if(S.items[j]&&S.items[j].kind==="ledger") n++; }
+  s.settled=n; return s;
+}
+function prevSnapFor(i){
+  if(S.mode==="replay") return i>=0?replaySnap(i-1):null;
+  var cur=snapFor(i); if(!cur) return null;
+  var idx=-1; for(var k=0;k<S.states.length;k++){ if(S.states[k].snap===cur) idx=k; }
+  return idx>0?S.states[idx-1].snap:null;
+}
 
-/* ---------- lenses ---------- */
-function parties(step){return [step.from,step.to];}
-function seesStep(step,lens){
-  if(lens==="all") return true;
-  if(lens==="public") return false;
-  var p=parties(step);
-  if(lens==="desp") return p.some(function(x){return /^DESP/.test(x);});
-  return p.some(function(x){return x==="PSP "+lens||x==="Banking App "+lens||x==="PSP "+lens+" core banking";}) || (step.from==="Game Master");
+/* ============================================================
+   LIVE CONNECTION (relay: I6 feed, I7 commands)
+   ============================================================ */
+function fetchJSON(url,opts,ms){
+  return new Promise(function(resolve,reject){
+    var done=false, ctl=(typeof AbortController!=="undefined")?new AbortController():null, t=null;
+    if(ctl){opts=Object.assign({},opts||{},{signal:ctl.signal}); t=setTimeout(function(){if(!done){done=true;try{ctl.abort();}catch(e){} reject(new Error("timeout"));}},ms||4000);}
+    fetch(url,opts).then(function(r){return r.text().then(function(txt){
+      if(done) return; done=true; clearTimeout(t);
+      var data=null; try{data=txt?JSON.parse(txt):null;}catch(e){}
+      resolve({status:r.status,ok:r.ok,data:data});
+    });}).catch(function(e){if(done)return;done=true;clearTimeout(t);reject(e);});
+  });
 }
-function canDecrypt(step,lens){
-  if(!step.decryptedView) return false;
-  if(lens==="all") return true;
-  if(lens==="A"||lens==="B") return step.from==="PSP "+lens||step.to==="PSP "+lens;
-  return false;
+function resetLive(){
+  S.items=[];S.byId={};S.states=[];S.scen=null;S.result=null;S.sel=null;S.recent=null;S.lastSeq=0;S.dropped=0;
+  S.ctrl={mode:S.ctrl.mode,delaySeconds:S.ctrl.delaySeconds,waiting:0,next:null};
 }
-var LENS_NAME={all:"the game master",desp:"the central platform",A:"PSP A",B:"PSP B",public:"the public"};
-function cap(x){return x.charAt(0).toUpperCase()+x.slice(1);}
+var MAXKEEP=300;
+function trimItems(){ // traffic without scenario events would grow forever: keep the last MAXKEEP steps
+  var over=S.items.length-MAXKEEP; if(over<=0) return;
+  var gone=S.items.splice(0,over); S.dropped+=over;
+  gone.forEach(function(g){ if(g.id) delete S.byId[g.id]; });
+  S.states.forEach(function(st){st.n=Math.max(0,st.n-over);});
+  if(S.sel!=null){ S.sel-=over; if(S.sel<0) S.sel=null; }
+  S.recent=S.recent&&S.items.indexOf(S.recent.item)>=0?S.recent:null;
+}
+function handleEvent(e,quiet){
+  if(!e||typeof e!=="object"||!e.type) return;
+  if(typeof e.seq==="number"){ if(e.seq<=S.lastSeq&&e.type!=="state") return; if(e.seq>S.lastSeq) S.lastSeq=e.seq; }
+  try{
+  switch(e.type){
+    case "reset":
+      S.items=[];S.byId={};S.scen=null;S.result=null;S.sel=null;S.recent=null;S.states=[];S.dropped=0;
+      if(!quiet) toast("Everything is back at the test data.","ok");
+      break;
+    case "message":{
+      if(!e.id||S.byId[e.id]) break;
+      var it=fromMessage(e); matchExample(it); S.items.push(it); S.byId[it.id]=it; trimItems();
+      break;}
+    case "released":{
+      var r=S.byId[e.id]; if(r){r.released=true;r.waiting=false;}
+      if(S.recent&&!quiet){var rc=S.recent; setTimeout(function(){if(S.recent===rc){S.recent=null;scheduleRender();}},S.ctrl.delaySeconds<0.6?1100:0);}
+      break;}
+    case "internal":{
+      var ii=fromInternal(e); matchExample(ii); S.items.push(ii); trimItems();
+      if(!quiet) S.recent={item:ii};
+      break;}
+    case "state":{
+      var prev=S.states.length?S.states[S.states.length-1].snap:null;
+      S.states.push({n:S.items.length,snap:snapFromApps(e.apps,prev),apps:e.apps});
+      if(S.states.length>400) S.states.shift();
+      break;}
+    case "control":
+      S.ctrl={mode:e.mode||S.ctrl.mode,delaySeconds:typeof e.delaySeconds==="number"?e.delaySeconds:S.ctrl.delaySeconds,waiting:e.waiting||0,next:e.next||null};
+      if(e.gameMaster&&!quiet) toast(e.gameMaster,"ok");
+      break;
+    case "scenario":
+      if(e.status==="started"){
+        S.scen={id:e.id,title:e.title,steps:Array.isArray(e.steps)?e.steps:[],used:[],status:"started"}; S.result=null;
+        if(!S.items.some(function(x){return x.live&&isMsg(x)&&!x.released;})){ // every run starts a fresh timeline (unless a message is still waiting)
+          S.items=[]; S.byId={}; S.sel=null; S.recent=null; S.dropped=0; S.states.forEach(function(st){st.n=0;});
+        }
+      }else if(e.status==="finished"||e.status==="failed"){
+        var ok=e.status==="finished"&&e.ok, ans=e.answer||{}, code=ans.StatusReason||(ans.ReturnCode?("return code "+ans.ReturnCode):"");
+        var text=e.status==="failed"?("Failed: "+(e.error||"unknown error")):ok?"Done – the bank answered ok.":("Rejected – "+(reasonText(ans.StatusReason)||code||"the bank said no")+".");
+        S.result={ok:ok,text:text,title:e.title};
+        if(S.scen) S.scen.status="finished";
+        if(!quiet) toast((e.title?e.title+": ":"")+text,ok?"ok":"bad");
+      }
+      break;
+    case "error":
+      if(!quiet) toast(e.text||"The relay reported an error.","bad");
+      break;
+    default: break; // unknown event types are ignored
+  }
+  }catch(err){ if(window.console) console.warn("event skipped",e&&e.type,err); }
+}
+
+var retryTimer=null;
+function loadHistory(){
+  return fetchJSON(S.base+"/control/history?since=0",null,5000).then(function(r){
+    if(!r.ok||!r.data||!Array.isArray(r.data.events)) throw new Error("no history");
+    resetLive();
+    r.data.events.forEach(function(e){handleEvent(e,true);});
+    if(r.data.control){var c=r.data.control; S.ctrl={mode:c.mode||"play",delaySeconds:typeof c.delaySeconds==="number"?c.delaySeconds:1.5,waiting:c.waiting||0,next:c.next||null};}
+    if(!S.states.length) return fetchJSON(S.base+"/control/state",null,5000).then(function(s){if(s.ok&&s.data&&s.data.apps) handleEvent(Object.assign({},s.data,{seq:0}),true);}).catch(function(){});
+  });
+}
+function openStream(){
+  try{ if(S.es) S.es.close(); }catch(e){}
+  var es;
+  try{ es=new EventSource(S.base+"/control/events?since="+S.lastSeq); }catch(e){ scheduleRetry(); return; }
+  S.es=es;
+  es.onopen=function(){S.online=true;S.retry=0;scheduleRender();};
+  es.onmessage=function(m){var e=null; try{e=JSON.parse(m.data);}catch(x){return;} handleEvent(e,false); scheduleRender();};
+  es.onerror=function(){ try{es.close();}catch(e){} if(S.es===es){S.es=null;} S.online=false; scheduleRender(); scheduleRetry(); };
+}
+function scheduleRetry(){
+  clearTimeout(retryTimer); S.retry++;
+  retryTimer=setTimeout(function(){
+    loadHistory().then(function(){S.online=true;openStream();scheduleRender();}).catch(function(){scheduleRetry();});
+  },Math.min(1000*S.retry,5000));
+}
+
+/* ---------- commands (I7) ---------- */
+function friendly(path,status,text){
+  var t=String(text||"");
+  if(status===409){
+    if(/reset/.test(path)) return "Messages are still waiting or a scenario is running \u2013 let them through (Play or Step) first, then reset."+(t?" ("+t+")":"");
+    return "A scenario is still running \u2013 let it finish first."+(t&&!/scenario/i.test(t)?" ("+t+")":"");
+  }
+  return t||("The relay answered "+status+".");
+}
+function post(path,body,quiet){
+  return fetchJSON(S.base+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})},8000).then(function(r){
+    var d=r.data||{};
+    if(!r.ok||d.ok===false){ var msg=friendly(path,r.status,d.error); if(!quiet) toast(msg,"bad"); return {ok:false,error:msg,data:d}; }
+    return {ok:true,data:d};
+  }).catch(function(){ toast("The relay is not reachable.","bad"); return {ok:false,error:"unreachable"}; });
+}
+function toast(text,kind){
+  try{
+    var box=$("toasts"), d=document.createElement("div"); d.className="toast "+(kind||""); d.textContent=anon(String(text),S.lens); box.appendChild(d);
+    while(box.children.length>4) box.removeChild(box.firstChild);
+    setTimeout(function(){if(d.parentNode) d.parentNode.removeChild(d);},kind==="bad"?7000:4500);
+  }catch(e){}
+}
+
+/* ============================================================
+   VIEW MODEL: which item is shown, rows for chips / timeline
+   ============================================================ */
+function followIdx(){
+  if(S.ctrl.waiting>0&&S.ctrl.next&&S.byId[S.ctrl.next]) return S.items.indexOf(S.byId[S.ctrl.next]);
+  return S.items.length-1;
+}
+function curIdx(){
+  if(S.mode==="replay") return S.rIdx;
+  if(S.sel!=null) return Math.max(-1,Math.min(S.sel,S.items.length-1));
+  return followIdx();
+}
+function virtualItem(st){
+  var k=kindOfExample({to:st.to,http:st.method||st.status?{method:st.method,status:st.status}:null});
+  return {key:"v"+st.step,kind:k,from:st.from,to:st.to,iface:st.interface||"",method:st.method||null,path:st.path||null,status:st.status||null,headers:{},body:null,
+    title:st.title,explanation:st.explanation,specRef:st.specRef,placeholder:!!st.placeholder,matched:true,released:false,waiting:false,future:true};
+}
+function upcoming(){
+  if(S.mode!=="live"||!S.scen||S.scen.status!=="started") return [];
+  var out=[]; S.scen.steps.forEach(function(st,i){ if(!S.scen.used[i]) out.push(virtualItem(st)); });
+  return out;
+}
+function rows(){
+  var cur=curIdx(), out=[];
+  S.items.forEach(function(it,i){
+    var status;
+    if(S.mode==="replay") status=i<cur?"done":i===cur?"now":"future";
+    else status=i===cur?"now":(it.live&&isMsg(it)&&!it.released)?"wait":"done";
+    out.push({it:it,i:i,status:status});
+  });
+  upcoming().forEach(function(v,k){out.push({it:v,i:S.items.length+k,status:"future"});});
+  return out;
+}
+function totalSteps(){return S.items.length+upcoming().length;}
+function dispName(n){return n==="DESP"?"Central platform":n==="DESP ledger"?"Central ledger":n;}
+function ifaceChip(i){
+  var m={"I1":"I1 app ↔ bank","I3":"I3 bank ↔ platform","I3 (placeholder)":"I3 placeholder","I5 (ours)":"I5 inside the bank (ours)","internal":"inside the platform","sim (not ECB)":"simulation only (not ECB)"};
+  return m[i]||i;
+}
 
 /* ---------- JSON rendering ---------- */
-function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
-function renderJSON(v,ind,opts,key){
-  ind=ind||"";var pad=ind+"  ";
-  if(v===null) return '<span class="b">null</span>';
+function renderJSON(v,ind,opts){
+  ind=ind||""; opts=opts||{}; var pad=ind+"  ";
+  if(v===null||v===undefined) return '<span class="b">null</span>';
   if(Array.isArray(v)){ if(!v.length) return "[]"; return "[\n"+v.map(function(x){return pad+renderJSON(x,pad,opts);}).join(",\n")+"\n"+ind+"]"; }
   if(typeof v==="object"){
     var ks=Object.keys(v); if(!ks.length) return "{}";
     return "{\n"+ks.map(function(k){
-      var val=v[k];
-      if(opts.redactOwner && k==="owner_for_observer") return pad+'<span class="k">"'+esc(k)+'"</span>: <span class="red">hidden in this view</span>';
-      return pad+'<span class="k">"'+esc(k)+'"</span>: '+renderJSON(val,pad,opts,k);
+      if(opts.redactOwner&&k==="owner_for_observer") return pad+'<span class="k">"'+esc(k)+'"</span>: <span class="red">hidden in this view</span>';
+      return pad+'<span class="k">"'+esc(k)+'"</span>: '+renderJSON(v[k],pad,opts);
     }).join(",\n")+"\n"+ind+"}";
   }
   if(typeof v==="string"){
-    if(v.indexOf("SIMENC:")===0) return '<span class="enc" title="Encrypted for the other bank">"SIMENC:'+esc(v.slice(7,27))+'… ('+v.length+' characters, encrypted)"</span>';
+    if(v.indexOf("SIMENC:")===0) return '<span class="enc" title="Sealed: only the banks can open this part">"SIMENC:'+esc(v.slice(7,27))+'…" ('+v.length+' characters, sealed)</span>';
     return '<span class="s">"'+esc(v)+'"</span>';
   }
   if(typeof v==="number") return '<span class="n">'+v+'</span>';
   return '<span class="b">'+esc(v)+'</span>';
 }
-function label(step){
-  if(step.http&&step.http.method) return step.http.method+" "+step.http.path.replace(/\/v1\/payment-instructions\/[0-9a-f-]+\/status/,"/v1/payment-instructions/{id}/status").replace(/\/v1\/(fundings|defundings)\/[0-9a-f-]+\/status/,"/v1/$1/{id}/status");
-  if(step.http&&step.http.status) return String(step.http.status);
-  if(step.to==="DESP ledger") return "settle";
-  if(/core banking$/.test(step.to)) return (step.body&&step.body.action)||"giro";
-  return step.interface||"";
+function headersHTML(h){
+  var ks=Object.keys(h||{}); if(!ks.length) return "";
+  return '<div class="hdrs">'+ks.map(function(k){return '<div><b>'+esc(k)+':</b> '+esc(h[k])+'</div>';}).join("")+'</div>';
 }
 
-/* ---------- rendering ---------- */
-function renderInspector(){
-  var s=sc(), st=s.steps[S.idx];
-  if(!st){
-    ins.innerHTML='<div class="eyebrow">Ready</div><h2>'+esc(s.title)+'</h2><p class="explain">'+esc(s.summary)+'</p><p class="ref">Press Play or Step ▶. Use the speed slider to slow the messages down. "Whose view" shows the same scenario through the eyes of the central platform, a bank or the public.</p>';
+/* ============================================================
+   RENDER
+   ============================================================ */
+var rafPending=false;
+function scheduleRender(){ if(rafPending) return; rafPending=true; (window.requestAnimationFrame||setTimeout)(function(){rafPending=false;render();}); }
+function guard(name,fn){try{fn();}catch(e){if(window.console) console.error("render "+name,e);}}
+var MAPIDS=["nPspA","nPspB","nAppA","nAppB","ledgerCard","narr","steps","inspector","moneyRow"], TLIDS=["seq","narrT","moneyT","lensT"];
+function clearView(ids){ // the view that is not shown keeps no stale (lens-filtered) text in the page
+  ids.forEach(function(id){ var el=$(id); if(el&&(el.innerHTML!==""||el._h)){ el.innerHTML=""; el._h=null; el._sig=null; } });
+  if(ids===MAPIDS){ lastInsSig=null; pillHide(); }
+}
+function render(){
+  guard("clear",function(){ clearView(S.view==="map"?TLIDS:MAPIDS); });
+  guard("header",renderHeader); guard("bar",renderBar);
+  var it=S.items[curIdx()]||null;
+  if(S.view==="map"){ guard("map",function(){renderMap(it);}); }
+  else { guard("timeline",function(){renderTimeline(it);}); }
+}
+
+/* ---------- header, banner, connection dots ---------- */
+function renderHeader(){
+  var dots=$("dots"), h="";
+  if(S.mode==="live"){
+    var last=S.states.length?S.states[S.states.length-1]:null, apps=last?last.apps:{};
+    var slugs=["desp"].concat(Object.keys(apps).filter(function(k){return /^psp-/.test(k);}).sort());
+    if(!last) slugs=["desp","psp-a","psp-b"];
+    slugs.forEach(function(s){
+      var name=s==="desp"?"Central platform":"PSP "+s.slice(4).toUpperCase(), cls="", st="no data yet";
+      if(S.online&&last){ if(apps[s]){cls="ok";st="connected";}else{cls="bad";st="not answering";} }
+      if(!S.online){st="relay offline";}
+      h+='<span title="'+esc(name+": "+st)+'"><i class="'+cls+'"></i>'+esc(name)+'<span class="sr"> '+esc(st)+'</span></span>';
+    });
+  }else if(S.mode==="replay"){
+    h='<span title="No live connection: recorded examples"><i></i>Offline replay</span>';
+  }
+  dots.innerHTML=h;
+  var b=$("banner");
+  if(S.mode==="replay"){
+    b.className="banner"; b.hidden=false;
+    b.innerHTML=IC.clock.replace("<svg","<svg width=\"22\" height=\"22\"")+'<div><strong>Replay of recorded examples</strong> – start <code>python3 tools/run_local.py --control-room</code> for the live simulation</div>';
+  }else if(S.mode==="live"&&!S.online){
+    b.className="banner warn"; b.hidden=false;
+    b.innerHTML=IC.warn.replace("<svg","<svg width=\"22\" height=\"22\"")+'<div><strong>The relay is not answering.</strong> Trying to reconnect …</div>';
+  }else if(S.mode==="none"){
+    b.className="banner warn"; b.hidden=false;
+    b.innerHTML=IC.warn.replace("<svg","<svg width=\"22\" height=\"22\"")+'<div><strong>Nothing to show yet.</strong> The relay is not reachable and the recorded examples (<code>scenarios.js</code>) are missing.</div>';
+  }else b.hidden=true;
+  var live=S.mode==="live";
+  $("runLbl").textContent=live?"Run scenario":"Play scenario";
+  syncRun(); $("bSet").disabled=!live; $("bSet").title=live?"":"Live mode only";
+}
+
+/* ---------- control bar ---------- */
+var speedDrag=false;
+function renderBar(){
+  var live=S.mode==="live", rep=S.mode==="replay", none=S.mode==="none";
+  var playing=live?S.ctrl.mode==="play":S.rPlaying;
+  $("bPlay").innerHTML=(playing?IC.pause:IC.play)+(playing?"Pause":"Play");
+  $("bPlay").setAttribute("aria-label",playing?"Pause":"Play");
+  var cur=curIdx(), total=totalSteps();
+  var txt;
+  if(none) txt="No data";
+  else if(cur<0) txt=total?("Ready · "+total+" steps"):"Waiting for the first message";
+  else txt="Step "+(cur+1)+" of "+total+" · "+(playing?"playing":"paused");
+  $("stepcount").textContent=txt;
+  $("backLive").hidden=!(live&&S.sel!=null);
+  $("bBack").disabled=none||cur<=0&&!(rep&&cur===0);
+  if(rep) $("bBack").disabled=cur<0;
+  if(live) $("bFwd").disabled=!(S.sel!=null||(S.ctrl.mode==="pause"&&S.ctrl.waiting>0));
+  else $("bFwd").disabled=none||cur>=S.items.length-1;
+  $("bStart").disabled=none;
+  $("bPlay").disabled=none;
+  $("bFwd").title=live&&S.sel==null?(S.ctrl.mode==="pause"?"Let the next waiting message through":"Switch to pause to step through messages"):"One step forward";
+  var sp=$("speed");
+  if(!speedDrag){
+    var v=live?S.ctrl.delaySeconds:parseFloat(sp.value);
+    sp.min=live?"0":"0.5";
+    if(live) sp.value=String(v);
+    $("speedOut").textContent=(v<=0&&live?"instant":v.toFixed(1)+" s");
+  }
+  var lb=$("lensBar");
+  if(!lb.children.length){
+    lb.innerHTML=LENS_LABEL.map(function(l){return '<button type="button" data-lens="'+l[0]+'" aria-pressed="false">'+l[1]+'</button>';}).join("");
+  }
+  Array.prototype.forEach.call(lb.children,function(b){b.setAttribute("aria-pressed",String(b.getAttribute("data-lens")===S.lens));});
+  $("vMap").setAttribute("aria-pressed",String(S.view==="map")); $("vTl").setAttribute("aria-pressed",String(S.view==="timeline"));
+  if(live&&!$("pop").hidden){ /* keep popover */ }
+  $("limit").placeholder=(function(){var s=S.states.length&&S.states[S.states.length-1].snap;return s&&s.limit!=null?eur(s.limit).replace(/,/g,""):"3000.00";})();
+}
+
+/* ---------- geometry (lines and travelling message) ---------- */
+function rectOf(key){
+  var el=$("n"+cap(key)), b=el.getBoundingClientRect(), s=$("stage").getBoundingClientRect();
+  return {x:b.left-s.left,y:b.top-s.top,w:b.width,h:b.height};
+}
+function edgePt(r,tx,ty,pad){
+  var cx=r.x+r.w/2, cy=r.y+r.h/2, dx=tx-cx, dy=ty-cy; if(!dx&&!dy) return [cx,cy];
+  var sx=dx?(r.w/2+pad)/Math.abs(dx):Infinity, sy=dy?(r.h/2+pad)/Math.abs(dy):Infinity, k=Math.min(sx,sy);
+  return [cx+dx*k,cy+dy*k];
+}
+function anchors(fk,tk){
+  var a=rectOf(fk), b=rectOf(tk), ac=[a.x+a.w/2,a.y+a.h/2], bc=[b.x+b.w/2,b.y+b.h/2];
+  return [edgePt(a,bc[0],bc[1],4),edgePt(b,ac[0],ac[1],4)];
+}
+var WIRES=[["appA","pspA"],["pspA","desp"],["desp","pspB"],["pspB","appB"]];
+function layoutWires(hotA,hotB){
+  if(S.view!=="map") return;
+  var svg=$("wires"), h="";
+  WIRES.forEach(function(w){
+    var g=anchors(w[0],w[1]), hot=(hotA===w[0]&&hotB===w[1])||(hotA===w[1]&&hotB===w[0]);
+    h+='<path class="wire'+(hot?" hot":"")+'" d="M'+g[0][0].toFixed(1)+" "+g[0][1].toFixed(1)+" L"+g[1][0].toFixed(1)+" "+g[1][1].toFixed(1)+'"/>';
+  });
+  svg.innerHTML=h;
+}
+var pillEl=null, hintEl=null;
+function ensurePill(){
+  if(pillEl) return;
+  var w=$("pillwrap");
+  pillEl=document.createElement("div"); pillEl.className="pill"; pillEl.style.display="none"; w.appendChild(pillEl);
+  hintEl=document.createElement("div"); hintEl.className="pillhint"; hintEl.style.display="none"; w.appendChild(hintEl);
+}
+function pillHide(){ if(!pillEl) return; pillEl.style.display="none"; hintEl.style.display="none"; S.pill={id:null,mode:null}; }
+function pillShow(it,mode,secs,extra){
+  var fk=nodeKey(it.from), tk=nodeKey(it.to);
+  if(!fk||!tk||fk===tk||S.view!=="map"){ pillHide(); return; }
+  ensurePill();
+  var g=anchors(fk,tk), A=g[0], B=g[1], idx=S.items.indexOf(it)+1;
+  pillEl.innerHTML='<span class="num">'+idx+'</span>'+IC.mail+'<span class="lb">'+esc(shortLabel(it))+'</span>'+(sealedOf(it).length?IC.lock:"");
+  pillEl.style.display="flex";
+  var P=[A[0]+(B[0]-A[0])*0.42,A[1]+(B[1]-A[1])*0.42];
+  function put(p,tr){ pillEl.style.transition=tr; pillEl.style.left=p[0]+"px"; pillEl.style.top=p[1]+"px"; }
+  if(mode==="travel"){
+    put(A,"none"); void pillEl.offsetWidth;
+    put(reduced?P:B,reduced?"none":"left "+secs+"s cubic-bezier(.45,.05,.4,.95), top "+secs+"s cubic-bezier(.45,.05,.4,.95)");
+    hintEl.style.display="none";
+  }else{
+    if(pillEl.getAttribute("data-id")!==it.key){ put(A,"none"); void pillEl.offsetWidth; }
+    put(P,reduced?"none":"left .35s ease-out, top .35s ease-out");
+    var n=S.ctrl.waiting||0;
+    hintEl.textContent="waiting – press Step"+(n>1?" · "+(n-1)+" more behind it":"");
+    hintEl.style.left=P[0]+"px"; hintEl.style.top=(P[1]-40)+"px"; hintEl.style.display="block";
+  }
+  pillEl.setAttribute("data-id",it.key);
+}
+function syncPill(){
+  if(S.mode!=="live") return;
+  var it=(S.ctrl.waiting>0&&S.ctrl.next)?S.byId[S.ctrl.next]:null;
+  if(!it||S.sel!=null||S.view!=="map"){ pillHide(); return; }
+  var mode=S.ctrl.mode==="pause"?"park":"travel";
+  if(S.pill.id===it.id&&S.pill.mode===mode){ return; }
+  S.pill={id:it.id,mode:mode};
+  if(mode==="travel"){ var secs=S.ctrl.delaySeconds; pillShow(it,"travel",secs<=0.05?0.0001:Math.max(0.15,secs*0.92)); }
+  else pillShow(it,"park");
+  S.pill={id:it.id,mode:mode};
+}
+
+/* ---------- map nodes ---------- */
+function inFlight(it){return !!it&&isMsg(it)&&((it.live&&!it.released)||(S.mode==="replay"&&S.rTransit));}
+function peopleOf(snap,L){return snap?snap.people.filter(function(p){return p.bank===L;}):[];}
+function nodeStatus(key,it,lens){
+  var idle={t:"Idle",c:"var(--muted)",i:IC.clock};
+  if(!it) return idle;
+  var fk=nodeKey(it.from), tk=nodeKey(it.to), vis=sees(it,lens);
+  if(!isMsg(it)){
+    if(fk!==key) return idle;
+    if(it.kind==="ledger") return {t:"Settling the payment",c:"var(--enc)",i:IC.check};
+    if(it.kind==="giro") return {t:"Giro account step",c:"var(--teal)",i:IC.check};
+    return {t:"Note",c:"var(--muted)",i:IC.check};
+  }
+  var lb=vis?shortLabel(it):"message";
+  if(tk===key) return inFlight(it)?{t:"Message arriving",c:"var(--blue)",i:IC.arrow}:{t:"Got: "+lb,c:"var(--blue)",i:IC.check};
+  if(fk===key) return inFlight(it)?{t:"Sending: "+lb,c:"var(--ink2)",i:IC.arrow}:{t:"Sent: "+lb,c:"var(--muted)",i:IC.check};
+  return idle;
+}
+function nodeHTML(key,it,snap,lens){
+  var L=key.slice(-1), st=nodeStatus(key,it,lens), ppl=peopleOf(snap,L), isBank=/^psp/.test(key);
+  var names=ppl.map(function(p){return first(p);});
+  if(lens==="desp"||lens==="public"||((lens==="A"||lens==="B")&&lens!==L)) names=[];
+  var stat='<div class="st" style="color:'+st.c+'">'+st.i+'<span>'+esc(st.t)+'</span></div>';
+  if(isBank){
+    var sub=names.length?(names.join(" & ")+"'s bank"):"Retail bank";
+    var g="", gi=it&&it.kind==="giro"?it:(S.recent&&S.recent.item.kind==="giro"&&S.mode==="live"&&S.sel==null?S.recent.item:null);
+    if(gi&&nodeKey(gi.from)===key&&sees(gi,lens)) g='<div class="giro new">'+esc(narrate(gi,lens).head)+'</div>';
+    return '<div class="hd"><span class="ic" style="width:34px;height:34px;background:var(--teal-t)">'+IC.bank+'</span><div><div class="nt">PSP '+L+'</div><div class="ns">'+esc(sub)+'</div></div></div>'+(g||stat)+(g?"":"");
+  }
+  var who=names.length?names.join(" · "):"Banking app";
+  return '<div class="hd">'+IC.phone+'<div><div class="nt">Banking App '+L+'</div></div></div><div class="ns" style="margin-top:4px">'+esc(who)+'</div>'+stat.replace('class="st"','class="st" style="margin-top:6px"');
+}
+function ledgerHTML(it,snap,lens){
+  if(!snap) return '<div class="eyebrow" style="margin-bottom:4px">Central ledger · no names</div><div class="ns">No balances yet.</div>';
+  var chg={}, led=null;
+  if(it&&it.kind==="ledger") led=it; else if(S.mode==="live"&&S.sel==null&&S.recent&&S.recent.item.kind==="ledger") led=S.recent.item;
+  if(led&&led.body&&Array.isArray(led.body.bookings)) led.body.bookings.forEach(function(b){chg[b.entry]=b.change;});
+  if(lens==="public") return '<div class="eyebrow" style="margin-bottom:4px">Central ledger · totals only</div><div class="g mono" style="display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:12.5px"><span style="color:var(--muted)">Digital euro in circulation</span><span>'+eur(snap.circ)+'</span></div>';
+  var own=(lens==="A"||lens==="B")?lens:null, g="";
+  function val(key,v){var c=chg[key];return (c?'<span class="chg '+(/^-|−/.test(c)?"down":"up")+'">'+esc(String(c).replace("-","−"))+'</span> ':"")+eur(v);}
+  snap.entries.forEach(function(en){ if(own&&en.bank!==own) return;
+    g+='<span>'+esc(en.entry.slice(0,8))+'… (PSP '+esc(en.bank)+')</span><span class="'+(chg[en.entry]?"chg":"")+'">'+val(en.entry,en.bal)+'</span>'; });
+  snap.banks.forEach(function(L){ if(own&&L!==own) return; if(snap.dca[L]==null) return;
+    var k="DCA of PSP "+L; g+='<span>DCA PSP '+esc(L)+'</span><span>'+val(k,snap.dca[L])+'</span>'; });
+  var book="";
+  if(led&&(lens==="all"||lens==="desp")&&S.mode!=="none") book='<div class="book">Booked: '+esc(bookingList(led,lens,true))+'</div>';
+  return '<div class="eyebrow" style="margin-bottom:4px">Central ledger · no names</div><div class="g">'+g+'</div>'+book;
+}
+
+/* ---------- narration ---------- */
+function narrHTML(it,withButtons){
+  var lens=S.lens, cur=curIdx(), head, text, before="", result="", hint="";
+  if(!it){
+    var ready=S.mode==="replay"?(S.items.length?(DATA.scenarios[S.rSc].title):"Ready"):"Ready when you are.";
+    head=ready;
+    text=S.mode==="replay"?(DATA.scenarios[S.rSc].summary+" Press Play to watch it, or step through with the arrows."):
+      S.mode==="live"?"Choose a scenario above and press Run scenario. Each message travels from app to app and is explained here in plain English.":"No data available.";
+  }else if(!sees(it,lens)){
+    head="Not visible to "+LENS_NAME[lens]+".";
+    text=lens==="public"?"The public sees no individual messages, only totals (below).":"This step happens between other parties. "+cap(LENS_NAME[lens])+" does not see it.";
+  }else{
+    var n=narrate(it,lens); head=n.head; text=n.text;
+    var b=[],j=cur-1; while(j>=0&&S.items[j]&&!isMsg(S.items[j])&&b.length<3){ if(sees(S.items[j],lens)) b.unshift(S.items[j]); j--; }
+    if(b.length) before='<div class="before">Just before: '+b.map(function(x){return esc(narrate(x,lens).head);}).join(" → ")+'</div>';
+    if(S.mode==="live"&&it.live&&isMsg(it)&&!it.released&&S.sel==null&&S.ctrl.mode==="pause") hint='<div class="before" style="color:var(--blue);font-weight:500">This message is waiting at the gate. Press Step to let it through.</div>';
+  }
+  if(S.mode==="live"&&S.result&&it&&cur===S.items.length-1&&S.sel==null&&S.scen&&S.scen.status==="finished")
+    result='<div class="result '+(S.result.ok?"ok":"bad")+'">'+(S.result.ok?IC.check:IC.warn).replace("<svg",'<svg width="18" height="18"')+esc(S.result.text)+'</div>';
+  if(S.mode==="live"&&S.sel!=null&&it) hint='<div class="before">You are looking at an earlier step. The live run goes on in the background.</div>';
+  var eyebrow="";
+  if(withButtons) eyebrow='<div class="eyebrow">'+(it?"Step "+(cur+1)+" · what happens":"Step 0 · ready")+'</div>';
+  var btns="";
+  if(withButtons){
+    var canFull=!!it&&sees(it,lens)&&it.body!==undefined, sealed=!!it&&sees(it,lens)&&sealedOf(it).length>0, openable=!!it&&canOpen(it,lens);
+    btns='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px"><button class="btn small" type="button" data-act="full"'+(canFull?"":" disabled")+'>'+IC.open+'Show full message</button>'+
+      '<button class="btn small" type="button" data-act="sealed"'+(sealed?"":" disabled")+' style="color:var(--enc);border-color:var(--enc-l)">'+IC.lockO+(openable?"Open sealed part":"Sealed part")+'</button></div>';
+  }
+  if(withButtons) return eyebrow+'<div class="hl" style="margin-top:6px">'+esc(head)+'</div><div class="tx">'+esc(text)+'</div>'+before+hint+result+btns;
+  return '<span class="ic">'+IC.speech+'</span><div style="min-width:0"><div class="hl">'+esc(head)+'</div><div class="tx">'+esc(text)+'</div>'+before+hint+result+'</div>';
+}
+
+/* ---------- step chips ---------- */
+function setList(container,html,sig){
+  if(container._sig===sig) return;
+  var act=document.activeElement, key=act&&container.contains(act)?act.getAttribute("data-k"):null;
+  var sl=container.scrollLeft;
+  container.innerHTML=html; container._sig=sig; container.scrollLeft=sl;
+  if(key){var n=container.querySelector('[data-k="'+key+'"]'); if(n) n.focus({preventScroll:true});}
+}
+var WINDOW=80;
+function renderChips(){
+  var lens=S.lens, cur=curIdx(), rs=rows(), hiddenN=Math.max(0,rs.length-WINDOW);
+  var sig=[S.mode,lens,cur,S.items.length,rs.length,S.dropped,S.items.slice(-WINDOW).map(function(x){return x.released?1:0;}).join("")].join("|");
+  var html=rs.slice(hiddenN).map(function(r){
+    var vis=sees(r.it,lens);
+    var label=vis?lensLabel(r.it,lens):(lens==="public"?"message":"not visible");
+    var tag=r.status==="now"?" \u00b7 now":r.status==="done"?" \u00b7 done":r.status==="wait"?" \u00b7 waiting":"";
+    var cls="step "+(r.status==="now"?"now":r.status==="done"?"done":r.status==="wait"?"wait":"future")+(vis?"":" hid");
+    var dis=r.status==="future"&&S.mode==="live";
+    return '<div role="listitem" style="flex:none"><button type="button" class="'+cls+'" data-i="'+r.i+'" data-k="c'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true"':"")+'><span class="n">'+(r.i+1+S.dropped)+tag+'</span>'+esc(label)+'</button></div>';
+  }).join("");
+  var older=hiddenN+S.dropped;
+  if(older>0) html='<div role="listitem" class="foot" style="flex:none;width:110px;align-self:center">'+older+' older steps hidden</div>'+html;
+  var box=$("steps");
+  if(!rs.length) html='<div role="listitem" class="foot" style="padding:6px 2px">The steps will appear here as messages arrive.</div>';
+  setList(box,html,sig);
+  var now=box.querySelector(".now");
+  if(now){ var l=now.parentNode.offsetLeft, w=now.offsetWidth; if(l<box.scrollLeft||l+w>box.scrollLeft+box.clientWidth) box.scrollLeft=Math.max(0,l-box.clientWidth/2+w/2); }
+}
+
+/* ---------- inspector ---------- */
+function readersHTML(it){
+  var s=sealedOf(it), r="";
+  if(!isMsg(it)) return '<div class="readers">'+IC.eye.replace("<svg","<svg stroke=\"#1E7B3C\"")+'<div><strong>'+esc(dispName(it.from))+':</strong> this happens inside the app. No message is sent, so nobody else sees it.</div></div>';
+  if(s.length){
+    var d=s.map(function(x){return x.decoded;}).filter(Boolean)[0]||{}, parts=[];
+    if(d.creditor||d.debtor) parts.push("names"); if(d.creditorAccount||d.debtorAccount) parts.push("account numbers (DEANs)"); if(d.remittanceInformationUnstructured) parts.push("payment text");
+    var what=parts.length?parts.join(", "):"personal details";
+    return '<div class="readers">'+IC.eye.replace("<svg","<svg stroke=\"#1E7B3C\"")+'<div><strong>Central platform:</strong> amount, banks, payment type, IDs</div>'+
+      IC.lockO.replace("<svg","<svg stroke=\"#7A3E00\"")+'<div><strong>Sealed for the banks only:</strong> '+esc(what)+'. The platform forwards the sealed part unread.</div></div>';
+  }
+  return '<div class="readers">'+IC.eye.replace("<svg","<svg stroke=\"#1E7B3C\"")+'<div><strong>Everyone on the route</strong> ('+esc(dispName(it.from))+', '+esc(dispName(it.to))+') can read all of it. Nothing in it is sealed.</div></div>';
+}
+function renderInspector(it){
+  var box=$("inspector"), lens=S.lens, total=totalSteps(), cur=curIdx();
+  if(!it){
+    box.innerHTML='<div><div class="eyebrow">Inspector</div><h2>Nothing selected yet</h2><div class="route">Select a step or press Play</div></div><p style="margin:0;color:var(--ink2)">Here you will see the exact message that is travelling: its route, the interface and spec reference, who can read which part, the headers and the body as it is sent – including the sealed part, opened for the simulation.</p>';
     return;
   }
-  var lens=S.lens, sees=seesStep(st,lens);
-  var h='<div class="eyebrow">Step '+st.step+' of '+(s.steps.length-1)+'</div><h2>'+esc(st.title)+'</h2>';
-  h+='<div class="route">'+esc(st.from)+' → '+esc(st.to)+'</div><div class="badges"><span class="badge if">'+esc(st.interface||"")+'</span>'+(st.placeholder?'<span class="badge ph">placeholder: not in the ECB documents</span>':'')+'</div>';
-  if(!sees){
-    h+='<div class="hiddenmsg">'+(lens==="public"?'The public sees no individual messages, only totals (below).':'This message is not visible to '+esc(LENS_NAME[lens])+'. It travels between other parties.')+'</div>';
-    ins.innerHTML=h; return;
+  var vis=sees(it,lens);
+  if(!vis){
+    box.innerHTML='<div><div class="eyebrow">'+(isMsg(it)?"Message ":"Inside step ")+(cur+1)+' of '+total+'</div><h2>Not visible in this view</h2></div><div class="hiddenmsg">'+(lens==="public"?"The public sees no individual messages, only totals.":"This step happens between other parties, so "+esc(LENS_NAME[lens])+" does not see it.")+'</div>';
+    return;
   }
-  h+='<p class="explain">'+esc(st.explanation||"")+'</p>';
-  if(st.http){
-    var line=st.http.method?st.http.method+" "+st.http.path:"HTTP "+st.http.status;
-    var hd=st.http.headers||{}; line+="\n"+Object.keys(hd).map(function(k){return k+": "+hd[k];}).join("\n");
-    h+='<div class="http">'+esc(line)+'</div>';
-  }
-  if(st.body!==null && st.body!==undefined){
-    h+='<pre class="json">'+renderJSON(st.body,"",{redactOwner:lens==="desp"})+'</pre>';
-  } else if(st.http) {
-    h+='<p class="ref">No body.</p>';
-  }
-  if(st.decryptedView){
-    if(canDecrypt(st,lens)){
-      h+='<div class="decrypt"><p><b>Encrypted part, opened for '+(lens==="all"?"the audience":esc(LENS_NAME[lens]))+'.</b> '+(lens==="all"?'Only the other bank can read this in reality; the central platform forwards it unread.':'This bank can read it.')+'</p><button type="button" id="decBtn">Show content</button><pre class="json" id="decBody" hidden>'+renderJSON(st.decryptedView.content,"",{})+'</pre></div>';
-    } else {
-      h+='<div class="decrypt"><p><b>Encrypted part.</b> '+esc(cap(LENS_NAME[lens]))+' cannot read it: it is meant for the other bank.</p></div>';
+  var title=it.matched&&it.title?anon(it.title,lens):cap(shortLabel(it));
+  var route=dispName(it.from)+" \u2192 "+dispName(it.to)+(it.method?" \u00b7 "+it.method+" "+(it.path||""):it.status?" \u00b7 HTTP "+it.status+(it.path?" "+it.path:""):"");
+  var h='<div><div class="eyebrow">'+(isMsg(it)?"Message ":"Inside step ")+(cur+1)+' of '+total+'</div><h2>'+esc(title)+'</h2><div class="route">'+esc(route)+'</div><div class="chips">'+
+    (it.iface?'<span class="chip if">'+esc(ifaceChip(it.iface))+'</span>':"")+
+    (it.specRef?'<span class="chip ref">'+esc(it.specRef)+'</span>':"")+
+    (it.placeholder?'<span class="chip ph">placeholder: not in the ECB documents</span>':"")+'</div></div>';
+  h+='<div><div class="eyebrow" style="margin-bottom:6px">Who can read what</div>'+readersHTML(it)+'</div>';
+  var origin=S.mode==="replay"?'<span class="chip sample">sample values</span>':'<span class="chip live" title="'+(it.standIn?"The relay plays the banking app until real banking apps exist":"Values from the running simulation")+'">live values'+(it.standIn?" · relay plays the app":"")+'</span>';
+  var hd=headersHTML(it.headers);
+  h+='<div><div class="insrow"><span class="eyebrow">As sent</span>'+origin+'</div>'+hd;
+  if(it.body!==null&&it.body!==undefined) h+='<pre class="json">'+renderJSON(it.body,"",{redactOwner:lens==="desp"})+'</pre>';
+  else h+='<div class="foot">No body.</div>';
+  h+='</div>';
+  var sealed=sealedOf(it);
+  if(sealed.length){
+    if(canOpen(it,lens)){
+      sealed.forEach(function(sx){ if(!sx.decoded) return;
+        h+='<div><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;color:var(--enc)">'+IC.lockO.replace("<svg",'<svg width="16" height="16"')+'<span class="eyebrow" style="color:var(--enc)">Sealed part, opened for the simulation</span></div><pre class="json sealed">'+renderJSON(sx.decoded,"",{})+'</pre></div>'; });
+    }else{
+      h+='<div class="hiddenmsg" style="border-color:var(--enc-l);background:var(--enc-t);color:var(--enc)"><strong>Sealed part.</strong> '+esc(cap(LENS_NAME[lens]))+' cannot open it – it is meant for the banks.</div>';
     }
   }
-  h+='<p class="ref">Spec: '+esc(st.specRef||"–")+(st.schema?' · contract: <span class="mono">'+esc(st.schema)+'</span>':'')+'</p>';
-  ins.innerHTML=h;
-  var b=document.getElementById("decBtn");
-  if(b) b.addEventListener("click",function(){var d=document.getElementById("decBody");d.hidden=!d.hidden;b.textContent=d.hidden?"Show content":"Hide content";});
+  box.innerHTML=h;
 }
 
-var lastState=null;
-function renderLedger(){
-  var st=stateAt(S.idx), prev=S.idx>=0?stateAt(S.idx-1):st, lens=S.lens;
-  var circ=0, circ0=0; var st0=initialState();
-  Object.keys(st.users).forEach(function(k){circ+=st.users[k].de;circ0+=st0.users[k].de;});
-  var dcaSum=0,dca0=0; Object.keys(st.dca).forEach(function(b){dcaSum+=st.dca[b];dca0+=st0.dca[b];});
-  function delta(now,before){var d=now-before;if(!d)return "";return '<span class="delta '+(d>0?"up":"down")+'">'+(d>0?"+":"−")+eur(Math.abs(d))+'</span>';}
-  var h='<h2>Balances</h2>';
+/* ---------- money ---------- */
+var lastVals={};
+function moneyData(){
+  var cur=curIdx(), snap=snapFor(cur); if(!snap) return null;
+  var prev=null; try{prev=prevSnapFor(cur);}catch(e){}
+  var lens=S.lens, T=[];
+  function delta(now,before){var d=(before==null)?0:now-before;return d?'<span class="dl '+(d>0?"up":"down")+'">'+sgn(d)+'</span>':"";}
+  function prevPerson(p){var q=prev&&prev.people.filter(function(x){return x.entry===p.entry;})[0];return q||null;}
   if(lens==="public"){
-    h+='<div class="tiles"><div class="tile"><div class="v">'+eur(circ)+'</div><div class="l">Digital euro in circulation (EUR)</div></div><div class="tile"><div class="v">'+st.settled+'</div><div class="l">Settlements in this scenario</div></div></div><p class="ref">The public sees aggregate figures only.</p>';
-    document.getElementById("ledger").innerHTML=h; return;
+    T.push({k:"circ",cls:"circ",l:"Digital euro in circulation",v:eur(snap.circ)+" €",s:"total, no names"});
+    T.push({k:"settled",l:"Settlements so far",v:String(snap.settled||0),s:"the public sees totals only"});
+    return {T:T,snap:snap,note:"The public sees aggregate figures only."};
   }
-  var rows="";
-  Object.keys(TD.users).forEach(function(k){
-    var u=TD.users[k], x=st.users[k], p=prev.users[k];
-    if((lens==="A"||lens==="B") && u.bank!==lens) return;
-    var who = lens==="desp" ? '<span class="mono">'+esc(u.entry)+'</span>' : esc(u.name)+' <span class="ref">PSP '+u.bank+'</span>';
-    var giro = lens==="desp" ? '<span class="ref">not visible</span>' : eur(x.giro)+delta(x.giro,p.giro)+(x.blocked?' <span class="ref">('+eur(x.blocked)+' blocked)</span>':'');
-    var changed=(x.de!==p.de||x.giro!==p.giro||x.blocked!==p.blocked)&&S.idx>=0;
-    rows+='<tr'+(changed?' class="changed"':'')+'><td>'+who+'</td><td class="num">'+eur(x.de)+delta(x.de,p.de)+'</td><td class="num">'+giro+'</td></tr>';
+  if(lens==="all"||lens==="desp") T.push({k:"circ",cls:"circ",l:"Digital euro in circulation",v:eur(snap.circ)+" €",d:delta(snap.circ,prev?prev.circ:null)});
+  if(lens==="desp"){
+    snap.entries.forEach(function(en){var q=prev&&prev.entries.filter(function(x){return x.entry===en.entry;})[0];
+      T.push({k:"e"+en.entry,l:en.entry.slice(0,8)+"… · PSP "+en.bank,v:eur(en.bal)+" €",d:delta(en.bal,q?q.bal:null),s:"no name, no giro account"});});
+  }else{
+    snap.people.forEach(function(p){
+      if((lens==="A"||lens==="B")&&p.bank!==lens) return;
+      var q=prevPerson(p);
+      T.push({k:"p"+(p.entry||p.name),l:first(p)+" · PSP "+p.bank,v:eur(p.de)+" €",d:delta(p.de,q?q.de:null),
+        s:"giro "+eur(p.giro)+" €"+(p.blocked?" ("+eur(p.blocked)+" blocked)":"")});
+    });
+  }
+  snap.banks.forEach(function(L){ if((lens==="A"||lens==="B")&&L!==lens) return; if(snap.dca[L]==null) return;
+    T.push({k:"d"+L,l:"DCA PSP "+L,v:eur(snap.dca[L])+" €",d:delta(snap.dca[L],prev&&prev.dca[L]!=null?prev.dca[L]:null),s:"central bank money"}); });
+  if((lens==="all"||lens==="desp")&&snap.check){
+    T.push({k:"chk",cls:"chk",ok:snap.check.ok,l:"Bookkeeping check",v:snap.check.ok?"Balanced":"Out of balance",s:snap.check.ok?"matches the banks' central bank accounts":snap.check.text});
+    T.push({k:"gm",cls:"gm",l:"Game-master top-ups",v:eur(snap.created||0)+" €",s:"created out of thin air"});
+  }
+  return {T:T,snap:snap};
+}
+function renderMoney(){
+  var box=$("moneyRow"), md=moneyData();
+  if(!md){ box.innerHTML='<div class="top"><span class="eyebrow">Money right now</span></div><div class="foot">Waiting for the first balances …</div>'; return; }
+  var html='<div class="top"><span class="eyebrow">Money right now</span><span class="foot">Digital euro sit on the central ledger · giro money sits at the bank'+(md.snap.limit!=null?" · holding limit "+eur(md.snap.limit).replace(/\.00$/,"")+" €":"")+'</span></div><div class="tiles">';
+  var seen={};
+  md.T.forEach(function(t){
+    var bump=lastVals[t.k]!==undefined&&lastVals[t.k]!==t.v; seen[t.k]=t.v;
+    var vstyle=t.cls==="chk"?' style="color:'+(t.ok?"var(--ok)":"var(--bad)")+';display:flex;align-items:center;gap:6px"':"";
+    html+='<div class="tile '+(t.cls||"")+(bump?" bump":"")+'"><div class="s">'+esc(t.l)+'</div><div class="v"'+vstyle+'>'+(t.cls==="chk"?(t.ok?IC.check:IC.warn).replace("<svg",'<svg width="18" height="18"'):"")+esc(t.v)+(t.d||"")+'</div>'+(t.s?'<div class="s">'+esc(t.s)+'</div>':"")+'</div>';
   });
-  h+='<div class="tblwrap"><table><thead><tr><th>'+(lens==="desp"?"Ledger entry":"Person")+'</th><th class="num">Digital euro (ECB ledger)</th><th class="num">Giro account (bank money)</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
-  var tiles="";
-  Object.keys(st.dca).forEach(function(b){
-    if((lens==="A"||lens==="B") && b!==lens) return;
-    tiles+='<div class="tile"><div class="v">'+eur(st.dca[b])+delta(st.dca[b],prev.dca[b])+'</div><div class="l">DCA of PSP '+b+' (central bank money)</div></div>';
+  lastVals=seen;
+  box.innerHTML=html+'</div>'+(md.note?'<div class="foot">'+esc(md.note)+'</div>':"");
+}
+function moneyListHTML(){
+  var md=moneyData(); if(!md) return '<div class="eyebrow">Money right now</div><div class="foot">Waiting for the first balances …</div>';
+  return '<div class="eyebrow" style="margin-bottom:4px">Money right now</div><div class="mlist">'+md.T.map(function(t){
+    var col=t.cls==="gm"?' style="color:var(--violet)"':"", vc=t.cls==="chk"?' style="color:'+(t.ok?"var(--ok)":"var(--bad)")+'"':col;
+    return '<div class="tl"><span'+col+'>'+esc(t.l)+'</span><span class="v"'+vc+'>'+esc(t.v)+(t.d||"")+'</span></div>';}).join("")+'</div>';
+}
+
+/* ---------- map view ---------- */
+function renderMap(it){
+  var lens=S.lens, cur=curIdx(), snap=null;
+  guard("snap",function(){snap=snapFor(cur);});
+  var fk=it?nodeKey(it.from):null, tk=it?nodeKey(it.to):null;
+  var internal=it&&!isMsg(it);
+  ["desp","pspA","pspB","appA","appB"].forEach(function(k){
+    guard("node "+k,function(){
+      var el=$("n"+cap(k)); if(!el) return;
+      var snd=!!it&&!internal&&fk===k, rcv=!!it&&(internal?fk===k:tk===k);
+      el.classList.toggle("snd",snd); el.classList.toggle("rcv",rcv);
+      el.classList.toggle("dim",!!it&&!sees(it,lens)&&lens!=="all");
+      if(k==="desp"){ $("ledgerCard").innerHTML=ledgerHTML(it,snap,lens); }
+      else { var sig=nodeHTML(k,it,snap,lens); if(el._h!==sig){el.innerHTML=sig;el._h=sig;} }
+    });
   });
-  if(lens==="all"||lens==="desp") tiles+='<div class="tile"><div class="v">'+eur(circ)+delta(circ,(function(){var c=0;Object.keys(prev.users).forEach(function(k){c+=prev.users[k].de;});return c;})())+'</div><div class="l">Digital euro in circulation</div></div>';
-  tiles+='<div class="tile"><div class="v">'+eur(st.limit)+'</div><div class="l">Holding limit per person</div></div>';
-  h+='<div class="tiles">'+tiles+'</div>';
-  if(lens==="all"||lens==="desp"){
-    var issued=circ-circ0, paid=dca0-dcaSum, ok=issued===paid+st.created;
-    var sgn=function(c){return (c>0?"+":"")+eur(c);};
-    h+='<p class="check '+(ok?"ok":"bad")+'">'+(ok?"✓ ":"✗ ")+'Digital euro in circulation changed by '+sgn(issued)+' EUR, the banks\' DCAs by '+sgn(-paid)+' EUR'+(st.created?', game-master top-ups '+sgn(st.created)+' EUR':'')+(ok?': they mirror each other.':': they do not add up!')+'</p>';
-  }
-  document.getElementById("ledger").innerHTML=h;
+  guard("wires",function(){layoutWires(internal?null:fk,internal?null:tk);});
+  guard("narration",function(){var nr=$("narr"), nh=narrHTML(it,false); if(nr._h!==nh){nr.innerHTML=nh;nr._h=nh;}});
+  guard("chips",renderChips);
+  guard("inspector",function(){renderInspectorOnce(it);});
+  guard("money",renderMoney);
+  guard("pill",syncPill);
+}
+var lastInsSig=null;
+function renderInspectorOnce(it){
+  var sig=[it?it.key:"-",it?it.released:"",S.lens,S.mode,it&&it.matched?1:0,it&&it.body?JSON.stringify(it.body).length:0,curIdx(),totalSteps()].join("|");
+  if(sig===lastInsSig) return; lastInsSig=sig; renderInspector(it);
 }
 
-function renderTimeline(){
-  var ol=document.getElementById("timeline"); ol.innerHTML="";
-  sc().steps.forEach(function(st,i){
-    var li=document.createElement("li"), b=document.createElement("button");
-    b.type="button";
-    var vis=seesStep(st,S.lens);
-    b.className=(i===S.idx?"cur ":"")+(i<S.idx?"done ":"")+(vis?"":"hid");
-    b.innerHTML='<span class="n">'+st.step+'</span><span>'+esc(vis?st.title:(S.lens==="public"?"message":"not visible"))+'</span>';
-    b.addEventListener("click",function(){stop();go(i,false);});
-    li.appendChild(b); ol.appendChild(li);
+/* ---------- timeline view ---------- */
+var LANE_META=[["Banking App A","amber","phone"],["PSP A","teal","bank"],["Central platform","blue","gov"],["PSP B","teal","bank"],["Banking App B","amber","phone"]];
+function laneOf(name){var k=nodeKey(name);return LANES.indexOf(k);}
+function boxText(it,lens){
+  if(it.kind==="ledger"){
+    var bk=it.body&&it.body.bookings; if(Array.isArray(bk)&&sees(it,lens)){
+      return "settle: "+bk.map(function(x){var m=/^DCA of PSP (\w+)$/.exec(x.entry||"");var who=m?"DCA "+m[1]:(lens==="desp"?String(x.entry).slice(0,8)+"…":(person(x.entry)?pname(person(x.entry),lens,true):String(x.entry).slice(0,8)+"…"));return who+" "+String(x.change).replace("-","−");}).join(" · ");}
+    return "settlement";
+  }
+  if(it.kind==="giro"){var b=it.body||{};return (b.action||"giro step")+(b.amount?" "+b.amount.amount+" €":"");}
+  return "note";
+}
+function renderTimeline(it){
+  var lens=S.lens, rs=rows(), cur=curIdx();
+  var heads=LANE_META.map(function(m,i){
+    var col={amber:["var(--amber-t)","#A85F0A"],teal:["var(--teal-t)","#0E7566"],blue:["var(--blue-t)","#1D4C99"]}[m[1]];
+    var icon={phone:IC.phone,bank:IC.bank,gov:IC.gov}[m[2]];
+    return '<div class="lanehead" style="grid-column:'+(2+2*i)+' / '+(4+2*i)+'"><span class="ic" style="background:'+col[0]+'">'+icon+'</span>'+m[0]+'</div>';
+  }).join("");
+  var lines='<div class="lanelines" aria-hidden="true"><i style="left:10%;border-color:#FAEEDD"></i><i style="left:30%;border-color:#E1F1ED"></i><i style="left:50%;border-color:#E5ECF8"></i><i style="left:70%;border-color:#E1F1ED"></i><i style="left:90%;border-color:#FAEEDD"></i></div>';
+  var hiddenN=Math.max(0,rs.length-WINDOW), older=hiddenN+S.dropped;
+  var sig=[S.mode,lens,cur,rs.length,S.dropped,S.items.slice(-WINDOW).map(function(x){return x.released?1:0;}).join("")].join("|");
+  var body=(older>0?'<div class="foot" style="padding:6px 8px;text-align:center">'+older+' older steps hidden</div>':"")+rs.slice(hiddenN).map(function(r){
+    var it2=r.it, vis=sees(it2,lens), cls=r.status==="done"?"past":r.status==="now"?"cur":r.status==="wait"?"waitrow":"next";
+    var fl=laneOf(it2.from), tl=laneOf(it2.to), cell="";
+    if(isMsg(it2)&&fl>=0&&tl>=0&&fl!==tl){
+      var lo=Math.min(fl,tl), hi=Math.max(fl,tl), right=tl>fl, color=r.status==="now"||r.status==="wait"?"#1D4C99":"#CBD3DD";
+      var lbl=vis?shortLabel(it2):(lens==="public"?"···":"not visible");
+      cell='<div class="arrow '+cls+'" style="grid-column:'+(3+2*lo)+' / '+(3+2*hi)+(vis?"":";opacity:.45")+'">'+(right?"":IC.tri(-1,color))+'<span class="lbl">'+esc(lbl)+'</span><span class="ln"></span>'+(right?IC.tri(1,color):"")+'</div>';
+    }else{
+      var lane=fl>=0?fl:2, txt=vis?boxText(it2,lens):"hidden";
+      if(isMsg(it2)) txt=shortLabel(it2);
+      cell='<div class="sbox '+cls+'" style="grid-column:'+(2+2*lane)+' / '+(4+2*lane)+(vis?"":";opacity:.45")+'">'+esc(txt)+'</div>';
+    }
+    var dis=r.status==="future";
+    return '<button type="button" class="trow'+(r.status==="now"?" sel":"")+'" data-i="'+r.i+'" data-k="t'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true" tabindex="-1" style="cursor:default"':"")+
+      ' aria-label="Step '+(r.i+1+S.dropped)+': '+esc(vis?lensLabel(it2,lens):"not visible")+(r.status==="future"?" (upcoming)":"")+'"><span class="tnum" style="'+(r.status==="now"?"color:var(--blue);font-weight:600":"")+'">'+(r.i+1+S.dropped)+'</span>'+cell+'</button>';
+  }).join("");
+  if(!rs.length) body='<div class="foot" style="padding:24px 8px;text-align:center">No messages yet. Run a scenario and they will appear here, one row per message.</div>';
+  var seq=$("seq");
+  if(seq._sig!==sig){
+    var act=document.activeElement, key=act&&seq.contains(act)?act.getAttribute("data-k"):null, sl=seq.scrollLeft, st=window.pageYOffset;
+    seq.innerHTML='<div class="seqin">'+lines+'<div class="trow head">'+'<div></div>'+heads+'</div>'+body+'</div>'; seq._sig=sig; seq.scrollLeft=sl;
+    if(key){var n=seq.querySelector('[data-k="'+key+'"]'); if(n) n.focus({preventScroll:true});}
+    var selEl=seq.querySelector(".trow.sel"); if(selEl&&!seq.contains(act)){ /* keep the current row in view in the page */
+      var rc=selEl.getBoundingClientRect(); if(rc.top<80||rc.bottom>window.innerHeight-20){ selEl.scrollIntoView({block:"center",behavior:"auto"}); }
+    }
+  }
+  guard("side narration",function(){var nt=$("narrT"), nh=narrHTML(it,true); if(nt._h!==nh){nt.innerHTML=nh;nt._h=nh;}});
+  guard("side money",function(){$("moneyT").innerHTML=moneyListHTML();});
+  $("lensT").innerHTML='<div class="eyebrow" style="margin-bottom:8px">Whose view</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+LENS_LABEL.map(function(l){return '<button type="button" class="btn small'+(S.lens===l[0]?" on":"")+'" data-lens="'+l[0]+'" aria-pressed="'+(S.lens===l[0])+'">'+(l[0]==="desp"?"Platform":l[1])+'</button>';}).join("")+'</div>';
+}
+
+/* ============================================================
+   INTERACTION
+   ============================================================ */
+function selectIndex(i){
+  if(S.mode==="replay"){ replayStop(); pillHide(); S.rIdx=i; S.rTransit=false; render(); return; }
+  if(i>=S.items.length) return;
+  S.sel=(i===followIdx()&&i===S.items.length-1)?null:i;
+  if(S.sel==null) S.pill={id:null,mode:null};
+  render();
+}
+function stepBack(){
+  if(S.mode==="replay"){ replayStop(); pillHide(); S.rIdx=Math.max(-1,S.rIdx-1); S.rTransit=false; render(); return; }
+  var c=curIdx(); if(c<=0) return; S.sel=c-1; render();
+}
+function stepForward(){
+  if(S.mode==="replay"){ replayStop(); replayGo(S.rIdx+1,true); return; }
+  if(S.sel!=null){ var n=S.sel+1; if(n>=followIdx()){S.sel=null;S.pill={id:null,mode:null};} else S.sel=n; render(); return; }
+  if(S.ctrl.mode==="pause"&&S.ctrl.waiting>0) post("/control/step",{}).then(function(){});
+}
+function togglePlay(){
+  if(S.mode==="replay"){ if(S.rPlaying) replayStop(); else replayPlay(); render(); return; }
+  if(S.mode!=="live") return;
+  var m=S.ctrl.mode==="play"?"pause":"play"; S.ctrl.mode=m; S.pill={id:null,mode:null}; render();
+  post("/control/mode",{mode:m});
+}
+function toStart(){
+  if(S.mode==="replay"){ replayStop(); pillHide(); S.rIdx=-1; S.rTransit=false; render(); return; }
+  if(S.mode!=="live") return;
+  var ok=true; try{ok=window.confirm("Reset everything to the test data? Balances go back to the start and the timeline is cleared.");}catch(e){}
+  if(ok) post("/control/reset",{}).then(function(r){ if(r.ok) toast("Reset done.","ok"); });
+}
+
+/* ---------- replay playback ---------- */
+function loadReplay(i){
+  replayStop(); pillHide();
+  S.rSc=i; var sc=DATA.scenarios[i];
+  S.items=sc.steps.map(fromExample); S.byId={};
+  S.items.forEach(function(it,ix){ if(it.kind==="response"&&!it.path){ for(var j=ix-1;j>=0;j--){ var q=S.items[j]; if(q.kind==="request"&&q.from===it.to&&q.to===it.from){ it.path=q.path; break; } } } }); S.rIdx=-1; S.rTransit=false; lastInsSig=null; render();
+}
+function replayStop(){ S.rPlaying=false; clearTimeout(S.rTimer); if(S.rTransit){S.rTransit=false;pillHide();} }
+function replaySecs(){var v=parseFloat($("speed").value);return isFinite(v)?v:2;}
+function replayPlay(){
+  if(S.rIdx>=S.items.length-1){ S.rIdx=-1; }
+  S.rPlaying=true; replayGo(S.rIdx+1,true);
+}
+function replayGo(i,anim){
+  var n=S.items.length; if(i>n-1){ S.rPlaying=false; render(); return; } i=Math.max(-1,i);
+  clearTimeout(S.rTimer);
+  var secs=replaySecs(), it=S.items[i];
+  S.rIdx=i; lastInsSig=null;
+  if(anim&&it&&!reduced&&S.view==="map"&&isMsg(it)&&nodeKey(it.from)&&nodeKey(it.to)){
+    S.rTransit=true; render();
+    var dur=Math.max(0.2,secs*0.75); pillShow(it,"travel",dur);
+    S.rTimer=setTimeout(function(){ S.rTransit=false; pillHide(); render(); replayNext(secs); },dur*1000);
+  }else{
+    S.rTransit=false; pillHide(); render();
+    if(anim) S.rTimer=setTimeout(function(){replayNext(secs);},reduced?600:secs*400);
+  }
+}
+function replayNext(secs){
+  if(!S.rPlaying) return;
+  if(S.rIdx>=S.items.length-1){ S.rPlaying=false; render(); return; }
+  S.rTimer=setTimeout(function(){ if(S.rPlaying) replayGo(S.rIdx+1,true); },secs*250);
+}
+
+/* ---------- dialogs ---------- */
+function openDialog(d){ try{ if(d.showModal) d.showModal(); else d.setAttribute("open",""); }catch(e){ d.setAttribute("open",""); } }
+function closeDialog(d){ try{ if(d.close) d.close(); else d.removeAttribute("open"); }catch(e){ d.removeAttribute("open"); } }
+function showFull(){
+  var it=S.items[curIdx()]; if(!it) return;
+  $("dlgT").textContent=(isMsg(it)?"Full message ":"Inside step ")+(curIdx()+1)+" · "+dispName(it.from)+" → "+dispName(it.to);
+  $("dlgB").innerHTML='<div class="route mono" style="font-size:12.5px;color:var(--muted)">'+esc((it.method?it.method+" "+it.path:it.status?"HTTP "+it.status+" "+(it.path||""):it.iface))+'</div>'+headersHTML(it.headers)+
+    '<pre class="json" style="max-height:none">'+renderJSON(it.body,"",{redactOwner:S.lens==="desp"})+'</pre>';
+  openDialog($("dlg"));
+}
+function showSealed(){
+  var it=S.items[curIdx()]; if(!it) return;
+  var sealed=sealedOf(it); $("dlgT").textContent="Sealed part";
+  if(canOpen(it,S.lens)){
+    $("dlgB").innerHTML='<p style="margin:0;color:var(--ink2)">In the real system only the banks can open this. The simulation opens it so you can see what is inside.</p>'+
+      sealed.filter(function(x){return x.decoded;}).map(function(x){return '<div class="eyebrow">'+esc(x.path)+'</div><pre class="json sealed" style="max-height:none">'+renderJSON(x.decoded,"",{})+'</pre>';}).join("");
+  }else{
+    $("dlgB").innerHTML='<div class="hiddenmsg" style="border-color:var(--enc-l);background:var(--enc-t);color:var(--enc)"><strong>Sealed.</strong> '+esc(cap(LENS_NAME[S.lens]))+' cannot open this part – it is meant for the banks. Switch "Whose view" to Everything or to one of the two banks to see inside.</div>'+
+      sealed.map(function(x){return '<pre class="json" style="max-height:none">'+renderJSON(x.value,"",{})+'</pre>';}).join("");
+  }
+  openDialog($("dlg"));
+}
+
+/* ---------- scenario picker and custom action ---------- */
+function fillPicker(){
+  var sel=$("scenario"), keep=sel.value, h="";
+  if(S.mode==="live"){
+    var ORDER=["p2p-same-psp","p2p-two-psps","funding-same-psp","defunding-same-psp","p2p-reverse-waterfall-same-psp","p2p-waterfall-two-psps"];
+    var ex=((S.lists&&S.lists.examples)||[]).slice().sort(function(a,b){var x=ORDER.indexOf(a.id),y=ORDER.indexOf(b.id);return (x<0?99:x)-(y<0?99:y);});
+    h=ex.map(function(e){return '<option value="'+esc(e.id)+'">'+esc(e.title)+'</option>';}).join("")+'<option value="__custom">Custom…</option>';
+  }else if(S.mode==="replay"){
+    h=DATA.scenarios.map(function(s,i){return '<option value="'+i+'">'+esc(s.title)+'</option>';}).join("");
+  }
+  sel.innerHTML=h; if(keep&&sel.querySelector('option[value="'+keep.replace(/"/g,'\\"')+'"]')) sel.value=keep;
+  syncRun();
+}
+function syncRun(){
+  var running=S.mode==="live"&&!!S.scen&&S.scen.status==="started", b=$("run");
+  b.disabled=running||!$("scenario").options.length;
+  b.title=running?"A scenario is still running \u2013 let it finish first":"";
+}
+function openCustom(){
+  var people=(S.lists&&S.lists.people)||[];
+  var opts=people.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(p.name)+(p.bank?" ("+esc(String(p.bank).toUpperCase().replace("PSP-","PSP "))+")":"")+'</option>';}).join("");
+  $("cPer").innerHTML=opts; $("cPayee").innerHTML=opts; if(people.length>1) $("cPayee").selectedIndex=Math.min(2,people.length-1);
+  $("cErr").textContent=""; syncCustom(); openDialog($("dlgC"));
+}
+function syncCustom(){
+  var a=$("cAct").value; $("cPayeeW").hidden=a!=="pay"; $("cTextW").hidden=a!=="pay"; $("cPerL").textContent=a==="pay"?"Who pays":"Whose account";
+}
+function submitCustom(ev){
+  ev.preventDefault();
+  var a=$("cAct").value, body={action:a,payer:$("cPer").value,amount:$("cAmt").value.trim().replace(",",".")};
+  if(!/^\d+(\.\d{1,2})?$/.test(body.amount)||parseFloat(body.amount)<=0){ $("cErr").textContent="Please enter an amount like 12.50."; return; }
+  if(a==="pay"){ body.payee=$("cPayee").value; var t=$("cText").value.trim(); if(t) body.text=t; if(body.payee===body.payer){ $("cErr").textContent="Payer and payee must be different people."; return; } }
+  $("cGo").disabled=true;
+  post("/control/actions",body,true).then(function(r){
+    $("cGo").disabled=false;
+    if(r.ok){ closeDialog($("dlgC")); S.sel=null; scheduleRender(); }
+    else $("cErr").textContent=r.error||"The relay did not accept this.";
   });
-  var cur=ol.querySelector(".cur");
-  if(cur){var li=cur.parentNode; if(li.offsetTop<ol.scrollTop||li.offsetTop+li.offsetHeight>ol.scrollTop+ol.clientHeight) ol.scrollTop=li.offsetTop-ol.offsetTop-40;}
 }
-
-function highlight(step){
-  Object.keys(nodeEls).forEach(function(n){nodeEls[n].classList.remove("active","dim");});
-  Object.keys(wireEls).forEach(function(k){wireEls[k].classList.remove("hot");});
-  if(!step) return;
-  [step.from,step.to].forEach(function(n){if(nodeEls[n])nodeEls[n].classList.add("active");});
-  var k1=step.from+"|"+step.to, k2=step.to+"|"+step.from;
-  var hotKey = wireEls[k1]?k1:(wireEls[k2]?k2:null);
-  if(!hotKey && /^DESP/.test(step.to) && /^PSP [AB]$/.test(step.from)) hotKey=step.from+"|DESP";
-  if(!hotKey && /^DESP/.test(step.from) && /^PSP [AB]$/.test(step.to)) hotKey=step.to+"|DESP";
-  if(hotKey && wireEls[hotKey]) wireEls[hotKey].classList.add("hot");
+function runScenario(){
+  var v=$("scenario").value;
+  if(S.mode==="replay"){ var i=parseInt(v,10)||0; loadReplay(i); replayPlay(); render(); return; }
+  if(S.mode!=="live") return;
+  if(v==="__custom"){ openCustom(); return; }
+  S.sel=null;
+  post("/control/scenarios/"+encodeURIComponent(v),{}).then(function(r){ if(r.ok) scheduleRender(); });
 }
-
-function updateControls(){
-  var n=sc().steps.length;
-  document.getElementById("prev").disabled=S.idx<0;
-  document.getElementById("next").disabled=S.idx>=n-1;
-  document.getElementById("play").textContent=S.playing?"Pause":(S.idx>=n-1?"Replay":"Play");
-  document.getElementById("stepcount").textContent=(S.idx<0?"start":"step "+(S.idx)+" / "+(n-1));
-}
-function renderAll(){renderInspector();renderLedger();renderTimeline();highlight(sc().steps[S.idx]);updateControls();}
-
-/* ---------- animation ---------- */
-var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-function animate(step,dur,done){
-  if(S.anim) cancelAnimationFrame(S.anim);
-  var from=step.from==="Game Master"?"Game Master":step.from, to=step.to;
-  if(step.from==="Game Master"){ // broadcast: flash every node
-    Object.keys(nodeEls).forEach(function(n){nodeEls[n].classList.remove("flash");void nodeEls[n].getBoundingClientRect();nodeEls[n].classList.add("flash");});
-    msg.setAttribute("visibility","hidden"); setTimeout(done,reduced?0:dur*0.6); return;
-  }
-  if(!NODES[from]||!NODES[to]||reduced||dur<=0){msg.setAttribute("visibility","hidden");done();return;}
-  var a=edge(from,center(to)), b=edge(to,center(from));
-  if(to==="DESP ledger"){a=[center("DESP")[0],NODES["DESP"].y+56];b=center("DESP ledger");}
-  var vis=seesStep(step,S.lens);
-  msg.setAttribute("class","msg"+(vis?"":" hidden"));
-  msgLabel.textContent=vis?label(step):"?";
-  msg.setAttribute("visibility","visible");
-  var t0=null;
-  function frame(ts){
-    if(t0===null)t0=ts;
-    var p=Math.min(1,(ts-t0)/dur), e=p<.5?2*p*p:1-Math.pow(-2*p+2,2)/2;
-    msg.setAttribute("transform","translate("+(a[0]+(b[0]-a[0])*e)+","+(a[1]+(b[1]-a[1])*e)+")");
-    if(p<1){S.anim=requestAnimationFrame(frame);}else{S.anim=null;msg.setAttribute("visibility","hidden");if(nodeEls[to]){nodeEls[to].classList.remove("flash");void nodeEls[to].getBoundingClientRect();nodeEls[to].classList.add("flash");}done();}
-  }
-  S.anim=requestAnimationFrame(frame);
-}
-function speedMs(){return parseFloat(document.getElementById("speed").value)*1000;}
-function go(i,anim){
-  var n=sc().steps.length; i=Math.max(-1,Math.min(n-1,i));
-  if(anim && i===S.idx+1 && i>=0){
-    var step=sc().steps[i]; highlight(step);
-    animate(step,speedMs()*0.75,function(){S.idx=i;renderAll();if(S.playing)schedule();});
-  } else {
-    if(S.anim){cancelAnimationFrame(S.anim);S.anim=null;} msg.setAttribute("visibility","hidden");
-    S.idx=i; renderAll();
-  }
-}
-function schedule(){
-  clearTimeout(S.timer);
-  if(S.idx>=sc().steps.length-1){stop();return;}
-  S.timer=setTimeout(function(){go(S.idx+1,true);},speedMs()*0.25);
-}
-function play(){ if(S.idx>=sc().steps.length-1) go(-1,false); S.playing=true; updateControls(); go(S.idx+1,true); }
-function stop(){ S.playing=false; clearTimeout(S.timer); updateControls(); }
 
 /* ---------- wiring ---------- */
-var selSc=document.getElementById("scenario");
-DATA.scenarios.forEach(function(s,i){var o=document.createElement("option");o.value=i;o.textContent=s.title;selSc.appendChild(o);});
-function loadScenario(i){stop();S.sc=i;S.idx=-1;document.getElementById("summary").textContent=sc().summary;renderAll();}
-selSc.addEventListener("change",function(){loadScenario(+selSc.value);});
-document.getElementById("lens").addEventListener("change",function(e){S.lens=e.target.value;renderAll();});
-document.getElementById("play").addEventListener("click",function(){S.playing?stop():play();});
-document.getElementById("next").addEventListener("click",function(){stop();go(S.idx+1,true);});
-document.getElementById("prev").addEventListener("click",function(){stop();go(S.idx-1,false);});
-document.getElementById("restart").addEventListener("click",function(){stop();go(-1,false);});
-var sp=document.getElementById("speed"), spo=document.getElementById("speedOut");
-sp.addEventListener("input",function(){spo.textContent=parseFloat(sp.value).toFixed(1)+" s";});
-document.addEventListener("keydown",function(e){
-  if(/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.target.tagName)&&e.key!==" ") return;
-  if(e.target.tagName==="SELECT") return;
-  if(e.key===" "){e.preventDefault();S.playing?stop():play();}
-  else if(e.key==="ArrowRight"){stop();go(S.idx+1,true);}
-  else if(e.key==="ArrowLeft"){stop();go(S.idx-1,false);}
-});
-var start=0;
-try{var h=(location.hash||"").replace("#","");DATA.scenarios.forEach(function(s,i){if(s.id===h)start=i;});}catch(e){}
-selSc.value=start; loadScenario(start);
+function setView(v,persist){
+  S.view=v==="timeline"?"timeline":"map";
+  $("viewMap").hidden=S.view!=="map"; $("viewTl").hidden=S.view!=="timeline";
+  if(persist!==false) store("bananaLedger.view",S.view);
+  lastInsSig=null; $("seq")._sig=null; pillHide(); S.pill={id:null,mode:null};
+  render();
+}
+function setLens(l){ S.lens=l; try{ $("toasts").innerHTML=""; }catch(e){} lastInsSig=null; try{ $("steps")._sig=null; $("seq")._sig=null; }catch(e){} render(); }
+function wire(){
+  $("vMap").addEventListener("click",function(){setView("map");});
+  $("vTl").addEventListener("click",function(){setView("timeline");});
+  $("bStart").addEventListener("click",toStart);
+  $("bBack").addEventListener("click",stepBack);
+  $("bFwd").addEventListener("click",stepForward);
+  $("bPlay").addEventListener("click",togglePlay);
+  $("backLive").addEventListener("click",function(){S.sel=null;S.pill={id:null,mode:null};render();});
+  $("run").addEventListener("click",runScenario);
+  $("scenario").addEventListener("change",function(){ if(S.mode==="replay") loadReplay(parseInt($("scenario").value,10)||0); else if($("scenario").value==="__custom") openCustom(); });
+  $("bTop").addEventListener("click",function(e){e.preventDefault();toast("Top-up is coming later (money creation, ADR 0002).");});
+  document.addEventListener("click",function(e){
+    var t=e.target.closest?e.target.closest("[data-lens]"):null;
+    if(t){ setLens(t.getAttribute("data-lens")); return; }
+    var c=e.target.closest?e.target.closest("[data-i]"):null;
+    if(c&&c.getAttribute("aria-disabled")!=="true"&&(c.closest("#steps")||c.closest("#seq"))){ selectIndex(parseInt(c.getAttribute("data-i"),10)); return; }
+    var a=e.target.closest?e.target.closest("[data-act]"):null;
+    if(a){ if(a.getAttribute("data-act")==="full") showFull(); else if(a.getAttribute("data-act")==="sealed") showSealed(); return; }
+    var pop=$("pop");
+    if(!pop.hidden&&!pop.contains(e.target)&&!$("bSet").contains(e.target)){ pop.hidden=true; $("bSet").setAttribute("aria-expanded","false"); }
+  });
+  $("bSet").addEventListener("click",function(){ var p=$("pop"); p.hidden=!p.hidden; $("bSet").setAttribute("aria-expanded",String(!p.hidden)); if(!p.hidden) $("limit").focus(); });
+  $("limitGo").addEventListener("click",function(){
+    var v=$("limit").value.trim().replace(",","."); if(!/^\d+(\.\d{1,2})?$/.test(v)){ toast("Enter an amount like 3000.00.","bad"); return; }
+    post("/control/holding-limit",{amount:parseFloat(v).toFixed(2)}).then(function(r){ if(r.ok){ $("pop").hidden=true; $("bSet").setAttribute("aria-expanded","false"); } });
+  });
+  $("limit").addEventListener("keydown",function(e){ if(e.key==="Enter"){e.preventDefault();$("limitGo").click();} });
+  var sp=$("speed");
+  sp.addEventListener("input",function(){ speedDrag=true; var v=parseFloat(sp.value); $("speedOut").textContent=(v<=0&&S.mode==="live"?"instant":v.toFixed(1)+" s"); });
+  sp.addEventListener("change",function(){ speedDrag=false; var v=parseFloat(sp.value); if(S.mode==="live"){ S.ctrl.delaySeconds=v; post("/control/delay",{seconds:v}); } scheduleRender(); });
+  $("dlgX").addEventListener("click",function(){closeDialog($("dlg"));});
+  $("dlgCX").addEventListener("click",function(){closeDialog($("dlgC"));});
+  $("cCancel").addEventListener("click",function(){closeDialog($("dlgC"));});
+  $("cAct").addEventListener("change",syncCustom);
+  $("cform").addEventListener("submit",submitCustom);
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"){ var p=$("pop"); if(!p.hidden){p.hidden=true;$("bSet").setAttribute("aria-expanded","false");$("bSet").focus();} return; }
+    if(/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)||document.querySelector("dialog[open]")) return;
+    if(e.key==="ArrowRight"){ if(!$("bFwd").disabled) stepForward(); }
+    else if(e.key==="ArrowLeft"){ if(!$("bBack").disabled) stepBack(); }
+  });
+  window.addEventListener("resize",function(){ scheduleRender(); });
+  try{ if(typeof ResizeObserver!=="undefined") new ResizeObserver(function(){ if(S.view==="map") guard("wires",function(){var it=S.items[curIdx()]||null; var internal=it&&!isMsg(it); layoutWires(it&&!internal?nodeKey(it.from):null,it&&!internal?nodeKey(it.to):null);}); }).observe($("stage")); }catch(e){}
+  try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(scheduleRender); }catch(e){}
+}
+
+/* ---------- start ---------- */
+function relayBase(){
+  var q=""; try{ q=new URLSearchParams(location.search).get("relay")||""; }catch(e){}
+  if(q) return q.replace(/\/+$/,"");
+  if(/^https?:$/.test(location.protocol)) return "";
+  return null;
+}
+function hasReplay(){return !!(DATA&&DATA.scenarios&&DATA.scenarios.length&&TD);}
+function startReplay(){
+  if(!hasReplay()){ S.mode="none"; render(); setEmpty(); return; }
+  S.mode="replay"; $("speed").min="0.5"; $("speed").max="5"; $("speed").value="2";
+  var start=0; try{var h=(location.hash||"").replace("#","");DATA.scenarios.forEach(function(s,i){if(s.id===h)start=i;});}catch(e){}
+  fillPicker(); $("scenario").value=String(start); loadReplay(start);
+}
+function setEmpty(){
+  $("narr").innerHTML='<span class="ic">'+IC.speech+'</span><div><div class="hl">No data to show</div><div class="tx">Start the simulation with <code>python3 tools/run_local.py --control-room</code> and open <code>http://127.0.0.1:8100/</code>, or rebuild the recorded examples with <code>python3 tools/build_observer.py</code>.</div></div>';
+  $("inspector").innerHTML='<div class="eyebrow">Inspector</div><h2>Nothing to inspect</h2>';
+  $("moneyRow").innerHTML="";
+}
+function startLive(base){
+  S.base=base; S.mode="live"; $("speed").min="0"; $("speed").max="5";
+  fetchJSON(base+"/control/scenarios",null,4000).then(function(r){ if(r.ok&&r.data) S.lists=r.data; }).catch(function(){}).then(function(){
+    fillPicker(); render();
+  });
+  return loadHistory().then(function(){ S.online=true; openStream(); render(); });
+}
+function init(){
+  wire();
+  var v=store("bananaLedger.view"); setView(v==="timeline"?"timeline":"map",false);
+  var base=relayBase();
+  if(base===null){ startReplay(); return; }
+  fetchJSON(base+"/control/history?since=0",null,2500).then(function(r){
+    if(r.ok&&r.data&&Array.isArray(r.data.events)) return startLive(base);
+    throw new Error("not a relay");
+  }).catch(function(){ startReplay(); });
+}
+try{ init(); }catch(e){ if(window.console) console.error(e); try{ startReplay(); }catch(x){} }
 })();
 </script>
 </body>

@@ -1,0 +1,12 @@
+{
+  "_note": "Network relay configuration (simulation layer, not ECB). Every app calls the others through the relay: http://<relay>/r/<from>/<to>/<path>. The relay forwards to the 'url' of <to>. 'kind' tells the control room where to draw the app.",
+  "port": 8100,
+  "apps": {
+    "app-a": {"name": "Banking App A", "kind": "app", "bank": "psp-a"},
+    "app-b": {"name": "Banking App B", "kind": "app", "bank": "psp-b"},
+    "psp-a": {"name": "PSP A", "kind": "bank", "url": "http://127.0.0.1:8001", "bic": "SIMADEF0XXX", "app": "app-a", "testDataBank": "A"},
+    "psp-b": {"name": "PSP B", "kind": "bank", "url": "http://127.0.0.1:8002", "bic": "SIMBDEF0XXX", "app": "app-b", "testDataBank": "B"},
+    "desp": {"name": "DESP", "kind": "central", "url": "http://127.0.0.1:8000"}
+  },
+  "start": {"mode": "play", "delaySeconds": 1.5}
+}
