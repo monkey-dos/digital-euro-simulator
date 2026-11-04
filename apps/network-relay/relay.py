@@ -19,6 +19,8 @@
        POST /control/scenarios/<example id>
        POST /control/actions     {"action": "pay"|"fund"|"defund", "payer": "anna",
                                   "payee": "ben", "amount": "50.00", "text": "…"}
+       POST /control/helicopter-money  {"person": "anna", "account": "digital-euro"|"giro",
+                                  "amount": "100.00"}   (money creation, ADR 0002)
 
 Run:  python3 relay.py            (port 8100; settings in config/relay.json)
 """
@@ -26,6 +28,7 @@ import asyncio
 import json
 import os
 import sys
+import uuid
 from decimal import Decimal, InvalidOperation
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -333,6 +336,106 @@ async def holding_limit(request: Request):
                          **({} if all(banks.values()) else {"error": "Not every bank accepted the new limit"})})
 
 
+def _hm_amount(value) -> Decimal | None:
+    """A Helicopter Money amount: positive, at most 1,000,000.00, at most two decimals."""
+    try:
+        d = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    if not d.is_finite() or d <= 0 or d > Decimal("1000000") or d != d.quantize(Decimal("0.01")):
+        return None
+    return d.quantize(Decimal("0.01"))
+
+
+async def _hm_send(to: str, body: dict) -> tuple[int, dict]:
+    """One game master message through the gate (so slow motion, pause and step apply)."""
+    status, _, content = await relay_message("game-master", to, "POST", "/sim/helicopter-money",
+                                             {"Content-Type": "application/json"},
+                                             json.dumps(body, ensure_ascii=False).encode())
+    answer = parse_body(content)
+    return status, answer if isinstance(answer, dict) else {}
+
+
+async def _run_helicopter(plan: dict):
+    """Orchestrate one Helicopter Money drop: the DESP books first, then the bank is told.
+    If the bank cannot follow, the DESP booking is undone, so the books never stay unbalanced."""
+    title, hid = plan["title"], plan["helicopterId"]
+    feed.publish("scenario", status="started", id="helicopter-money", title=title, steps=[], helicopterMoney=True,
+                 helicopterId=hid)
+    try:
+        status, answer = await _hm_send("desp", plan["desp"])
+        if status != 200:
+            raise RuntimeError(f"The central platform refused: {answer.get('error', status)}")
+        status, answer = await _hm_send(plan["bank"], plan["psp"])
+        if status != 200:
+            error = answer.get("error", status)
+            undone = False
+            try:
+                undone = (await _hm_send("desp", {"reverse": hid}))[0] == 200
+            except Exception:  # report below
+                pass
+            raise RuntimeError(f"The bank refused: {error}. " + ("The central platform booking was undone."
+                                                                  if undone else "UNDOING THE CENTRAL PLATFORM BOOKING FAILED."))
+        await asyncio.sleep(0.4)
+        await feed.poll_internal()
+        feed.publish("scenario", status="finished", id="helicopter-money", title=title, ok=True,
+                     helicopterMoney=True, helicopterId=hid)
+    except Exception as e:  # never leave the control room waiting without an answer
+        feed.publish("scenario", status="failed", id="helicopter-money", title=title, ok=False, error=str(e),
+                     helicopterMoney=True, helicopterId=hid)
+        feed.publish("error", text=str(e))
+    finally:
+        feed.refresh_state_soon()
+
+
+async def helicopter_money(request: Request):
+    """Game master command: new money for a person (ADR 0002). Answers 202; progress arrives in the feed."""
+    b = await _json(request)
+    people = scenarios.test_data["users"]
+    person = people.get(b.get("person")) if isinstance(b.get("person"), str) else None
+    if person is None:
+        return bad(f"Unknown person {b.get('person')!r}", 404)
+    account = b.get("account")
+    if account not in ("digital-euro", "giro"):
+        return bad('Account must be "digital-euro" or "giro"')
+    amount = _hm_amount(b.get("amount"))
+    if amount is None:
+        return bad("Amount must be positive, at most 1,000,000.00, with at most two decimals")
+    if _running:
+        return bad("A scenario or another Helicopter Money drop is still running. Let it finish first.", 409)
+    if gate.queue:
+        return bad("Messages are still on their way. Let them arrive (press Play), then add money.", 409)
+    slug = scenarios.bank_slug(person["bank"])
+    first = person["name"].split()[0]
+    hid = "HM-" + uuid.uuid4().hex[:12]
+    if account == "digital-euro":
+        try:  # the bank's view of the holding limit: balance + incoming + amount
+            r = await client.get(APPS[slug]["url"] + "/sim/state", timeout=5)
+            st = r.json()
+            cust = next(c for c in st["customers"] if c["DEAN"] == person["dean"])
+            now = Decimal(cust["digitalEuro"]) + Decimal(cust["pendingIncoming"])
+            limit = Decimal(st["holdingLimit"])
+        except (httpx.HTTPError, ValueError, KeyError, StopIteration):
+            return bad(f"{APPS[slug]['name']} did not answer, so the holding limit cannot be checked", 502)
+        if now + amount > limit:
+            room = max(Decimal("0"), limit - now)
+            return bad(f"{first} would hold {now + amount:.2f} EUR, above the holding limit of {limit:.2f} EUR. "
+                       f"Room for new digital euro: {room:.2f} EUR.", 409)
+        plan = {"desp": {"target": "entry", "entryId": person["entry"], "amount": f"{amount:.2f}", "helicopterId": hid},
+                "psp": {"account": "digital-euro", "dean": person["dean"], "amount": f"{amount:.2f}", "helicopterId": hid},
+                "title": f"Helicopter Money: {amount:.2f} EUR digital euro for {first}"}
+    else:
+        bic = APPS[slug]["bic"]
+        plan = {"desp": {"target": "dca", "bic": bic, "amount": f"{amount:.2f}", "helicopterId": hid},
+                "psp": {"account": "giro", "dean": person["dean"], "amount": f"{amount:.2f}", "helicopterId": hid},
+                "title": f"Helicopter Money: {amount:.2f} EUR giro money for {first} (via {APPS[slug]['name']})"}
+    plan.update(bank=slug, helicopterId=hid)
+    task = asyncio.create_task(_run_helicopter(plan))
+    _running.add(task)
+    task.add_done_callback(_running.discard)
+    return JSONResponse({"ok": True, "started": plan["title"], "helicopterId": hid}, status_code=202)
+
+
 async def list_scenarios(request: Request):
     return JSONResponse(scenarios.list())
 
@@ -443,6 +546,7 @@ routes = [
     Route("/control/scenarios", list_scenarios, methods=["GET"]),
     Route("/control/scenarios/{id}", run_example, methods=["POST"]),
     Route("/control/actions", run_action, methods=["POST"]),
+    Route("/control/helicopter-money", helicopter_money, methods=["POST"]),
 ]
 if os.path.isdir(OBSERVER_DIR):
     routes.append(Mount("/", StaticFiles(directory=OBSERVER_DIR, html=True), name="control-room"))

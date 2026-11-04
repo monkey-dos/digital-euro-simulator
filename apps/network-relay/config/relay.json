@@ -6,7 +6,8 @@
     "app-b": {"name": "Banking App B", "kind": "app", "bank": "psp-b"},
     "psp-a": {"name": "PSP A", "kind": "bank", "url": "http://127.0.0.1:8001", "bic": "SIMADEF0XXX", "app": "app-a", "testDataBank": "A"},
     "psp-b": {"name": "PSP B", "kind": "bank", "url": "http://127.0.0.1:8002", "bic": "SIMBDEF0XXX", "app": "app-b", "testDataBank": "B"},
-    "desp": {"name": "DESP", "kind": "central", "url": "http://127.0.0.1:8000"}
+    "desp": {"name": "DESP", "kind": "central", "url": "http://127.0.0.1:8000"},
+    "game-master": {"name": "Game master", "kind": "gamemaster"}
   },
   "start": {"mode": "play", "delaySeconds": 1.5}
 }

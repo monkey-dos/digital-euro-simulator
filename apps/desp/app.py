@@ -7,10 +7,12 @@ Offers (interface I3, DESP API, Annex D2-7):
   POST /v1/sim/alias-lookup         PLACEHOLDER alias lookup (INTERPRETATION T5)
 Calls (PSP API of every bank): forwarded POST /v1/payment-instructions and the
 status pushes …/{id}/status.
-Simulation only (not ECB): GET /health, GET /sim/state, GET /sim/events, POST /sim/reset.
+Simulation only (not ECB): GET /health, GET /sim/state, GET /sim/events, POST /sim/reset,
+  POST /sim/helicopter-money (game master money creation, ADR 0002).
 
 Run:  python3 app.py            (port 8000; set DESP_PORT to change)
 """
+import json
 import os
 import sys
 
@@ -35,6 +37,7 @@ def _require_dependencies():
 _require_dependencies()
 
 from contextlib import asynccontextmanager  # noqa: E402
+from decimal import Decimal, InvalidOperation  # noqa: E402
 
 import httpx  # noqa: E402
 import uvicorn  # noqa: E402
@@ -50,6 +53,7 @@ from ledger import Ledger  # noqa: E402
 from reasons import XALI  # noqa: E402
 from schema_check import SchemaCheck  # noqa: E402
 from settlement import Engine  # noqa: E402
+from sim_ids import money, now_ts  # noqa: E402
 
 sim_log.APP_NAME = "DESP"
 S = "i3-psp-desp/schemas/"
@@ -157,6 +161,54 @@ async def sim_reset(request: Request):
     return Json({"ok": True})
 
 
+async def sim_helicopter_money(request: Request):
+    """Helicopter Money (ADR 0002, simulation only): new money, impossible with the real digital euro.
+    {"target": "entry", "entryId": "...", "amount": "100.00", "helicopterId": "..."}  digital euro on a ledger entry
+    {"target": "dca", "bic": "...", "amount": "100.00", "helicopterId": "..."}        central bank money on a DCA
+    {"reverse": "<helicopterId>"}                                                    undo one booking"""
+    def refuse(status: int, text: str):
+        return Json({"ok": False, "error": text}, status_code=status)
+    try:
+        body = json.loads(await request.body() or b"{}")
+        if not isinstance(body, dict):
+            raise ValueError
+    except ValueError:
+        return refuse(400, "Body is not a JSON object")
+    hid = body.get("reverse") or body.get("helicopterId")
+    if not isinstance(hid, str) or not hid:
+        return refuse(400, "helicopterId is missing")
+    try:
+        if body.get("reverse"):
+            bookings = ledger.helicopter_reverse(hid)
+            note = "Helicopter Money undone"
+        else:
+            try:
+                amount = money(body.get("amount"))
+                if amount <= 0 or amount > Decimal("1000000") or Decimal(str(body["amount"])) != amount:
+                    raise ValueError
+            except (InvalidOperation, ValueError, KeyError, TypeError):
+                return refuse(400, "Amount must be positive, at most 1,000,000.00, with at most two decimals")
+            if body.get("target") == "entry":
+                bookings = ledger.helicopter_entry(hid, str(body.get("entryId")), amount)
+            elif body.get("target") == "dca":
+                bookings = ledger.helicopter_dca(hid, str(body.get("bic")), amount)
+            else:
+                return refuse(400, 'target must be "entry" or "dca"')
+            note = "Helicopter Money created"
+    except KeyError as e:
+        return refuse(404, str(e.args[0]))
+    except ValueError as e:
+        return refuse(409, str(e))
+    for b in bookings:
+        if b["entry"].startswith("DCA of "):
+            b["entry"] = "DCA of " + participants.name(b["entry"][len("DCA of "):])
+    sim_log.emit("internal", "DESP", "DESP ledger", "internal", kind="ledger",
+                 body={"helicopterMoney": True, "helicopterId": hid, "reversed": bool(body.get("reverse")),
+                       "settlementDateTime": now_ts(), "bookings": bookings},
+                 note=f"{note}: " + ", ".join(f"{b['entry']} {b['change']}" for b in bookings))
+    return Json({"ok": True, "helicopterId": hid, "bookings": bookings})
+
+
 @asynccontextmanager
 async def lifespan(app):
     engine.client = httpx.AsyncClient(timeout=float(os.environ.get("DESP_FORWARD_TIMEOUT", "10")))
@@ -173,6 +225,7 @@ routes = [
     Route("/sim/state", sim_state, methods=["GET"]),
     Route("/sim/events", sim_events, methods=["GET"]),
     Route("/sim/reset", sim_reset, methods=["POST"]),
+    Route("/sim/helicopter-money", sim_helicopter_money, methods=["POST"]),
 ]
 seed()
 app = Starlette(routes=routes, lifespan=lifespan)
