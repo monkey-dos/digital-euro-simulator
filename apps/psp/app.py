@@ -13,7 +13,8 @@ Offers
       POST /v1/fundings/{id}/status                 final status push → 204
       POST /v1/defundings/{id}/status               final status push → 204
   Simulation only (not ECB): GET /health, GET /sim/state, GET /sim/events,
-      POST /sim/holding-limit, POST /sim/reset
+      POST /sim/holding-limit, POST /sim/reset,
+      POST /sim/helicopter-money (game master money creation, ADR 0009)
 Calls the DESP API (alias lookup placeholder, payment instructions, fundings, defundings).
 """
 import json
@@ -68,6 +69,7 @@ from starlette.routing import Route  # noqa: E402
 import sim_log  # noqa: E402
 from customers import Bank  # noqa: E402
 from desp_client import DespClient  # noqa: E402
+from helicopter import HelicopterLedger  # noqa: E402
 from http_util import (Json, check_request_headers, logged, problem, read_valid_body,  # noqa: E402
                        response_headers)
 from payee import PayeeSide  # noqa: E402
@@ -85,6 +87,7 @@ SEED = os.environ.get("SIM_SEED") or os.path.join(HERE, "..", "..", "examples", 
 
 schemas = SchemaCheck()
 bank = Bank(ME)
+helicopter = HelicopterLedger(ME)
 pending = Pending(ME)
 desp = DespClient(ME, CFG["bic"], CFG["despUrl"], schemas)
 payer_side = PayerSide(CFG, bank, desp, pending, float(os.environ.get("PSP_STATUS_TIMEOUT", "15")))
@@ -98,6 +101,7 @@ def seed():
     bank.seed(data["users"], CFG["seedBank"])
     payer_side.holding_limit = money(CFG["holdingLimit"])
     pending.clear()
+    helicopter.clear()
 
 
 def caller(request: Request) -> str:
@@ -210,7 +214,8 @@ async def health(request: Request):
 
 async def sim_state(request: Request):
     return Json({"app": ME, "bic": CFG["bic"], "holdingLimit": fmt(payer_side.holding_limit),
-                 "customers": [c.view() for c in bank.by_dean.values()], "pendingTransactions": pending.count()})
+                 "customers": [c.view() for c in bank.by_dean.values()], "pendingTransactions": pending.count(),
+                 "helicopterMoney": helicopter.state()})
 
 
 async def sim_events(request: Request):
@@ -234,6 +239,53 @@ async def sim_holding_limit(request: Request):
                        'Expected {"command": "SET_HOLDING_LIMIT", "amount": {"currency": "EUR", "amount": "100.00"}}')
     payer_side.holding_limit = limit
     return Json({"holdingLimit": fmt(limit)})
+
+
+async def sim_helicopter_money(request: Request):
+    """Helicopter Money (ADR 0009, simulation only), called by the game master after the DESP booked it.
+    {"account": "digital-euro"|"giro", "dean": "...", "amount": "100.00", "helicopterId": "..."}
+    {"reverse": "<helicopterId>"}   undo one booking"""
+    def refuse(status: int, text: str):
+        return Json({"ok": False, "error": text}, status_code=status)
+    try:
+        body = json.loads(await request.body() or b"{}")
+        if not isinstance(body, dict):
+            raise ValueError
+    except ValueError:
+        return refuse(400, "Body is not a JSON object")
+    if body.get("reverse"):
+        try:
+            helicopter.reverse(bank, str(body["reverse"]))
+        except Rejection as r:
+            return refuse(404, str(r))
+        except ValueError as e:
+            return refuse(409, str(e))
+        return Json({"ok": True})
+    hid = body.get("helicopterId")
+    if not isinstance(hid, str) or not hid:
+        return refuse(400, "helicopterId is missing")
+    if any(b["helicopterId"] == hid for b in helicopter.bookings):
+        return refuse(409, f"Helicopter Money booking {hid} exists already")
+    try:
+        amount = money(body.get("amount"))
+        if amount <= 0 or amount > Decimal("1000000") or Decimal(str(body["amount"])) != amount:
+            raise ValueError
+    except (InvalidOperation, ValueError, KeyError, TypeError):
+        return refuse(400, "Amount must be positive, at most 1,000,000.00, with at most two decimals")
+    account = body.get("account")
+    if account not in ("digital-euro", "giro"):
+        return refuse(400, 'account must be "digital-euro" or "giro"')
+    c = bank.by_dean.get(str(body.get("dean")))
+    if c is None:
+        return refuse(404, "No customer with this DEAN at this bank")
+    if account == "digital-euro":
+        if c.projected() + amount > payer_side.holding_limit:
+            return refuse(409, f"{c.name} would hold more than the holding limit of {fmt(payer_side.holding_limit)} EUR "
+                               f"({fmt(c.projected())} EUR now incl. incoming, {fmt(amount)} EUR new)")
+        helicopter.book_digital_euro(c, amount, hid)
+    else:
+        helicopter.book_giro(bank, c, amount, hid)
+    return Json({"ok": True, "helicopterId": hid, "digitalEuro": fmt(c.balance), "giro": fmt(c.giro)})
 
 
 async def sim_reset(request: Request):
@@ -260,6 +312,7 @@ routes = [
     Route("/sim/events", sim_events, methods=["GET"]),
     Route("/sim/holding-limit", sim_holding_limit, methods=["POST"]),
     Route("/sim/reset", sim_reset, methods=["POST"]),
+    Route("/sim/helicopter-money", sim_helicopter_money, methods=["POST"]),
 ]
 seed()
 app = Starlette(routes=routes, lifespan=lifespan)

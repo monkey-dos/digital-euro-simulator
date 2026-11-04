@@ -1,6 +1,6 @@
 # ADR 0002: A game master may create money
 
-Status: accepted (1 November 2026)
+Status: superseded by [ADR 0009](0009-helicopter-money.md) (accepted 1 November 2026, superseded 4 November 2026)
 
 ## Decision
 A game master can top up any account (giro, digital euro or a bank's DCA) at any time.

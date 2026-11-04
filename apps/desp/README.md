@@ -34,10 +34,13 @@ Settings (environment variables): `DESP_PORT` (8000), `DESP_PARTICIPANTS` (parti
 | `POST /v1/sim/alias-lookup` | Phone number → DEAN + bank | **placeholder** (INTERPRETATION T5) |
 | `GET /sim/state` | Ledger entries, DCA balances, money check, access data, last transactions | simulation only |
 | `GET /sim/events?since=N` | The message log (see below) | simulation only |
-| `POST /sim/reset` | Back to the test data | simulation only |
+| `POST /sim/reset` | Back to the test data (also Helicopter Money totals to 0) | simulation only |
+| `POST /sim/helicopter-money` | Helicopter Money (ADR 0009): `{"target": "entry", "entryId", "amount", "helicopterId"}` new digital euro on a ledger entry, `{"target": "dca", "bic", …}` new central bank money on a DCA, `{"reverse": "<helicopterId>"}` undo. 400 bad body or amount, 404 unknown entry / DCA, 409 duplicate id or nothing to undo. Logs a `ledger` step marked `helicopterMoney` | simulation only (money creation, impossible with the real digital euro) |
 | `GET /health` | Health check | simulation only |
 
 Calls on each bank's PSP API: the forwarded `POST /v1/payment-instructions` (only when payer and payee banks differ) and the status pushes `POST /v1/payment-instructions/{id}/status`, `/v1/fundings/{id}/status`, `/v1/defundings/{id}/status` (the bank answers 204).
+
+The `/sim/` endpoints are for the relay only (they are the game master's and the test tools' way in, not part of the ECB scheme). Calling them directly, for example a Helicopter Money `reverse` after a finished giro drop, can unbalance the books: the bank would keep the giro money the DESP no longer backs.
 
 ## How it works
 
@@ -47,7 +50,7 @@ Calls on each bank's PSP API: the forwarded `POST /v1/payment-instructions` (onl
 4. It settles **all legs in one atomic step** (`ledger.py`): funding (DCA → payer), payment, defunding (payee → DCA). If any leg fails, nothing is booked.
 5. It pushes the final status to every bank involved. Funding ID/status go only to the payer's bank, defunding ID/status only to the payee's bank (T7). If the payee bank rejected, only the payer's bank gets a status (D2-7 Fig. 8).
 
-Ledger: one balance per entry and one DCA per bank (BIC). Funding debits the DCA of `instructedAgent`, defunding credits it (T4). Money check in `/sim/state`: digital euro in circulation = opening balances + net DCA debits since start.
+Ledger: one balance per entry and one DCA per bank (BIC). Funding debits the DCA of `instructedAgent`, defunding credits it (T4). Money check in `/sim/state`: digital euro in circulation = opening balances + net DCA debits since start (DCA changes from Helicopter Money left out) + digital euro Helicopter Money. The ledger keeps created money apart: `helicopterMoney` in `/sim/state` has the digital euro created and the DCA money created per BIC; `moneyCheck.ok` stays true after any Helicopter Money. The game master (the relay) sends these simulation-only bookings; the DESP does not know it is the relay.
 
 ## Code
 

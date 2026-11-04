@@ -26,13 +26,15 @@ Every event has `seq` (1, 2, 3 …, gaps possible after a reset), `type` and `ti
 | `kind` | `request` or `response` |
 | `inReplyTo` | for a response: the `id` of its request |
 | `from`, `to` | display names (`Banking App A`, `PSP A`, `DESP`, …), the same names the apps use in their own logs |
-| `fromId`, `toId` | relay names (`app-a`, `psp-a`, `desp`, …) |
+| `fromId`, `toId` | relay names (`app-a`, `psp-a`, `desp`, `game-master`, …) |
 | `interface` | `I1`, `I3`, `I3 (placeholder)` or `sim (not ECB)` |
 | `method`, `path` | request line; a response repeats the request's `path` and has `method: null` |
 | `status` | HTTP status of a response, otherwise absent |
 | `headers` | the technical headers defined in the contracts (INTERPRETATION T1, A12) |
 | `body` | the JSON body exactly as sent; encrypted parts stay `SIMENC:…` (INTERPRETATION C7) |
 | `standIn` | `true` when the relay itself played the banking app (no real app exists yet) |
+
+**Game master messages (Helicopter Money, ADR 0009).** The relay sends them itself and they pass the gate like all others. They have `from` or `to` = `Game master` (`fromId` / `toId` = `game-master`), interface `sim (not ECB)`, path `/sim/helicopter-money`, and are not marked `standIn`. A drop is four messages: request and answer to the DESP, request and answer to the person's bank. A drop that is refused by the bank and undone has six (plus the undo request and answer to the DESP); after a lost answer the undo goes to the DESP and the bank, so up to eight. The request bodies are described in `contracts/i7-game-master`.
 
 ### `released` – the gate let message `id` continue
 
@@ -43,13 +45,15 @@ Every event has `seq` (1, 2, 3 …, gaps possible after a reset), `type` and `ti
 | Field | Meaning |
 |---|---|
 | `app`, `appId` | which app reported it |
-| `kind` | `ledger` (DESP booking), `giro` (bank's core banking: block, debit, credit, release), `note` (anything else, e.g. a rejection reason) |
+| `kind` | `ledger` (DESP booking), `giro` (bank's core banking: block, debit, credit, release), `bank-ledger` (a bank's own ledger booking, today only for Helicopter Money), `note` (anything else, e.g. a rejection reason) |
 | `from`, `to`, `interface`, `body`, `note` | as in the app's own log (`GET /sim/events`); `body` of a ledger booking has `UETR`, `settlementDateTime`, `bookings[]` (`entry`, `before`, `change`, `after`), the same shape as `examples/*-ledger-settlement.json` |
 | `appTime` | when the app logged it |
 
+**Helicopter Money steps.** A `ledger` step with `body.helicopterMoney: true` is the DESP booking of new money (`body.helicopterId`, `body.reversed: true` when it is the undo of a drop; `bookings[]` as above, with the changed entry or `DCA of PSP A` marked `+X`). A `bank-ledger` step has `body: {"helicopterMoney": true, "helicopterId": "…", "bookings": [{"account": "DCA at the central bank", "change": "+100.00"}, {"account": "giro of Anna Schmidt", "change": "+100.00"}]}`. The giro credit that follows is a normal `giro` step with the action `credit (Helicopter Money)` (`undo credit (Helicopter Money)` for an undo). For digital euro the bank logs a `note` ("digital euro Helicopter Money: balance of … +X"), because only its copy of the balance changes.
+
 ### `state` – balances changed
 
-`{"apps": {"desp": <DESP GET /sim/state>, "psp-a": <PSP A GET /sim/state>, "psp-b": …}}`. An app that did not answer is `null`. Sent only when something changed.
+`{"apps": {"desp": <DESP GET /sim/state>, "psp-a": <PSP A GET /sim/state>, "psp-b": …}}`. An app that did not answer is `null`. Sent only when something changed. The DESP state has `helicopterMoney` (`digitalEuro`, `dca` per BIC) and `moneyCheck.ok`; each bank state has `helicopterMoney` (`giro`, `digitalEuro`, `dcaReceived`, `ok`, `bookings[]`). The observer checks that, per bank, the DESP's `helicopterMoney.dca[BIC]` equals the bank's `helicopterMoney.giro`.
 
 ### `control` – the gate changed
 
@@ -62,6 +66,8 @@ Every event has `seq` (1, 2, 3 …, gaps possible after a reset), `type` and `ti
 | `started` | `id`, `title`, `steps` (the example's steps for the narration: `step`, `title`, `from`, `to`, `interface`, `method`, `path`, `status`, `placeholder`, `specRef`, `explanation`; empty for a free action), `standIn: true` |
 | `finished` | `id`, `title`, `ok` (the bank answered `ReturnCode` 0), `httpStatus`, `answer` (the bank's I1 answer) |
 | `failed` | `id`, `title`, `ok: false`, `error` |
+
+A Helicopter Money drop uses the same events with `id: "helicopter-money"`, `helicopterMoney: true` and `helicopterId`; `started` also carries `hm: {"person", "name", "account", "amount", "bank", "bankName"}` so the control room can tell the story, `steps` is empty and `standIn` is absent; `finished` has `ok: true`, `failed` has an `error` in plain English (for example "The bank refused: … The central platform booking was undone.").
 
 ### `error` – the relay could not reach an app
 

@@ -27,7 +27,7 @@ http://127.0.0.1:8100/r/<from>/<to>/<path>
 
 for example PSP A calls the DESP at `http://127.0.0.1:8100/r/psp-a/desp/v1/payment-instructions`. The relay forwards to the address of `<to>` in `config/relay.json` and returns the answer. `run_local.py --control-room` gives every app these addresses (PSP: `DESP_URL`; DESP: a generated participant register), so the apps' code stays unchanged.
 
-Names: `app-a`, `app-b` (banking apps), `psp-a`, `psp-b`, `desp`.
+Names: `app-a`, `app-b` (banking apps), `psp-a`, `psp-b`, `desp`, and `game-master` (the relay itself as sender of Helicopter Money messages; it has no address).
 
 ## The gate
 
@@ -43,6 +43,10 @@ If the relay cannot reach an app, it answers the caller with HTTP 502, problem+j
 ## Banking app stand-in
 
 There is no banking app yet. When the game master starts a scenario, the relay sends the banking app's message itself (marked `standIn: true` in the feed). Real banking apps can replace it later by sending to `/r/app-a/psp-a/i1/messages`.
+
+## Game master: Helicopter Money
+
+`POST /control/helicopter-money` (I7, ADR 0009) makes the relay the game master. It checks the input and the holding limit, answers 202, then sends its own messages **through the gate** (so slow motion, pause and step apply, and they show in the feed from `Game master`): to the DESP (new digital euro on the person's entry, or new central bank money on the bank's DCA), then to the person's bank (update the balance copy, or book and credit giro money). If the bank refuses after the DESP booked, the relay sends an undo to the DESP; after an error or a lost answer (5xx, 502, timeout) it sends the undo to the DESP and the bank, because it cannot know what was booked ("nothing to undo", 404, is fine). Refused (409) while a scenario runs, another drop runs or a message waits, like reset; the slot is claimed before the first wait, so two drops at the same moment cannot both start. The apps' `/sim/…` endpoints are for the relay only: the relay route `/r/<from>/<to>/…` passes on only paths that start with `/v1/` (I3) or `/i1/` (I1), after decoding the path until it stops changing and refusing empty, `.` and `..` segments (so `./sim/…`, `%2e` and `/v1/../sim/…` are refused too), and answers 403 (problem+json) for everything else and for `game-master` as sender. An undo after a failed drop is judged per side: a connection that never opened (502 XNET from a connect error) means nothing was booked there; a timeout or a 5xx means the booking is unknown, so the undo goes there too, and the message names each side whose undo failed.
 
 ## Settings
 

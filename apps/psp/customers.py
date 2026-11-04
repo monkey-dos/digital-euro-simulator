@@ -83,6 +83,11 @@ class Bank:
         c.blocked -= amount
         self._giro_event(c, "release", amount)
 
-    def credit(self, c: Customer, amount: Decimal):
+    def credit(self, c: Customer, amount: Decimal, label: str = "credit"):
         c.giro += amount
-        self._giro_event(c, "credit", amount)
+        self._giro_event(c, label, amount)
+
+    def debit_giro(self, c: Customer, amount: Decimal, label: str = "debit"):
+        """Plain debit of available giro money (used only to undo a Helicopter Money credit)."""
+        c.giro -= amount
+        self._giro_event(c, label, amount)
