@@ -10,7 +10,7 @@ An educational simulation of the ECB **digital euro**. It shows what happens bet
 - The **central platform (DESP)** keeps the one ledger where all digital euro live.
 - At least **two banks (PSPs)**, each built as its own app. A bank provides only the interface; the money itself sits on the ECB ledger.
 - A **transparency observer** shows every message travelling between the apps, slowed down so you can follow it, plus all balances in real time.
-- A **game master** controls speed, prepares scenarios and can top up accounts that run dry. That creates money, which is impossible in reality, so every top-up is labelled.
+- A **game master** controls speed, prepares scenarios and can drop **Helicopter Money** on people: new digital euro on their ledger entry, or new giro money via their bank. That creates money, which is impossible in reality, so every drop is labelled and counted separately.
 - Later: a **merchant gateway** with a test shop.
 
 See [the component map](docs/architecture/component-map.md) for all parts and interfaces.

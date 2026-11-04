@@ -27,7 +27,7 @@ http://127.0.0.1:8100/r/<from>/<to>/<path>
 
 for example PSP A calls the DESP at `http://127.0.0.1:8100/r/psp-a/desp/v1/payment-instructions`. The relay forwards to the address of `<to>` in `config/relay.json` and returns the answer. `run_local.py --control-room` gives every app these addresses (PSP: `DESP_URL`; DESP: a generated participant register), so the apps' code stays unchanged.
 
-Names: `app-a`, `app-b` (banking apps), `psp-a`, `psp-b`, `desp`.
+Names: `app-a`, `app-b` (banking apps), `psp-a`, `psp-b`, `desp`, and `game-master` (the relay itself as sender of Helicopter Money messages; it has no address).
 
 ## The gate
 
@@ -43,6 +43,10 @@ If the relay cannot reach an app, it answers the caller with HTTP 502, problem+j
 ## Banking app stand-in
 
 There is no banking app yet. When the game master starts a scenario, the relay sends the banking app's message itself (marked `standIn: true` in the feed). Real banking apps can replace it later by sending to `/r/app-a/psp-a/i1/messages`.
+
+## Game master: Helicopter Money
+
+`POST /control/helicopter-money` (I7, ADR 0002) makes the relay the game master. It checks the input and the holding limit, answers 202, then sends its own messages **through the gate** (so slow motion, pause and step apply, and they show in the feed from `Game master`): to the DESP (new digital euro on the person's entry, or new central bank money on the bank's DCA), then to the person's bank (update the balance copy, or book and credit giro money). If the bank refuses after the DESP booked, the relay sends an undo to the DESP. Refused (409) while a scenario runs or a message waits, like reset. The apps' `/sim/helicopter-money` endpoints are simulation only.
 
 ## Settings
 
