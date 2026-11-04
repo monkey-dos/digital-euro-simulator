@@ -47,6 +47,8 @@ Two apps that respect the same contract can replace each other. For example, a b
 
 ## Watch it live: the control room
 
+New here? **[Getting started](docs/getting-started.md)** walks you through it step by step (Python, git, macOS pitfalls). In short, with Python 3.11+ in an activated environment:
+
 ```bash
 pip install -r apps/desp/requirements.txt -r apps/psp/requirements.txt -r apps/network-relay/requirements.txt
 python3 tools/run_local.py --control-room          # add --pause to start step by step
@@ -69,7 +71,7 @@ python3 tools/build_observer.py      # bundles the examples for the observer
 
 ## Run the apps
 
-The first apps run on your computer without Docker: the central platform (DESP) and two banks (PSP A, PSP B). You need Python 3.11 or newer.
+The first apps run on your computer without Docker: the central platform (DESP) and two banks (PSP A, PSP B). You need Python 3.11 or newer (the one built into macOS is too old; see [Getting started](docs/getting-started.md)).
 
 ```bash
 pip install -r apps/desp/requirements.txt -r apps/psp/requirements.txt
