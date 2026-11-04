@@ -22,7 +22,7 @@ python3 tools/build_observer.py      # bundle them (scenarios.js and dist/observ
 ## What each part shows
 
 - **Header:** logo, the **Map | Timeline** switch (your choice is remembered), the scenario picker with **Run scenario** (live: the example flows from the relay plus *Custom…* for a free pay / fund / defund action; offline: the recorded examples), and connection dots (green = the app answers, red = it does not).
-- **Control bar:** back to start (live: reset, after a confirmation), step back, play / pause, step forward, speed (0–5 s per message), **Whose view**, the violet **Helicopter Money** button (money creation, ADR 0002; live only, disabled with a tooltip in the offline replay) and *Settings* (holding limit of all banks, live only).
+- **Control bar:** back to start (live: reset, after a confirmation), step back, play / pause, step forward, speed (0–5 s per message), **Whose view**, the violet **Helicopter Money** button (money creation, ADR 0009; live only, disabled with a tooltip in the offline replay) and *Settings* (holding limit of all banks, live only).
   - Live, **pause** mode: every message waits at the gate until you press step forward. **Play** lets each message wait the chosen number of seconds. Several waiting messages are released oldest first.
   - Step back or clicking an earlier step only *reviews* it; the live run carries on in the background. **Back to live** returns.
 - **Map:** the apps as a map (banking app A, PSP A, central platform with its ledger card, PSP B, banking app B). The travelling pill shows the step number, a short label and a lock when the message has a sealed (`SIMENC`) part. Below it: the narration, then the step chips (done, now, waiting, upcoming steps of the running example).

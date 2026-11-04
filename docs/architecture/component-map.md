@@ -35,7 +35,7 @@ All documents are drafts, "not intended as a basis for implementation". That is 
 ### Simulation layer (not in the spec)
 - **Network Relay**: all traffic between apps passes through it. It delays each hop (slow motion) and copies messages to the observer, so the apps stay unchanged.
 - **Transparency Observer**: **decision: everything is visible.** Live message flow, ledger and DCA balances, status steps, replay. Optional lenses: what DESP sees / what a PSP sees / public totals.
-- **Game Master Console**: speed, pause, single-step, reset, test users, scenarios. **Decision (amended 4 Nov 2026, ADR 0002):** the game master may create **Helicopter Money** for people: new digital euro on a person's DEAN ledger entry, or new central bank money on a bank's DCA that the bank credits to the person's giro account (the bank books "DCA at the central bank +X / giro +X"). There is no stand-alone DCA top-up. That creates money, which is impossible in reality, so every drop is labelled and totalled separately. The relay orchestrates it through the gate; the DESP and the banks offer simulation-only `/sim/helicopter-money` endpoints.
+- **Game Master Console**: speed, pause, single-step, reset, test users, scenarios. **Decision (4 Nov 2026, ADR 0009, supersedes ADR 0002):** the game master may create **Helicopter Money** for people: new digital euro on a person's DEAN ledger entry, or new central bank money on a bank's DCA that the bank credits to the person's giro account (the bank books "DCA at the central bank +X / giro +X"). There is no stand-alone DCA top-up. That creates money, which is impossible in reality, so every drop is labelled and totalled separately. The relay orchestrates it through the gate; the DESP and the banks offer simulation-only `/sim/helicopter-money` endpoints.
 - **Interface Contracts**: folder in the shared repository with API definitions and sample messages per interface.
 
 ## Interfaces
@@ -67,7 +67,7 @@ All documents are drafts, "not intended as a basis for implementation". That is 
 
 ## Decisions (agreed 1 Nov 2026)
 1. Holding limit: adjustable by the game master, 3,000 € placeholder.
-2. Everything visible; a game master can create Helicopter Money for people (money creation in two kinds, labelled and totalled separately; amended 4 Nov 2026, ADR 0002).
+2. Everything visible; a game master can create Helicopter Money for people (money creation in two kinds, labelled and totalled separately; 4 Nov 2026, ADR 0009 supersedes ADR 0002).
 3. Giro accounts always at the same bank as the digital euro access; digital euro always on the ECB ledger, the bank only provides the interface.
 4. PSP B serves merchants, PSP A only individuals; a third bank may follow (PSP app is a template).
 5. One account per person, enforced (bank asks the central user registry; sim simplification).

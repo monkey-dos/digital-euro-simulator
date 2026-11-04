@@ -171,7 +171,7 @@ svg{flex:none}
 .tile.bump{animation:bump 1.2s ease-out}
 @keyframes bump{0%{background:var(--enc-t);border-color:var(--banana)}100%{background:var(--surface)}}
 
-/* Helicopter Money (game master, ADR 0002) */
+/* Helicopter Money (game master, ADR 0009) */
 .btn.hm{color:var(--violet);border-color:var(--violet-l)}
 .btn.hm:hover:not(:disabled):not([aria-disabled=true]){border-color:var(--violet)}
 .btn.hm.on{background:var(--violet);border-color:var(--violet);color:#fff}
@@ -606,7 +606,7 @@ function fromInternal(e){
     note:e.note,app:e.app,headers:{},released:true,waiting:false,standIn:false,time:e.time};
 }
 
-/* ---------- Helicopter Money (ADR 0002): items made by the game master ---------- */
+/* ---------- Helicopter Money (ADR 0009): items made by the game master ---------- */
 function isGmMsg(it){return !!it&&(it.fromId==="game-master"||it.toId==="game-master");}
 function isHM(it){
   if(!it) return false;

@@ -1,4 +1,4 @@
-"""The bank's small Helicopter Money ledger (ADR 0002, simulation only).
+"""The bank's small Helicopter Money ledger (ADR 0009, simulation only).
 
 Helicopter Money is new money made by the game master, impossible with the real
 digital euro. The bank sees two kinds, both for a customer:
@@ -28,10 +28,15 @@ class HelicopterLedger:
         self.bookings = []
 
     def total(self, account: str) -> Decimal:
+        """What the bank credited to customers: giro credits, or digital euro balance copies."""
         return sum((Decimal(b["amount"]) for b in self.bookings if b["account"] == account), Decimal("0"))
 
+    def dca_received(self) -> Decimal:
+        """Central bank money the bank booked in its own ledger: the "DCA at the central bank" legs, counted on their own."""
+        return sum((Decimal(b["dcaLeg"]) for b in self.bookings if b["account"] == "giro"), Decimal("0"))
+
     def state(self) -> dict:
-        giro, dca = self.total("giro"), self.total("giro")  # one booking has both legs: DCA +X and giro +X
+        giro, dca = self.total("giro"), self.dca_received()
         return {"giro": fmt(giro), "digitalEuro": fmt(self.total("digital-euro")), "dcaReceived": fmt(dca),
                 "ok": giro == dca, "bookings": list(self.bookings)}
 
@@ -43,8 +48,10 @@ class HelicopterLedger:
                      body={"helicopterMoney": True, "helicopterId": hid, "bookings": legs},
                      note=f"bank ledger (Helicopter Money): DCA at the central bank +{fmt(amount)} / giro of {customer.name} +{fmt(amount)}")
         bank.credit(customer, amount, label="credit (Helicopter Money)")
+        # "amount" = credited to the customer's giro account; "dcaLeg" = the DCA leg of the ledger booking above.
+        # They are recorded apart, so the check in state() can really fail if one of them goes missing.
         self.bookings.append({"helicopterId": hid, "time": now_ts(), "account": "giro", "dean": customer.dean,
-                              "name": customer.name, "amount": fmt(amount)})
+                              "name": customer.name, "amount": fmt(amount), "dcaLeg": legs[0]["change"].lstrip("+")})
 
     def book_digital_euro(self, customer, amount: Decimal, hid: str):
         """Digital euro Helicopter Money: only the bank's copy of the balance changes."""

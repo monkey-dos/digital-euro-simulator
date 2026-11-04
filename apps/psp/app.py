@@ -14,7 +14,7 @@ Offers
       POST /v1/defundings/{id}/status               final status push → 204
   Simulation only (not ECB): GET /health, GET /sim/state, GET /sim/events,
       POST /sim/holding-limit, POST /sim/reset,
-      POST /sim/helicopter-money (game master money creation, ADR 0002)
+      POST /sim/helicopter-money (game master money creation, ADR 0009)
 Calls the DESP API (alias lookup placeholder, payment instructions, fundings, defundings).
 """
 import json
@@ -242,7 +242,7 @@ async def sim_holding_limit(request: Request):
 
 
 async def sim_helicopter_money(request: Request):
-    """Helicopter Money (ADR 0002, simulation only), called by the game master after the DESP booked it.
+    """Helicopter Money (ADR 0009, simulation only), called by the game master after the DESP booked it.
     {"account": "digital-euro"|"giro", "dean": "...", "amount": "100.00", "helicopterId": "..."}
     {"reverse": "<helicopterId>"}   undo one booking"""
     def refuse(status: int, text: str):

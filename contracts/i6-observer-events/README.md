@@ -34,7 +34,7 @@ Every event has `seq` (1, 2, 3 …, gaps possible after a reset), `type` and `ti
 | `body` | the JSON body exactly as sent; encrypted parts stay `SIMENC:…` (INTERPRETATION C7) |
 | `standIn` | `true` when the relay itself played the banking app (no real app exists yet) |
 
-**Game master messages (Helicopter Money, ADR 0002).** The relay sends them itself and they pass the gate like all others. They have `from` or `to` = `Game master` (`fromId` / `toId` = `game-master`), interface `sim (not ECB)`, path `/sim/helicopter-money`, and are not marked `standIn`. A drop is four messages: request and answer to the DESP, request and answer to the person's bank. The request bodies are described in `contracts/i7-game-master`.
+**Game master messages (Helicopter Money, ADR 0009).** The relay sends them itself and they pass the gate like all others. They have `from` or `to` = `Game master` (`fromId` / `toId` = `game-master`), interface `sim (not ECB)`, path `/sim/helicopter-money`, and are not marked `standIn`. A drop is four messages: request and answer to the DESP, request and answer to the person's bank. A drop that is refused by the bank and undone has six (plus the undo request and answer to the DESP); after a lost answer the undo goes to the DESP and the bank, so up to eight. The request bodies are described in `contracts/i7-game-master`.
 
 ### `released` – the gate let message `id` continue
 

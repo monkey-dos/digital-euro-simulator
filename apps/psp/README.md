@@ -36,9 +36,11 @@ Settings (environment variables, override the config file): `PSP_PORT`, `DESP_UR
 | `POST /v1/payment-instructions/{id}/status` | DESP | Final status → 204 | D2-7 p.106–109 |
 | `POST /v1/fundings/{id}/status`, `/v1/defundings/{id}/status` | DESP | Final status → 204 | D2-7 p.95–102 |
 | `POST /sim/holding-limit` | game master | `{"command": "SET_HOLDING_LIMIT", "amount": {...}}` | simulation only (ADR 0005) |
-| `POST /sim/helicopter-money` | game master | `{"account": "digital-euro"\|"giro", "dean", "amount", "helicopterId"}` or `{"reverse": "<helicopterId>"}` | simulation only (ADR 0002) |
+| `POST /sim/helicopter-money` | game master | `{"account": "digital-euro"\|"giro", "dean", "amount", "helicopterId"}` or `{"reverse": "<helicopterId>"}` | simulation only (ADR 0009) |
 | `GET /sim/state` | anyone | Customers: name, DEAN, giro, blocked, digital euro; `helicopterMoney` ledger | simulation only |
 | `GET /sim/events?since=N`, `POST /sim/reset`, `GET /health` | anyone | Log, reset to test data, health | simulation only |
+
+The `/sim/` endpoints are for the relay only. Calling them directly (for example a Helicopter Money `reverse` here or at the DESP after a finished giro drop) can unbalance the books between the bank and the DESP.
 
 Every I1 request needs the header `Sim-User-DEAN` with the logged-in customer's DEAN (**placeholder** for the app's login after SCA, INTERPRETATION A12). Without it: 401 problem+json.
 
@@ -75,7 +77,7 @@ Checks and reservations happen in one step: digital euro going out (`reservedOut
 - Waterfall and reverse waterfall are switched on for every test user (the D1-1 liquidity settings are not built yet).
 - The bank keeps its own copy of each customer's digital euro balance, updated from the DESP's status pushes. There is no balance query to the DESP yet. After an `XTMO` the copy and the reservations wait for the late status push; if none ever comes, a reset is needed.
 - The holding limit is one value per bank, set by config or the game master (ADR 0005), not per customer.
-- **Helicopter Money** (ADR 0002, game master, simulation only): `digital-euro` updates only the bank's copy of the customer's balance and is refused (409) if balance + pending incoming + amount would exceed the holding limit. `giro` is called after the DESP credited new central bank money to this bank's DCA: the bank books "DCA at the central bank +X / giro of the customer +X" in a small Helicopter Money ledger (`helicopter.py`, a `bank-ledger` step) and credits the giro account (a `giro` step); the digital euro balance stays. The banks keep no full balance sheet; this ledger covers only Helicopter Money. `/sim/state` shows `helicopterMoney` (`giro`, `digitalEuro`, `dcaReceived`, `ok`, `bookings`); a reset sets it to 0.
+- **Helicopter Money** (ADR 0009, game master, simulation only): `digital-euro` updates only the bank's copy of the customer's balance and is refused (409) if balance + pending incoming + amount would exceed the holding limit. `giro` is called after the DESP credited new central bank money to this bank's DCA: the bank books "DCA at the central bank +X / giro of the customer +X" in a small Helicopter Money ledger (`helicopter.py`, a `bank-ledger` step) and credits the giro account (a `giro` step); the digital euro balance stays. The banks keep no full balance sheet; this ledger covers only Helicopter Money. `/sim/state` shows `helicopterMoney` (`giro` = credited to customers, `digitalEuro`, `dcaReceived` = the "DCA at the central bank" legs of the bank ledger, counted separately, `ok` = the two are equal, `bookings`); a reset sets it to 0.
 - The payee name (`Name`, A14) goes into the encrypted part as typed by the user; it is not checked.
 - Only P2P (`PP01`, MCC 4829) with `ALIA` or `DEAN` as payment method. No notification to the payee's app yet.
 - State lives in memory; a restart starts again from the test data.

@@ -15,8 +15,10 @@ Checks:
   6. inside-the-app steps (ledger booking, giro) appear in the feed, before the
      message that follows them;
   7. wrong input is refused with a clear error, and an unknown route gives 404;
-  8. Helicopter Money (ADR 0002): digital euro and giro money for people at both banks, the
-     holding limit, refusals, the bookkeeping check, the messages in the feed and at the gate, reset.
+  8. Helicopter Money (ADR 0009): digital euro and giro money for people at both banks, the
+     holding limit, refusals, the bookkeeping check, the messages in the feed and at the gate, reset;
+  9. Helicopter Money guards: parallel drops (one 202, one 409), the relay route refusing /sim/ paths and the
+     game master as sender (403), bodies that are not a JSON object (400).
 Uses only the Python standard library. Exit code 0 only if everything passes.
 """
 import argparse
@@ -460,6 +462,75 @@ def check_helicopter_money():
     return problems
 
 
+def check_helicopter_guards():
+    """Parallel drops, the relay route keeping /sim/ and the game master sender private, bad bodies."""
+    import threading
+    problems = []
+    fresh("play", 0.2)
+    results = {}
+
+    def send(key, path, body):
+        results[key] = http("POST", path, body)
+
+    # two drops at the same moment: exactly one may start
+    ts = [threading.Thread(target=send, args=(k, "/control/helicopter-money", {"person": "anna", "account": "digital-euro", "amount": "10.00"}))
+          for k in ("a", "b")]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    codes = sorted(results[k][0] for k in ("a", "b"))
+    if codes != [202, 409]:
+        problems.append(f"two parallel drops: expected one 202 and one 409, got {codes}")
+    wait_for(finished, 15)
+    time.sleep(0.5)
+    if apps_state()["desp"]["helicopterMoney"]["digitalEuro"] != "10.00":
+        problems.append(f"only one of two parallel drops may be booked: {apps_state()['desp']['helicopterMoney']}")
+    money_ok(problems, "parallel drops")
+
+    # a drop and a reset at the same moment: not both may succeed
+    fresh("play", 0.2)
+    results.clear()
+    ts = [threading.Thread(target=send, args=("drop", "/control/helicopter-money", {"person": "ben", "account": "giro", "amount": "10.00"})),
+          threading.Thread(target=send, args=("reset", "/control/reset", None))]
+    [t.start() for t in ts]
+    [t.join() for t in ts]
+    if results["drop"][0] == 202 and results["reset"][0] == 200:
+        problems.append("a drop and a reset were both accepted at the same moment")
+    wait_for(finished, 15) if results["drop"][0] == 202 else None
+    time.sleep(0.5)
+    money_ok(problems, "drop and reset at once")
+
+    # the apps' /sim/ endpoints and the game master are not reachable through the relay route
+    fresh("play", 0)
+    before = apps_state()
+    for path, body in (("/r/game-master/desp/sim/helicopter-money", {"target": "dca", "bic": DESP_BIC_A, "amount": "5.00", "helicopterId": "HM-EVIL"}),
+                       ("/r/game-master/desp/v1/payment-instructions", {}),
+                       ("/r/app-a/psp-a/sim/helicopter-money", {"account": "giro", "dean": "EU4900000000000001", "amount": "5.00", "helicopterId": "HM-EVIL"}),
+                       ("/r/psp-a/desp/sim/reset", None),
+                       ("/r/app-a/psp-a/%73im/reset", None),
+                       ("/r/app-a/psp-a//sim/reset", None)):
+        status, r = http("POST", path, body)
+        if status != 403:
+            problems.append(f"{path}: expected 403, got {status} {r}")
+    after = apps_state()
+    if after["desp"]["dcaBalances"] != before["desp"]["dcaBalances"] or customer(after, "psp-a", "anna")["giro"] != customer(before, "psp-a", "anna")["giro"]:
+        problems.append("a refused /sim/ call changed the books")
+    if events(["message"]):
+        problems.append("a refused /sim/ call must not appear as a message")
+
+    # a body that is not a JSON object is a 400
+    for raw in (b"[1,2]", b"\"anna\"", b"nonsense", b"null", b""):
+        req = urllib.request.Request(RELAY + "/control/helicopter-money", data=raw, method="POST", headers={"Content-Type": "application/json"})
+        try:
+            urllib.request.urlopen(req, timeout=10)
+            code = 200
+        except urllib.error.HTTPError as e:
+            code = e.code
+        if code != 400:
+            problems.append(f"body {raw!r}: expected 400, got {code}")
+    money_ok(problems, "guards")
+    return problems
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--start", action="store_true", help="start the apps and the relay, stop them afterwards")
@@ -481,7 +552,7 @@ def main():
         for name, fn in (("pause and step", check_pause_and_step), ("reset while a message waits", check_reset_while_waiting),
                          ("play with a delay", check_play_delay),
                          ("free actions", check_actions), ("refusals", check_refusals),
-                         ("Helicopter Money", check_helicopter_money)):
+                         ("Helicopter Money", check_helicopter_money), ("Helicopter Money guards", check_helicopter_guards)):
             print(f"── {name}")
             try:
                 results.append((name, fn()))

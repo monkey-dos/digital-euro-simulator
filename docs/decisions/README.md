@@ -10,3 +10,4 @@ Short records of decisions that shape the simulation. One file per decision; nev
 - [0006](0006-banks-and-merchants.md)
 - [0007](0007-first-apps-python.md)
 - [0008](0008-control-room-through-relay.md)
+- [0009](0009-helicopter-money.md)

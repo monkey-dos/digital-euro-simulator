@@ -35,10 +35,12 @@ Settings (environment variables): `DESP_PORT` (8000), `DESP_PARTICIPANTS` (parti
 | `GET /sim/state` | Ledger entries, DCA balances, money check, access data, last transactions | simulation only |
 | `GET /sim/events?since=N` | The message log (see below) | simulation only |
 | `POST /sim/reset` | Back to the test data (also Helicopter Money totals to 0) | simulation only |
-| `POST /sim/helicopter-money` | Helicopter Money (ADR 0002): `{"target": "entry", "entryId", "amount", "helicopterId"}` new digital euro on a ledger entry, `{"target": "dca", "bic", …}` new central bank money on a DCA, `{"reverse": "<helicopterId>"}` undo. 400 bad body or amount, 404 unknown entry / DCA, 409 duplicate id or nothing to undo. Logs a `ledger` step marked `helicopterMoney` | simulation only (money creation, impossible with the real digital euro) |
+| `POST /sim/helicopter-money` | Helicopter Money (ADR 0009): `{"target": "entry", "entryId", "amount", "helicopterId"}` new digital euro on a ledger entry, `{"target": "dca", "bic", …}` new central bank money on a DCA, `{"reverse": "<helicopterId>"}` undo. 400 bad body or amount, 404 unknown entry / DCA, 409 duplicate id or nothing to undo. Logs a `ledger` step marked `helicopterMoney` | simulation only (money creation, impossible with the real digital euro) |
 | `GET /health` | Health check | simulation only |
 
 Calls on each bank's PSP API: the forwarded `POST /v1/payment-instructions` (only when payer and payee banks differ) and the status pushes `POST /v1/payment-instructions/{id}/status`, `/v1/fundings/{id}/status`, `/v1/defundings/{id}/status` (the bank answers 204).
+
+The `/sim/` endpoints are for the relay only (they are the game master's and the test tools' way in, not part of the ECB scheme). Calling them directly, for example a Helicopter Money `reverse` after a finished giro drop, can unbalance the books: the bank would keep the giro money the DESP no longer backs.
 
 ## How it works
 

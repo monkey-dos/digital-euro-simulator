@@ -20,7 +20,7 @@
        POST /control/actions     {"action": "pay"|"fund"|"defund", "payer": "anna",
                                   "payee": "ben", "amount": "50.00", "text": "…"}
        POST /control/helicopter-money  {"person": "anna", "account": "digital-euro"|"giro",
-                                  "amount": "100.00"}   (money creation, ADR 0002)
+                                  "amount": "100.00"}   (money creation, ADR 0009)
 
 Run:  python3 relay.py            (port 8100; settings in config/relay.json)
 """
@@ -30,6 +30,7 @@ import os
 import sys
 import uuid
 from decimal import Decimal, InvalidOperation
+from urllib.parse import unquote
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -90,8 +91,22 @@ gate = Gate(mode=os.environ.get("RELAY_MODE", CFG.get("start", {}).get("mode", "
             delay=float(os.environ.get("RELAY_DELAY", CFG.get("start", {}).get("delaySeconds", 1.5))))
 scenarios = Scenarios(EXAMPLES_DIR, APPS)
 _msg_counter = 0
-_running: set[asyncio.Task] = set()
+_running: set = set()  # running scenario / drop tasks, and short-lived claims (see _claim) while a command is still checking
 _holding_limit = {"amount": scenarios.test_data.get("holdingLimit", "3000.00")}  # as last set by the game master
+
+
+def _claim():
+    """Claim the one "something is running" slot. There is no await between the check and the claim, so two
+    parallel commands cannot both get it. Release with _release() (or hand the slot over to a task)."""
+    if _running:
+        return None
+    token = object()
+    _running.add(token)
+    return token
+
+
+def _release(token):
+    _running.discard(token)
 
 
 def _control_event():
@@ -185,6 +200,15 @@ async def relay_route(request: Request) -> Response:
     path = path or "/"
     if request.url.query:
         path += "?" + request.url.query
+    segments = [x for x in unquote(path.split("?")[0]).split("/") if x]
+    if frm == "game-master" or (segments and segments[0] == "sim") or ".." in segments:
+        # The apps' /sim/ endpoints (reset, Helicopter Money, ...) are for the relay itself; an app must not reach them
+        # through the relay, and nobody may play the game master from outside.
+        feed.publish("error", text=f"Refused: {request.method} {path} from {frm} (simulation endpoints are for the relay only)")
+        return Response(json.dumps({"type": "https://digital-euro-simulator.invalid/problems/forbidden", "title": "Not allowed through the relay",
+                                    "status": 403, "detail": "The relay passes on I1 and I3 messages only. The /sim/ endpoints and the game master "
+                                    "sender are reserved for the relay's own commands.", "instance": path, "reasonCode": "XFMT"}),
+                        status_code=403, media_type="application/problem+json")
     status, headers, content = await relay_message(frm, to, request.method, path,
                                                    pass_on_headers(request.headers), await request.body())
     return Response(content, status_code=status, headers=headers)
@@ -271,8 +295,16 @@ async def step(request: Request):
 
 
 async def reset(request: Request):
-    if _running:
+    token = _claim()
+    if token is None:
         return bad("A scenario is still running. Let it finish (press Play), then reset.", 409)
+    try:
+        return await _reset()
+    finally:
+        _release(token)
+
+
+async def _reset():
     if gate.queue:
         # Releasing them now would let old messages reach freshly reset apps and the books would disagree.
         return bad("Messages are still on their way. Let them arrive (press Play), then reset.", 409)
@@ -324,8 +356,16 @@ async def _set_holding_limit(amount: str) -> dict:
 
 
 async def holding_limit(request: Request):
-    if _running:
+    token = _claim()
+    if token is None:
         return bad("A scenario is still running. Change the holding limit when it has finished.", 409)
+    try:
+        return await _holding_limit_command(request)
+    finally:
+        _release(token)
+
+
+async def _holding_limit_command(request: Request):
     amount = _limit((await _json(request)).get("amount"))
     if amount is None:
         return bad('Expected {"amount": "100.00"}: 0 to 1,000,000 EUR, at most two decimals')
@@ -356,26 +396,42 @@ async def _hm_send(to: str, body: dict) -> tuple[int, dict]:
     return status, answer if isinstance(answer, dict) else {}
 
 
+async def _undo(hid: str, targets: list[str]) -> bool:
+    """Send "reverse" to each target. 404 means "nothing to undo there" and is fine. True if every target is clean."""
+    clean = True
+    for t in targets:
+        try:
+            status, _ = await _hm_send(t, {"reverse": hid})
+        except Exception:
+            status = 0
+        if status not in (200, 404):
+            clean = False
+    return clean
+
+
 async def _run_helicopter(plan: dict):
     """Orchestrate one Helicopter Money drop: the DESP books first, then the bank is told.
-    If the bank cannot follow, the DESP booking is undone, so the books never stay unbalanced."""
+    If the bank cannot follow, the DESP booking is undone, so the books never stay unbalanced.
+    A definite refusal (4xx) means that app booked nothing. After an error or a lost answer (5xx, 502, timeout)
+    we cannot know, so the undo goes to the DESP and the bank (404 "nothing to undo" is fine)."""
     title, hid = plan["title"], plan["helicopterId"]
     feed.publish("scenario", status="started", id="helicopter-money", title=title, steps=[], helicopterMoney=True,
                  helicopterId=hid, hm=plan["info"])
     try:
         status, answer = await _hm_send("desp", plan["desp"])
         if status != 200:
-            raise RuntimeError(f"The central platform refused: {answer.get('error', status)}")
+            error = answer.get("error") or answer.get("detail") or status
+            if status >= 500:  # no answer or an error: the booking may still have happened
+                clean = await _undo(hid, ["desp", plan["bank"]])
+                raise RuntimeError(f"The central platform did not answer properly: {error}. " + (
+                    "Anything booked was undone." if clean else "UNDOING FAILED, CHECK THE BOOKS."))
+            raise RuntimeError(f"The central platform refused: {error}")
         status, answer = await _hm_send(plan["bank"], plan["psp"])
         if status != 200:
-            error = answer.get("error", status)
-            undone = False
-            try:
-                undone = (await _hm_send("desp", {"reverse": hid}))[0] == 200
-            except Exception:  # report below
-                pass
-            raise RuntimeError(f"The bank refused: {error}. " + ("The central platform booking was undone."
-                                                                  if undone else "UNDOING THE CENTRAL PLATFORM BOOKING FAILED."))
+            error = answer.get("error") or answer.get("detail") or status
+            clean = await _undo(hid, ["desp"] if status < 500 else ["desp", plan["bank"]])
+            raise RuntimeError(f"The bank {'refused' if status < 500 else 'did not answer properly'}: {error}. " + (
+                "The central platform booking was undone." if clean else "UNDOING THE CENTRAL PLATFORM BOOKING FAILED."))
         await asyncio.sleep(0.4)
         await feed.poll_internal()
         feed.publish("scenario", status="finished", id="helicopter-money", title=title, ok=True,
@@ -388,8 +444,13 @@ async def _run_helicopter(plan: dict):
 
 
 async def helicopter_money(request: Request):
-    """Game master command: new money for a person (ADR 0002). Answers 202; progress arrives in the feed."""
-    b = await _json(request)
+    """Game master command: new money for a person (ADR 0009). Answers 202; progress arrives in the feed."""
+    try:
+        b = json.loads(await request.body() or b"null")
+    except ValueError:
+        b = None
+    if not isinstance(b, dict):
+        return bad('Expected a JSON object like {"person": "anna", "account": "giro", "amount": "100.00"}')
     people = scenarios.test_data["users"]
     person = people.get(b.get("person")) if isinstance(b.get("person"), str) else None
     if person is None:
@@ -400,8 +461,16 @@ async def helicopter_money(request: Request):
     amount = _hm_amount(b.get("amount"))
     if amount is None:
         return bad("Amount must be positive, at most 1,000,000.00, with at most two decimals")
-    if _running:
+    token = _claim()  # from here until the drop task runs, nothing else may start (the limit check below awaits)
+    if token is None:
         return bad("A scenario or another Helicopter Money drop is still running. Let it finish first.", 409)
+    try:
+        return await _start_helicopter(b, person, account, amount, token)
+    finally:
+        _release(token)  # no-op once the slot was handed over to the task
+
+
+async def _start_helicopter(b: dict, person: dict, account: str, amount: Decimal, token):
     if gate.queue:
         return bad("Messages are still on their way. Let them arrive (press Play), then add money.", 409)
     slug = scenarios.bank_slug(person["bank"])
@@ -414,7 +483,7 @@ async def helicopter_money(request: Request):
             cust = next(c for c in st["customers"] if c["DEAN"] == person["dean"])
             now = Decimal(cust["digitalEuro"]) + Decimal(cust["pendingIncoming"])
             limit = Decimal(st["holdingLimit"])
-        except (httpx.HTTPError, ValueError, KeyError, StopIteration):
+        except (httpx.HTTPError, ValueError, KeyError, StopIteration, TypeError, InvalidOperation):
             return bad(f"{APPS[slug]['name']} did not answer, so the holding limit cannot be checked", 502)
         if now + amount > limit:
             room = max(Decimal("0"), limit - now)
@@ -434,6 +503,7 @@ async def helicopter_money(request: Request):
     task = asyncio.create_task(_run_helicopter(plan))
     _running.add(task)
     task.add_done_callback(_running.discard)
+    _release(token)  # the task now holds the slot
     return JSONResponse({"ok": True, "started": plan["title"], "helicopterId": hid}, status_code=202)
 
 

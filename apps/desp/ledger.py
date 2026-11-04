@@ -20,7 +20,7 @@ class Ledger:
         self.dca: dict[str, Decimal] = {}    # BIC -> central bank money
         self.opening_entries = Decimal("0")  # seeded digital euro (no DCA counterpart)
         self.opening_dca: dict[str, Decimal] = {}
-        # Helicopter Money (ADR 0002): new money made by the game master, counted apart from everything else.
+        # Helicopter Money (ADR 0009): new money made by the game master, counted apart from everything else.
         self.hm_digital_euro = Decimal("0")
         self.hm_dca: dict[str, Decimal] = {}
         self.hm_bookings: dict[str, dict] = {}   # helicopterId -> what was created (kept for the undo)
@@ -129,7 +129,7 @@ class Ledger:
         return bookings
 
     def state(self) -> dict:
-        """Ledger snapshot plus the money-in-circulation check (ADR 0002):
+        """Ledger snapshot plus the money-in-circulation check (ADR 0009):
         digital euro in circulation = opening balances + net DCA debits since start
         (DCA changes made by Helicopter Money left out) + digital euro Helicopter Money."""
         circulation = sum((e["balance"] for e in self.entries.values()), Decimal("0"))

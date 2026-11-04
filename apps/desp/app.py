@@ -8,7 +8,7 @@ Offers (interface I3, DESP API, Annex D2-7):
 Calls (PSP API of every bank): forwarded POST /v1/payment-instructions and the
 status pushes …/{id}/status.
 Simulation only (not ECB): GET /health, GET /sim/state, GET /sim/events, POST /sim/reset,
-  POST /sim/helicopter-money (game master money creation, ADR 0002).
+  POST /sim/helicopter-money (game master money creation, ADR 0009).
 
 Run:  python3 app.py            (port 8000; set DESP_PORT to change)
 """
@@ -162,7 +162,7 @@ async def sim_reset(request: Request):
 
 
 async def sim_helicopter_money(request: Request):
-    """Helicopter Money (ADR 0002, simulation only): new money, impossible with the real digital euro.
+    """Helicopter Money (ADR 0009, simulation only): new money, impossible with the real digital euro.
     {"target": "entry", "entryId": "...", "amount": "100.00", "helicopterId": "..."}  digital euro on a ledger entry
     {"target": "dca", "bic": "...", "amount": "100.00", "helicopterId": "..."}        central bank money on a DCA
     {"reverse": "<helicopterId>"}                                                    undo one booking"""
