@@ -19,6 +19,8 @@ Checks:
      holding limit, refusals, the bookkeeping check, the messages in the feed and at the gate, reset;
   9. Helicopter Money guards: parallel drops (one 202, one 409), the relay route refusing /sim/ paths and the
      game master as sender (403), bodies that are not a JSON object (400).
+  10. Helicopter Money with an app stopped during a drop (needs --start): PSP A down after the DESP booked
+     (undone, message says so), DESP down at the first call (nothing booked), slot free again afterwards;
 Uses only the Python standard library. Exit code 0 only if everything passes.
 """
 import argparse
@@ -32,6 +34,8 @@ import urllib.request
 from decimal import Decimal
 
 RELAY = "http://127.0.0.1:8100"
+PROCS: list = []     # the apps started by --start (empty when they were started by someone else)
+LOG_DIR = None
 
 
 def http(method, path, body=None):
@@ -507,11 +511,24 @@ def check_helicopter_guards():
                        ("/r/app-a/psp-a/sim/helicopter-money", {"account": "giro", "dean": "EU4900000000000001", "amount": "5.00", "helicopterId": "HM-EVIL"}),
                        ("/r/psp-a/desp/sim/reset", None),
                        ("/r/app-a/psp-a/%73im/reset", None),
-                       ("/r/app-a/psp-a//sim/reset", None)):
+                       ("/r/app-a/psp-a//sim/reset", None),
+                       ("/r/app-a/psp-a/./sim/reset", None),
+                       ("/r/psp-a/desp/./sim/helicopter-money", {"target": "dca", "bic": DESP_BIC_A, "amount": "5.00", "helicopterId": "HM-EVIL2"}),
+                       ("/r/psp-a/desp/v1/../sim/reset", None),
+                       ("/r/psp-a/desp/v1/%2e%2e/sim/helicopter-money", {"target": "dca", "bic": DESP_BIC_A, "amount": "5.00", "helicopterId": "HM-EVIL3"}),
+                       ("/r/psp-a/desp/%2e/sim/reset", None),
+                       ("/r/psp-a/desp/%252e/sim/reset", None),
+                       ("/r/psp-a/desp/%2E%2E/sim/reset", None),
+                       ("/r/psp-a/desp/v1%2f..%2fsim/reset", None),
+                       ("/r/psp-a/desp/health", None)):
         status, r = http("POST", path, body)
         if status != 403:
             problems.append(f"{path}: expected 403, got {status} {r}")
+    # the books and every app's state are exactly as before (a reset or a minted DCA would show here)
     after = apps_state()
+    strip = lambda st: {k: {kk: vv for kk, vv in (v or {}).items() if kk not in ("transactions",)} for k, v in st.items()}
+    if strip(after) != strip(before):
+        problems.append("a refused /sim/ call changed the state of an app")
     if after["desp"]["dcaBalances"] != before["desp"]["dcaBalances"] or customer(after, "psp-a", "anna")["giro"] != customer(before, "psp-a", "anna")["giro"]:
         problems.append("a refused /sim/ call changed the books")
     if events(["message"]):
@@ -531,6 +548,59 @@ def check_helicopter_guards():
     return problems
 
 
+def check_helicopter_app_down():
+    """An app stops during a drop: the books stay balanced, the slot is free again, the message names the right side."""
+    if not PROCS:
+        print("   (skipped: needs --start, to stop and restart the apps)")
+        return []
+    import run_local
+    problems = []
+
+    def drop_with_app_down(app, person, account):
+        fresh("play", 0)
+        run_local.stop_all([next(p for p in PROCS if p.sim_name == app)])
+        n = len(events(["scenario"]))
+        try:
+            status, r = http("POST", "/control/helicopter-money", {"person": person, "account": account, "amount": "25.00"})
+            done = wait_for(lambda: next((e for e in events(["scenario"])[n:] if e["status"] in ("finished", "failed")), None), 20) if status == 202 else None
+        finally:
+            run_local.restart(PROCS, app, LOG_DIR)
+        return status, done
+
+    # PSP A is down when the bank is told: the DESP booked (new DCA money), so it must be undone
+    status, done = drop_with_app_down("PSP A", "anna", "giro")
+    err = (done or {}).get("error", "")
+    if status != 202 or not done or done["status"] != "failed":
+        problems.append(f"PSP A down: the drop should fail: {status} {done}")
+    if "PSP A could not be reached" not in err or "central platform booking was undone" not in err or "FAILED" in err:
+        problems.append(f"PSP A down: the message should say PSP A was unreachable and the central platform booking was undone: {err!r}")
+    d = apps_state()["desp"]
+    if d["helicopterMoney"]["dca"] or not d["moneyCheck"]["ok"] or d["dcaBalances"][DESP_BIC_A] != "1000000.00":
+        problems.append(f"PSP A down: the DESP booking was not undone: {d['helicopterMoney']} {d['dcaBalances']}")
+    fresh("play", 0)
+    status, r, done = helicopter("anna", "giro", "5.00")
+    if status != 202 or not done or not done.get("ok"):
+        problems.append(f"PSP A down: the slot is not free again afterwards: {status} {r} {done}")
+    money_ok(problems, "PSP A down")
+
+    # the DESP is down at the first call: nothing arrived, nothing was booked, nothing to undo
+    status, done = drop_with_app_down("DESP", "ben", "giro")
+    err = (done or {}).get("error", "")
+    if status != 202 or not done or done["status"] != "failed":
+        problems.append(f"DESP down: the drop should fail: {status} {done}")
+    if "central platform could not be reached" not in err or "Nothing was booked" not in err or "FAILED" in err or "undo" in err.lower():
+        problems.append(f"DESP down: the message should say nothing was booked and nothing needed undoing: {err!r}")
+    fresh("play", 0)  # the DESP came back with the seed data
+    d = apps_state()["desp"]
+    if d["helicopterMoney"]["dca"] or d["helicopterMoney"]["digitalEuro"] != "0.00" or not d["moneyCheck"]["ok"]:
+        problems.append(f"DESP down: books not clean after restart: {d['helicopterMoney']}")
+    status, r, done = helicopter("ben", "digital-euro", "5.00")
+    if status != 202 or not done or not done.get("ok"):
+        problems.append(f"DESP down: the slot is not free again afterwards: {status} {r} {done}")
+    money_ok(problems, "DESP down")
+    return problems
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--start", action="store_true", help="start the apps and the relay, stop them afterwards")
@@ -542,6 +612,8 @@ def main():
         run_local.use_relay("play", "0")
         log_dir = tempfile.mkdtemp(prefix="desim-relay-")
         procs = run_local.start_all(log_dir)
+        PROCS.extend(procs)
+        globals()["LOG_DIR"] = log_dir
     else:
         try:
             http("GET", "/health")
@@ -552,7 +624,8 @@ def main():
         for name, fn in (("pause and step", check_pause_and_step), ("reset while a message waits", check_reset_while_waiting),
                          ("play with a delay", check_play_delay),
                          ("free actions", check_actions), ("refusals", check_refusals),
-                         ("Helicopter Money", check_helicopter_money), ("Helicopter Money guards", check_helicopter_guards)):
+                         ("Helicopter Money", check_helicopter_money), ("Helicopter Money guards", check_helicopter_guards),
+                         ("Helicopter Money, app down", check_helicopter_app_down)):
             print(f"── {name}")
             try:
                 results.append((name, fn()))
@@ -561,7 +634,7 @@ def main():
         fresh("play", 0)
     finally:
         if procs:
-            run_local.stop_all(procs)
+            run_local.stop_all(PROCS)  # PROCS also holds apps restarted by a check
     failed = 0
     print("\n══ Summary")
     for name, problems in results:

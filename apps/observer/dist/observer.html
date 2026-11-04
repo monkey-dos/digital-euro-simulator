@@ -850,6 +850,8 @@ function sees(it,lens){
   if(lens==="public") return false;
   var p=[it.from,it.to];
   if(lens==="desp") return p.some(function(x){return /^DESP/.test(x||"");});
+  // "Game Master" as sender exists only in the recorded replay: the example step where the game master sets the
+  // holding limit at "all apps". Live game-master messages are named "Game master" and always involve the DESP or a bank.
   return p.some(function(x){return x==="PSP "+lens||x==="Banking App "+lens||x==="PSP "+lens+" core banking";})||it.from==="Game Master";
 }
 function canOpen(it,lens){
@@ -911,7 +913,7 @@ function hmFromApps(apps,people,check){
   var dcaTotal=0; Object.keys(hm.dca).forEach(function(L){dcaTotal+=hm.dca[L];});
   hm.total=hm.de+dcaTotal;
   Object.keys(hm.giro).forEach(function(L){ if(!hm.pending&&(hm.dca[L]||0)!==hm.giro[L]){hm.ok=false; hm.text="The central platform created "+eur(hm.dca[L]||0)+" € on the DCA of PSP "+L+", but the bank credited "+eur(hm.giro[L])+" € to giro accounts."; hm.textDesp="The books do not balance: a bank does not match the central platform.";} });
-  if(d&&d.moneyCheck&&d.moneyCheck.ok===false){hm.ok=false; hm.text="Digital euro in circulation does not match opening balances + net DCA debits + Helicopter Money.";}
+  if(d&&d.moneyCheck&&d.moneyCheck.ok===false){hm.ok=false; hm.text="Digital euro in circulation does not match opening balances + net DCA debits + Helicopter Money."; hm.textDesp=hm.text;} // the platform's own check: it shows its own error even if a bank mismatch was found first
   people.forEach(function(p){var c=created[p.dean]; p.hmDe=c?c.de:0; p.hmGiro=c?c.giro:0;});
   return hm;
 }

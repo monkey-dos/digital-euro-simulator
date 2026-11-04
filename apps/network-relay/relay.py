@@ -27,6 +27,7 @@ Run:  python3 relay.py            (port 8100; settings in config/relay.json)
 import asyncio
 import json
 import os
+import posixpath
 import sys
 import uuid
 from decimal import Decimal, InvalidOperation
@@ -191,6 +192,31 @@ async def relay_message(frm: str, to: str, method: str, path: str, headers: dict
     return status, resp_headers, content
 
 
+FORWARD_PREFIXES = ("/v1/", "/i1/")  # I3 (DESP API, PSP API, the alias placeholder) and I1: everything the apps send each other
+
+
+def forwardable(path: str) -> bool:
+    """May the relay route pass this path on? Only plain I1 / I3 paths. The path is decoded until it stops
+    changing (so %2e, %252e and %73im are seen as what they are), and anything odd is refused: empty, "." or ".."
+    segments, backslashes, control characters, and of course anything outside /v1/ and /i1/ (so never /sim/)."""
+    p = path.split("?")[0].split("#")[0]
+    for _ in range(6):
+        q = unquote(p)
+        if q == p:
+            break
+        p = q
+    else:
+        return False  # still changing after six rounds: not a path we want to pass on
+    if "\\" in p or any(ord(c) < 32 or ord(c) == 127 for c in p) or "%" in p:
+        return False
+    segments = p.split("/")
+    if segments[0] != "" or any(x in ("", ".", "..") for x in segments[1:]):
+        return False
+    if posixpath.normpath(p) != p:
+        return False
+    return p.startswith(FORWARD_PREFIXES)
+
+
 async def relay_route(request: Request) -> Response:
     frm, to = request.path_params["frm"], request.path_params["to"]
     # Use the path exactly as it arrived (still percent-encoded), so the relay never changes an address.
@@ -200,11 +226,10 @@ async def relay_route(request: Request) -> Response:
     path = path or "/"
     if request.url.query:
         path += "?" + request.url.query
-    segments = [x for x in unquote(path.split("?")[0]).split("/") if x]
-    if frm == "game-master" or (segments and segments[0] == "sim") or ".." in segments:
+    if frm == "game-master" or not forwardable(path):
         # The apps' /sim/ endpoints (reset, Helicopter Money, ...) are for the relay itself; an app must not reach them
         # through the relay, and nobody may play the game master from outside.
-        feed.publish("error", text=f"Refused: {request.method} {path} from {frm} (simulation endpoints are for the relay only)")
+        feed.publish("error", text=f"Refused: {request.method} {path} from {frm} (only I1 and I3 paths are passed on; simulation endpoints are for the relay only)")
         return Response(json.dumps({"type": "https://digital-euro-simulator.invalid/problems/forbidden", "title": "Not allowed through the relay",
                                     "status": 403, "detail": "The relay passes on I1 and I3 messages only. The /sim/ endpoints and the game master "
                                     "sender are reserved for the relay's own commands.", "instance": path, "reasonCode": "XFMT"}),
@@ -396,17 +421,35 @@ async def _hm_send(to: str, body: dict) -> tuple[int, dict]:
     return status, answer if isinstance(answer, dict) else {}
 
 
-async def _undo(hid: str, targets: list[str]) -> bool:
-    """Send "reverse" to each target. 404 means "nothing to undo there" and is fine. True if every target is clean."""
-    clean = True
+def _not_delivered(status: int, answer: dict) -> bool:
+    """True if the relay itself answered 502 XNET because it could not even connect: nothing reached the app."""
+    return (status == 502 and answer.get("reasonCode") == "XNET"
+            and any(w in str(answer.get("detail", "")) for w in ("ConnectError", "ConnectTimeout")))
+
+
+async def _undo(hid: str, targets: list[str]) -> dict:
+    """Send "reverse" to each target. 200 and 404 ("nothing to undo there") are fine.
+    Returns {target: True if that side is clean, False if it could not be confirmed}."""
+    result = {}
     for t in targets:
         try:
             status, _ = await _hm_send(t, {"reverse": hid})
         except Exception:
             status = 0
-        if status not in (200, 404):
-            clean = False
-    return clean
+        result[t] = status in (200, 404)
+    return result
+
+
+def _undo_text(result: dict, bank: str, booked_desp: bool) -> str:
+    """Plain words for what the undo did, naming each side that failed."""
+    sides = {"desp": "the central platform", bank: APPS[bank]["name"]}
+    failed = [sides[t] for t, ok in result.items() if not ok]
+    if failed:
+        return (" UNDOING FAILED at " + " and at ".join(failed)
+                + ": the books may be out of balance, check them (or reset).")
+    if "desp" in result and booked_desp:
+        return " The central platform booking was undone."
+    return " Anything that had been booked was undone."
 
 
 async def _run_helicopter(plan: dict):
@@ -421,17 +464,21 @@ async def _run_helicopter(plan: dict):
         status, answer = await _hm_send("desp", plan["desp"])
         if status != 200:
             error = answer.get("error") or answer.get("detail") or status
-            if status >= 500:  # no answer or an error: the booking may still have happened
-                clean = await _undo(hid, ["desp", plan["bank"]])
-                raise RuntimeError(f"The central platform did not answer properly: {error}. " + (
-                    "Anything booked was undone." if clean else "UNDOING FAILED, CHECK THE BOOKS."))
+            if _not_delivered(status, answer):  # never arrived: nothing was booked, nothing to undo
+                raise RuntimeError(f"The central platform could not be reached: {error}. Nothing was booked.")
+            if status >= 500:  # an error or a lost answer: the booking may still have happened
+                undo = await _undo(hid, ["desp", plan["bank"]])
+                raise RuntimeError(f"The central platform did not answer properly: {error}." + _undo_text(undo, plan["bank"], False))
             raise RuntimeError(f"The central platform refused: {error}")
         status, answer = await _hm_send(plan["bank"], plan["psp"])
         if status != 200:
             error = answer.get("error") or answer.get("detail") or status
-            clean = await _undo(hid, ["desp"] if status < 500 else ["desp", plan["bank"]])
-            raise RuntimeError(f"The bank {'refused' if status < 500 else 'did not answer properly'}: {error}. " + (
-                "The central platform booking was undone." if clean else "UNDOING THE CENTRAL PLATFORM BOOKING FAILED."))
+            bank = APPS[plan["bank"]]["name"]
+            # the DESP booked for sure; the bank only if it may have received the call and did not refuse it
+            bank_unsure = status >= 500 and not _not_delivered(status, answer)
+            undo = await _undo(hid, ["desp", plan["bank"]] if bank_unsure else ["desp"])
+            what = "refused" if status < 500 else ("could not be reached" if _not_delivered(status, answer) else "did not answer properly")
+            raise RuntimeError(f"{bank} {what}: {error}." + _undo_text(undo, plan["bank"], True))
         await asyncio.sleep(0.4)
         await feed.poll_internal()
         feed.publish("scenario", status="finished", id="helicopter-money", title=title, ok=True,
