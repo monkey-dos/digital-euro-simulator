@@ -171,6 +171,63 @@ svg{flex:none}
 .tile.bump{animation:bump 1.2s ease-out}
 @keyframes bump{0%{background:var(--enc-t);border-color:var(--banana)}100%{background:var(--surface)}}
 
+/* Helicopter Money (game master, ADR 0002) */
+.btn.hm{color:var(--violet);border-color:var(--violet-l)}
+.btn.hm:hover:not(:disabled):not([aria-disabled=true]){border-color:var(--violet)}
+.btn.hm.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.btn.hm.on:hover:not(:disabled){background:#5A3E8C}
+.hmbanner{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-radius:14px;background:var(--violet-t);border:1px solid var(--violet-l);color:#3F2A66}
+.hmbanner svg{width:24px;height:24px;color:var(--violet);margin-top:1px}
+.hmadd{display:flex;align-items:center;justify-content:center;width:100%;min-height:44px;margin-top:10px;padding:0 10px;border:1.5px dashed var(--violet);border-radius:10px;background:transparent;color:var(--violet);font:500 13.5px/1.2 var(--f-body);cursor:pointer}
+.hmadd:hover{background:var(--violet-t)}
+.tile.hmopen{flex:2 1 300px;border-color:var(--violet);background:#FBF9FD}
+.hmform{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.hmform .seg{width:100%}
+.hmform .seg button{flex:1;justify-content:center;min-height:44px;font-size:13.5px}
+.hmform .seg button[aria-pressed=true]{background:var(--violet-t);color:var(--violet);font-weight:600}
+.hmchips{display:flex;gap:6px}
+.hmchips button{flex:1;min-height:44px;border:1px solid var(--violet-l);border-radius:10px;background:#fff;color:var(--violet);font:500 13.5px var(--f-mono);cursor:pointer}
+.hmchips button:hover{border-color:var(--violet)}
+.hmform label{font-size:13px;font-weight:500;color:var(--ink)}
+.hmform input{min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;font:500 15px var(--f-mono);width:100%;background:#fff;color:var(--ink)}
+.hmform .hint{font-size:12.5px;color:var(--muted)}
+.hmform .hmerr{font-size:13px;color:var(--bad);min-height:0}
+.hmform .hmerr:empty{display:none}
+.hmgo{min-height:44px;border:1px solid var(--violet);border-radius:10px;background:var(--violet);color:#fff;font:600 14px var(--f-body);cursor:pointer;padding:0 12px}
+.hmgo:hover:not(:disabled){background:#5A3E8C}
+.hmgo:disabled{opacity:.6;cursor:wait}
+.hmclose{min-height:44px;border:0;background:transparent;color:var(--muted);font:500 13px var(--f-body);cursor:pointer;text-decoration:underline}
+.hmpill{display:inline-block;margin-top:4px;padding:1px 9px;border-radius:999px;background:var(--violet-t);color:var(--violet);font:500 11.5px/1.5 var(--f-mono);border:1px solid var(--violet-l)}
+.node.gm{border:2px dashed var(--violet);background:#FBF9FD}
+.node.gm.snd,.node.gm.rcv{border-style:solid}
+.wire.gm{stroke:var(--violet-l);stroke-width:2.5;stroke-dasharray:3 6}
+.wire.gm.hot{stroke:var(--violet);stroke-width:4;stroke-dasharray:6 7;animation:dash 1.2s linear infinite}
+.pill.gm{background:var(--violet);box-shadow:0 6px 16px rgba(106,76,158,.3)}
+.pill.gm .num{color:var(--violet)}
+.pillhint.gm{border-color:var(--violet-l);color:var(--violet)}
+.narr.hm,.narrbox.hm{border-color:var(--violet-l)!important;background:#FBF9FD!important}
+.narr.hm .ic{background:var(--violet)}
+.step.hm{border-color:var(--violet-l)}
+.step.hm.now{border-color:var(--violet);background:var(--violet-t)}
+.step.hm.now .n{color:var(--violet)}
+.step.hm.wait{border-color:var(--violet)}
+.step .gmtag{display:inline-block;margin-bottom:3px;padding:0 7px;border-radius:999px;background:var(--violet-t);color:var(--violet);font:500 10.5px/1.5 var(--f-mono)}
+.ledger .g .chg.hm{color:var(--violet)}
+.ledger .book.hm{background:var(--violet-t);border-color:var(--violet-l);color:#3F2A66;animation:none}
+.hmled{margin-top:8px;padding:6px 8px;border-radius:8px;background:var(--violet-t);border:1px solid var(--violet-l);color:#3F2A66}
+.hmled .eyebrow{color:var(--violet);font-size:10px;letter-spacing:.04em;margin-bottom:2px}
+.hmled .g{display:grid;grid-template-columns:1fr auto;gap:0 8px;font:400 12px/1.5 var(--f-body)}
+.hmled .g span:nth-child(even){font-family:var(--f-mono);font-size:11.5px}
+.hmled .g span:nth-child(odd){white-space:nowrap}
+.tiles.hmmode{align-items:flex-start}
+.hmled .g span:nth-child(even){text-align:right;font-weight:500}
+.arrow.gmr.cur .ln,.arrow.gmr.waitrow .ln{border-color:var(--violet)}
+.arrow.gmr.cur .lbl,.arrow.gmr.waitrow .lbl{color:var(--violet)}
+.sbox.gmr.cur{border-color:var(--violet);color:var(--violet)}
+.sbox.gmr{border-color:var(--violet-l)}
+.trow.gmr.sel{background:#FBF9FD}
+.hmrow{margin-top:8px}
+
 /* timeline */
 .tlmain{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
 .seq{flex:999 1 720px;min-width:0;padding:18px 18px 10px;position:relative;overflow-x:auto}
@@ -179,6 +236,7 @@ svg{flex:none}
 .lanelines i{position:absolute;top:0;bottom:0;border-left:2px solid}
 .trow{display:grid;grid-template-columns:44px repeat(10,minmax(0,1fr));align-items:center;min-height:50px;width:100%;border:0;background:transparent;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer;border-radius:10px;position:relative}
 .trow:hover{background:rgba(29,76,153,.04)}
+.trow[aria-disabled=true]{cursor:default}
 .trow.sel{background:var(--blue-bg)}
 .trow.head{min-height:76px;align-items:start;cursor:default}
 .trow.head:hover{background:transparent}
@@ -291,7 +349,7 @@ dialog .db{padding:16px 18px;display:flex;flex-direction:column;gap:12px;max-hei
     <div class="seg" role="group" aria-label="Whose view" id="lensBar"></div>
   </div>
   <div class="grp" style="margin-left:auto">
-    <button class="btn" type="button" id="bTop" aria-disabled="true" title="Coming later (money creation, ADR 0002)" style="color:var(--violet);border-color:var(--violet-l)"><svg viewBox="0 0 24 24" fill="none" stroke="#6A4C9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20L15 9M14 4v3M19 9h-3M17.5 5.5l-2 2M18 14l.8 1.7 1.7.8-1.7.8L18 19l-.8-1.7-1.7-.8 1.7-.8zM8 3l.6 1.4L10 5l-1.4.6L8 7l-.6-1.4L6 5l1.4-.6z"/></svg>Top up</button>
+    <button class="btn hm" type="button" id="bTop" aria-pressed="false" title="Helicopter Money: create new money for a person (live only)"></button>
     <button class="btn" type="button" id="bSet" aria-expanded="false" aria-controls="pop"><svg viewBox="0 0 24 24" fill="none" stroke="#13202D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</button>
   </div>
   <div class="pop" id="pop" hidden>
@@ -318,8 +376,9 @@ dialog .db{padding:16px 18px;display:flex;flex-direction:column;gap:12px;max-hei
 
       <div class="node" id="nPspA" style="left:26%;top:288px;width:200px;border:1.5px solid var(--teal);padding:12px 14px"></div>
       <div class="node" id="nPspB" style="left:74%;top:288px;width:200px;border:1.5px solid var(--teal);padding:12px 14px"></div>
-      <div class="node" id="nAppA" style="left:11%;top:418px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
-      <div class="node" id="nAppB" style="left:89%;top:418px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
+      <div class="node" id="nAppA" style="left:11%;top:446px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
+      <div class="node" id="nAppB" style="left:89%;top:446px;width:172px;border:1.5px solid var(--amber-l);padding:10px 12px"></div>
+      <div class="node gm" id="nGm" hidden style="left:50%;top:352px;width:206px;padding:10px 12px"></div>
 
       <div class="pillwrap" id="pillwrap"></div>
 
@@ -408,6 +467,7 @@ var IC={
   open:'<svg viewBox="0 0 24 24" fill="none" stroke="#13202D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4H4v16h16v-4M14 4h6v6M10 14L20 4"/></svg>',
   play:'<svg viewBox="0 0 24 24" fill="#1D4C99" aria-hidden="true"><path d="M8 5l11 7-11 7z"/></svg>',
   pause:'<svg viewBox="0 0 24 24" fill="#1D4C99" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>',
+  heli:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h14M10 5v3M5 8h8a5 5 0 0 1 5 5v1a2 2 0 0 1-2 2H9a4 4 0 0 1-4-4zM18 12h4M22 10v4M8 20h9M10 16v4M15 16v4"/></svg>',
   tri:function(dir,color){return '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="'+(dir>0?'M1 1l10 5-10 5z':'M11 1L1 6l10 5z')+'" fill="'+color+'"/></svg>';}
 };
 
@@ -431,7 +491,9 @@ var S={
   lists:null,           // GET /control/scenarios
   recent:null,          // {item, until} an inside-the-app step shown on its node
   appsKnown:null,
-  pill:{id:null,mode:null}, dropped:0
+  pill:{id:null,mode:null}, dropped:0,
+  hm:{mode:false,open:null,account:"digital-euro",amount:"100.00",err:"",busy:false},  // Helicopter Money mode (live only)
+  hmRuns:{}             // helicopterId -> {person,name,account,amount,bank,bankName} from the scenario event
 };
 
 /* ---------- lanes / nodes ---------- */
@@ -439,6 +501,7 @@ function nodeKey(name){
   var m=/^Banking App ([A-Z])$/.exec(name||""); if(m) return "app"+m[1];
   m=/^PSP ([A-Z])(?: core banking)?$/.exec(name||""); if(m) return "psp"+m[1];
   if(/^DESP/.test(name||"")) return "desp";
+  if(name==="Game master") return "gm";
   return null;
 }
 var LANES=["appA","pspA","desp","pspB","appB"];
@@ -535,9 +598,88 @@ function fromMessage(e){
     inReplyTo:e.inReplyTo,standIn:!!e.standIn,released:false,waiting:true,time:e.time};
 }
 function fromInternal(e){
-  var k=e.kind==="ledger"||e.kind==="giro"?e.kind:"note";
+  var k=e.kind==="ledger"||e.kind==="giro"||e.kind==="bank-ledger"?e.kind:"note";
   return {key:"i"+e.seq,seq:e.seq,live:true,kind:k,from:e.from||e.app,to:e.to||e.app,iface:e.interface||"",body:e.body===undefined?null:e.body,
     note:e.note,app:e.app,headers:{},released:true,waiting:false,standIn:false,time:e.time};
+}
+
+/* ---------- Helicopter Money (ADR 0002): items made by the game master ---------- */
+function isGmMsg(it){return !!it&&(it.fromId==="game-master"||it.toId==="game-master");}
+function isHM(it){
+  if(!it) return false;
+  if(isGmMsg(it)) return true;
+  var b=it.body;
+  if(b&&typeof b==="object"&&b.helicopterMoney===true) return true;
+  if(it.kind==="bank-ledger") return true;
+  if(it.kind==="giro"&&b&&/Helicopter/i.test(String(b.action||""))) return true;
+  if(it.kind==="note"&&/Helicopter Money/i.test(String(it.note||""))) return true;
+  return false;
+}
+function hmInfo(it){
+  var b=it&&it.body, id=(b&&typeof b==="object")?(b.helicopterId||b.reverse):null;
+  if(!id&&it&&it.inReplyTo&&S.byId[it.inReplyTo]){var q=S.byId[it.inReplyTo].body; id=q&&(q.helicopterId||q.reverse);}
+  return (id&&S.hmRuns[id])||null;
+}
+function hmAmt(it){
+  var b=(it.body&&typeof it.body==="object")?it.body:{}, v=null;
+  if(b.amount!=null) v=(typeof b.amount==="object")?b.amount.amount:b.amount;
+  else if(Array.isArray(b.bookings)&&b.bookings[0]) v=String(b.bookings[0].change||"").replace(/[^0-9.]/g,"");
+  else if(it.kind==="note"){var m=/[+\-\u2212](\d[\d.]*)/.exec(it.note||""); if(m) v=m[1];}
+  if(v==null||v===""){var inf=hmInfo(it); v=inf?inf.amount:null;}
+  var n=parseFloat(v); return isFinite(n)?n.toFixed(2):"";
+}
+function hmLabel(it){
+  var b=(it.body&&typeof it.body==="object")?it.body:{};
+  if(it.kind==="request"){
+    if(b.reverse) return "undo new money";
+    if(b.target==="entry") return "new digital euro";
+    if(b.target==="dca") return "new central bank money";
+    if(b.account) return b.account==="giro"?"tell the bank: giro":"tell the bank: balance";
+  }
+  if(it.kind==="response") return it.status+" \u00b7 "+(it.status<300?"done":"refused");
+  if(it.kind==="ledger") return b.reversed?"new money undone":"new money booked";
+  if(it.kind==="bank-ledger") return "bank ledger";
+  if(it.kind==="giro") return /undo/i.test(b.action||"")?"giro credit undone":"giro credit";
+  if(it.kind==="note") return "balance copy";
+  return null;
+}
+function hmGen(it,lens){
+  if(!isHM(it)) return null;
+  var b=(it.body&&typeof it.body==="object")?it.body:{}, inf=hmInfo(it), a=hmAmt(it), A=a?a+" \u20ac":"the money", pn=null;
+  if(inf) pn=person(inf.name);
+  if(!pn&&it.kind==="giro") pn=person(String(b.account||"").replace(/^giro of /,""));
+  if(!pn&&it.kind==="note"){var mm=/balance of (.+?) [+\-\u2212]/.exec(it.note||""); if(mm) pn=person(mm[1]);}
+  if(!pn&&it.kind==="ledger"&&Array.isArray(b.bookings)&&b.bookings[0]) pn=person(b.bookings[0].entry);
+  if(!pn&&it.kind==="bank-ledger"&&Array.isArray(b.bookings)&&b.bookings[1]) pn=person(String(b.bookings[1].account||"").replace(/^giro of /,""));
+  var who=pn?pname(pn,lens,true):"the person", whose=who+"'s";
+  var bank=/^PSP [A-Z]$/.test(it.to||"")?it.to:/^PSP [A-Z]$/.test(it.from||"")?it.from:(inf&&inf.bankName)||"the bank", bankP=bank+"'s";
+  var undo=/undo|undone/i.test((b.action||"")+" "+(it.note||""))||b.reversed;
+  if(it.kind==="request"){
+    if(b.reverse) return {head:"The game master undoes the new money.",text:"The bank could not follow, so the central platform takes the new money back. The books never stay unbalanced."};
+    if(b.target==="entry") return {head:"Helicopter Money: "+A+" digital euro for "+who,text:"The central platform adds "+A+" to "+whose+" digital euro entry. No bank pays for it and no central bank account goes down: the money is new. That is impossible with the real digital euro; the simulation does it so the demo can go on."};
+    if(b.target==="dca") return {head:"Helicopter Money: "+A+" giro money for "+who,text:"Giro money starts at the central bank. The central platform credits "+A+" of new central bank money to "+bankP+" central bank account (DCA). Nobody pays for it: the money is new. That is impossible in reality; the simulation does it so the demo can go on."};
+    if(b.account==="digital-euro") return {head:"The game master tells "+bank+": "+whose+" digital euro balance rose by "+A+".",text:"The money is already on the central ledger. The bank only updates its own copy of the balance, so its balance and holding-limit checks stay right. Nothing is booked on the giro account."};
+    if(b.account==="giro") return {head:"The game master tells "+bank+" about the new central bank money.",text:bank+" sees "+A+" more on its central bank account (DCA). It books this in its own ledger and credits "+whose+" giro account. The digital euro balance does not change; "+who+" can fund it as usual."};
+  }
+  if(it.kind==="response"){
+    var rq=it.inReplyTo&&S.byId[it.inReplyTo], rb=(rq&&rq.body&&typeof rq.body==="object")?rq.body:{}, ok=it.status<300&&b.ok!==false, fromDesp=/^DESP/.test(it.from||"");
+    if(!ok) return {head:dispNameSafe(it.from)+" refused the new money.",text:(b.error||b.detail||"The request was not accepted.")+(fromDesp?"":" The central platform booking is undone next.")};
+    if(rb.reverse) return {head:dispNameSafe(it.from)+" confirms: the new money is taken back.",text:"The books are balanced again."};
+    if(fromDesp&&rb.target==="entry") return {head:"The central platform confirms the new digital euro.",text:"The central ledger now holds it on "+whose+" entry. Next the game master tells the bank, so the bank's copy of the balance matches."};
+    if(fromDesp&&rb.target==="dca") return {head:"The central platform confirms the new central bank money.",text:cap(bankP)+" central bank account (DCA) has grown. Next the game master tells the bank, so it can credit "+whose+" giro account."};
+    if(rb.account==="giro") return {head:bank+" confirms: "+whose+" giro account is credited.",text:"The new money has arrived with the customer. The digital euro balance is untouched."};
+    if(rb.account==="digital-euro") return {head:bank+" confirms: its copy of the balance is updated.",text:whose.replace(/^./,function(c){return c.toUpperCase();})+" digital euro balance now matches the central ledger."};
+    return {head:dispNameSafe(it.from)+" confirms.",text:"Helicopter Money step done."};
+  }
+  if(it.kind==="ledger"){
+    var e0=(Array.isArray(b.bookings)&&b.bookings[0])||{}, isDca=/^DCA of /.test(e0.entry||"");
+    if(isDca) return {head:"The central ledger "+(undo?"takes "+A+" back from":"credits "+A+" to")+" "+String(e0.entry).replace(/^DCA of /,"")+"'s central bank account (DCA).",text:(undo?"The new central bank money is taken back.":"New central bank money: nothing is taken from anywhere.")+" The bookkeeping check counts it separately as Helicopter Money, so it stays balanced."};
+    return {head:"The central ledger "+(undo?"takes "+A+" back from":"adds "+A+" to")+" "+whose+" entry.",text:(undo?"The new digital euro is taken back.":"New digital euro: no central bank account goes down.")+" The bookkeeping check counts it separately as Helicopter Money, so it stays balanced."};
+  }
+  if(it.kind==="bank-ledger") return {head:bank+" books in its own ledger: DCA at the central bank +"+A+", giro of "+who+" +"+A+".",text:"This is how a bank books central bank money it receives for a customer. It happens inside the bank, no message is sent. In this simulation the banks keep no full balance sheet; this ledger covers only Helicopter Money."};
+  if(it.kind==="giro") return {head:bank+(undo?" takes back ":" credits ")+A+(undo?" from ":" to ")+whose+" giro account (Helicopter Money).",text:undo?"The giro credit is reversed because the booking at the central platform was undone.":"The giro balance is up; the digital euro balance is untouched. "+cap(who)+" can fund it into digital euro as usual."};
+  if(it.kind==="note") return {head:bank+(undo?" takes back the new digital euro from":" updates its own copy of")+" "+whose+" digital euro balance"+(undo?" copy":"")+".",text:"Only the bank's copy changes: the real balance lives on the central ledger. No giro account and no central bank account is involved."};
+  return null;
 }
 
 /* match a live item to the next unused step of the running example */
@@ -609,6 +751,7 @@ function bookingList(it,lens,short){
   }).join(", ");
 }
 function gen(it,lens){
+  var hg=safe(function(){return hmGen(it,lens);},null); if(hg) return hg;
   var b=it.body, p=it.path||"", from=it.from, to=it.to, amt=amountOf(it);
   var e=amt?amt+" €":"";
   if(it.kind==="ledger"){
@@ -663,6 +806,7 @@ function narrate(it,lens){
   return {head:anon(head,lens),text:anon(text,lens)};
 }
 function shortLabel(it){
+  if(isHM(it)){var hl=safe(function(){return hmLabel(it);},null); if(hl) return hl;}
   var p=it.path||"", b=it.body||{}, tt=b.TransactionType;
   if(it.kind==="ledger") return "settlement";
   if(it.kind==="giro") return (b.action||"giro step");
@@ -716,6 +860,7 @@ function snapFromApps(apps,prev){
     if(a.holdingLimit!=null) limit=dec(a.holdingLimit);
     (a.customers||[]).forEach(function(c){
       var p={name:(typeof c.name==="string"&&c.name)?c.name:"Customer",bank:L,dean:c.DEAN,entry:c.entryId,phone:c.phone,de:dec(c.digitalEuro),giro:dec(c.giro),blocked:dec(c.giroBlocked)};
+      p.pin=dec(c.pendingIncoming);
       learnPerson(p); people.push(p);
     });
   });
@@ -730,7 +875,32 @@ function snapFromApps(apps,prev){
     var mc=d.moneyCheck; if(mc){check={ok:!!mc.ok,text:mc.rule||"digital euro in circulation = opening balances + net DCA debits"}; if(mc.digitalEuroInCirculation!=null) circ=dec(mc.digitalEuroInCirculation);}
   }else if(prev){entries=prev.entries;dca=prev.dca;circ=prev.circ;check=prev.check;}
   banks.sort();
-  return {people:people,dca:dca,entries:entries,circ:circ,limit:limit,check:check,banks:banks,created:0};
+  var hm=safe(function(){return hmFromApps(apps,people,check);},null);
+  if(!hm&&prev) hm=prev.hm;
+  if(hm&&check&&!hm.ok){check.ok=false; check.text=hm.text;}
+  return {people:people,dca:dca,entries:entries,circ:circ,limit:limit,check:check,banks:banks,created:hm?hm.total:0,hm:hm};
+}
+/* Helicopter Money totals and the two checks: the central platform's own money check, and
+   "what the platform created on a bank's DCA = what that bank credited to giro accounts" */
+function hmFromApps(apps,people,check){
+  var d=apps&&apps.desp, hm={de:0,dca:{},giro:{},bankDe:{},total:0,ok:true,text:"",pending:!!(S.scen&&S.scen.status==="started"&&S.scen.hm)};
+  var created={};
+  if(d&&d.helicopterMoney){
+    hm.de=dec(d.helicopterMoney.digitalEuro);
+    Object.keys(d.helicopterMoney.dca||{}).forEach(function(bic){hm.dca[S.banks[bic]||bic]=dec(d.helicopterMoney.dca[bic]);});
+  }
+  Object.keys(apps||{}).forEach(function(slug){
+    var m=/^psp-(\w+)$/.exec(slug), a=apps[slug]; if(!m||!a||!a.helicopterMoney) return;
+    var L=m[1].toUpperCase(); hm.giro[L]=dec(a.helicopterMoney.giro); hm.bankDe[L]=dec(a.helicopterMoney.digitalEuro);
+    (a.helicopterMoney.bookings||[]).forEach(function(bk){var c=created[bk.dean]||(created[bk.dean]={de:0,giro:0}); if(bk.account==="giro") c.giro+=dec(bk.amount); else c.de+=dec(bk.amount);});
+    if(a.helicopterMoney.ok===false){hm.ok=false; hm.text="A bank's Helicopter Money ledger does not add up.";}
+  });
+  var dcaTotal=0; Object.keys(hm.dca).forEach(function(L){dcaTotal+=hm.dca[L];});
+  hm.total=hm.de+dcaTotal;
+  Object.keys(hm.giro).forEach(function(L){ if(!hm.pending&&(hm.dca[L]||0)!==hm.giro[L]){hm.ok=false; hm.text="The central platform created "+eur(hm.dca[L]||0)+" € on the DCA of PSP "+L+", but the bank credited "+eur(hm.giro[L])+" € to giro accounts.";} });
+  if(d&&d.moneyCheck&&d.moneyCheck.ok===false){hm.ok=false; hm.text="Digital euro in circulation does not match opening balances + net DCA debits + Helicopter Money.";}
+  people.forEach(function(p){var c=created[p.dean]; p.hmDe=c?c.de:0; p.hmGiro=c?c.giro:0;});
+  return hm;
 }
 /* replay: rebuild balances from the recorded steps */
 function replayInit(){
@@ -803,6 +973,7 @@ function fetchJSON(url,opts,ms){
   });
 }
 function resetLive(){
+  S.hmRuns={};
   S.items=[];S.byId={};S.states=[];S.scen=null;S.result=null;S.sel=null;S.recent=null;S.lastSeq=0;S.dropped=0;
   S.ctrl={mode:S.ctrl.mode,delaySeconds:S.ctrl.delaySeconds,waiting:0,next:null};
 }
@@ -821,7 +992,7 @@ function handleEvent(e,quiet){
   try{
   switch(e.type){
     case "reset":
-      S.items=[];S.byId={};S.scen=null;S.result=null;S.sel=null;S.recent=null;S.states=[];S.dropped=0;
+      S.items=[];S.byId={};S.scen=null;S.result=null;S.sel=null;S.recent=null;S.states=[];S.dropped=0;S.hmRuns={};
       if(!quiet) toast("Everything is back at the test data.","ok");
       break;
     case "message":{
@@ -847,13 +1018,14 @@ function handleEvent(e,quiet){
       break;
     case "scenario":
       if(e.status==="started"){
-        S.scen={id:e.id,title:e.title,steps:Array.isArray(e.steps)?e.steps:[],used:[],status:"started"}; S.result=null;
+        S.scen={id:e.id,title:e.title,steps:Array.isArray(e.steps)?e.steps:[],used:[],status:"started",hm:!!e.helicopterMoney}; S.result=null;
+        if(e.helicopterMoney&&e.helicopterId&&e.hm) S.hmRuns[e.helicopterId]=e.hm;
         if(!S.items.some(function(x){return x.live&&isMsg(x)&&!x.released;})){ // every run starts a fresh timeline (unless a message is still waiting)
           S.items=[]; S.byId={}; S.sel=null; S.recent=null; S.dropped=0; S.states.forEach(function(st){st.n=0;});
         }
       }else if(e.status==="finished"||e.status==="failed"){
         var ok=e.status==="finished"&&e.ok, ans=e.answer||{}, code=ans.StatusReason||(ans.ReturnCode?("return code "+ans.ReturnCode):"");
-        var text=e.status==="failed"?("Failed: "+(e.error||"unknown error")):ok?"Done – the bank answered ok.":("Rejected – "+(reasonText(ans.StatusReason)||code||"the bank said no")+".");
+        var text=e.status==="failed"?("Failed: "+(e.error||"unknown error")):ok?(e.helicopterMoney?"Done \u2013 the new money is booked.":"Done – the bank answered ok."):("Rejected – "+(reasonText(ans.StatusReason)||code||"the bank said no")+".");
         S.result={ok:ok,text:text,title:e.title};
         if(S.scen) S.scen.status="finished";
         if(!quiet) toast((e.title?e.title+": ":"")+text,ok?"ok":"bad");
@@ -896,6 +1068,7 @@ function scheduleRetry(){
 /* ---------- commands (I7) ---------- */
 function friendly(path,status,text){
   var t=String(text||"");
+  if(/helicopter-money/.test(path)) return t||("The relay answered "+status+".");
   if(status===409){
     if(/reset/.test(path)) return "Messages are still waiting or a scenario is running \u2013 let them through (Play or Step) first, then reset."+(t?" ("+t+")":"");
     return "A scenario is still running \u2013 let it finish first."+(t&&!/scenario/i.test(t)?" ("+t+")":"");
@@ -987,7 +1160,8 @@ function headersHTML(h){
 var rafPending=false;
 function scheduleRender(){ if(rafPending) return; rafPending=true; (window.requestAnimationFrame||setTimeout)(function(){rafPending=false;render();}); }
 function guard(name,fn){try{fn();}catch(e){if(window.console) console.error("render "+name,e);}}
-var MAPIDS=["nPspA","nPspB","nAppA","nAppB","ledgerCard","narr","steps","inspector","moneyRow"], TLIDS=["seq","narrT","moneyT","lensT"];
+var GM_ON=false;
+var MAPIDS=["nPspA","nPspB","nAppA","nAppB","nGm","ledgerCard","narr","steps","inspector","moneyRow"], TLIDS=["seq","narrT","moneyT","lensT"];
 function clearView(ids){ // the view that is not shown keeps no stale (lens-filtered) text in the page
   ids.forEach(function(id){ var el=$(id); if(el&&(el.innerHTML!==""||el._h)){ el.innerHTML=""; el._h=null; el._sig=null; } });
   if(ids===MAPIDS){ lastInsSig=null; pillHide(); }
@@ -1031,6 +1205,10 @@ function renderHeader(){
   var live=S.mode==="live";
   $("runLbl").textContent=live?"Run scenario":"Play scenario";
   syncRun(); $("bSet").disabled=!live; $("bSet").title=live?"":"Live mode only";
+  var hb=$("bTop"), on=live&&S.hm.mode;
+  hb.innerHTML=IC.heli+(on?"Done adding money":"Helicopter Money");
+  hb.classList.toggle("on",on); hb.setAttribute("aria-pressed",String(on)); hb.disabled=!live;
+  hb.title=live?(on?"Leave Helicopter Money mode (Escape)":"Create new money for a person (impossible with the real digital euro)"):"Helicopter Money needs the live simulation, it is not available in the offline replay";
 }
 
 /* ---------- control bar ---------- */
@@ -1088,10 +1266,10 @@ function anchors(fk,tk){
 var WIRES=[["appA","pspA"],["pspA","desp"],["desp","pspB"],["pspB","appB"]];
 function layoutWires(hotA,hotB){
   if(S.view!=="map") return;
-  var svg=$("wires"), h="";
-  WIRES.forEach(function(w){
+  var svg=$("wires"), h="", ws=GM_ON?WIRES.concat([["gm","desp"],["gm","pspA"],["gm","pspB"]]):WIRES;
+  ws.forEach(function(w){
     var g=anchors(w[0],w[1]), hot=(hotA===w[0]&&hotB===w[1])||(hotA===w[1]&&hotB===w[0]);
-    h+='<path class="wire'+(hot?" hot":"")+'" d="M'+g[0][0].toFixed(1)+" "+g[0][1].toFixed(1)+" L"+g[1][0].toFixed(1)+" "+g[1][1].toFixed(1)+'"/>';
+    h+='<path class="wire'+(w[0]==="gm"?" gm":"")+(hot?" hot":"")+'" d="M'+g[0][0].toFixed(1)+" "+g[0][1].toFixed(1)+" L"+g[1][0].toFixed(1)+" "+g[1][1].toFixed(1)+'"/>';
   });
   svg.innerHTML=h;
 }
@@ -1108,6 +1286,7 @@ function pillShow(it,mode,secs,extra){
   if(!fk||!tk||fk===tk||S.view!=="map"){ pillHide(); return; }
   ensurePill();
   var g=anchors(fk,tk), A=g[0], B=g[1], idx=S.items.indexOf(it)+1;
+  pillEl.className="pill"+(isHM(it)?" gm":""); hintEl.className="pillhint"+(isHM(it)?" gm":"");
   pillEl.innerHTML='<span class="num">'+idx+'</span>'+IC.mail+'<span class="lb">'+esc(shortLabel(it))+'</span>'+(sealedOf(it).length?IC.lock:"");
   pillEl.style.display="flex";
   var P=[A[0]+(B[0]-A[0])*0.42,A[1]+(B[1]-A[1])*0.42];
@@ -1148,6 +1327,7 @@ function nodeStatus(key,it,lens){
     if(fk!==key) return idle;
     if(it.kind==="ledger") return {t:"Settling the payment",c:"var(--enc)",i:IC.check};
     if(it.kind==="giro") return {t:"Giro account step",c:"var(--teal)",i:IC.check};
+    if(it.kind==="bank-ledger") return {t:"Booking in the bank ledger",c:"var(--violet)",i:IC.check};
     return {t:"Note",c:"var(--muted)",i:IC.check};
   }
   var lb=vis?shortLabel(it):"message";
@@ -1155,7 +1335,16 @@ function nodeStatus(key,it,lens){
   if(fk===key) return inFlight(it)?{t:"Sending: "+lb,c:"var(--ink2)",i:IC.arrow}:{t:"Sent: "+lb,c:"var(--muted)",i:IC.check};
   return idle;
 }
+function hmRecent(kind,key){ // the latest step of this kind a few steps back (the bank-ledger section stays while the giro step follows)
+  if(S.mode!=="live") return null;
+  for(var j=Math.min(curIdx(),S.items.length-1),n=0;j>=0&&n<6;j--,n++){var x=S.items[j]; if(x&&x.kind===kind&&nodeKey(x.from)===key) return x;}
+  return null;
+}
 function nodeHTML(key,it,snap,lens){
+  if(key==="gm"){
+    var gs=nodeStatus(key,it,lens);
+    return '<div class="hd"><span class="ic" style="width:34px;height:34px;background:var(--violet-t);color:var(--violet)">'+IC.heli.replace("<svg",'<svg width="22" height="22"')+'</span><div><div class="nt">Game master</div><div class="ns">Simulation only \u2013 not part of the digital euro</div></div></div><div class="st" style="color:'+gs.c+'">'+gs.i+'<span>'+esc(gs.t)+'</span></div>';
+  }
   var L=key.slice(-1), st=nodeStatus(key,it,lens), ppl=peopleOf(snap,L), isBank=/^psp/.test(key);
   var names=ppl.map(function(p){return first(p);});
   if(lens==="desp"||lens==="public"||((lens==="A"||lens==="B")&&lens!==L)) names=[];
@@ -1164,7 +1353,11 @@ function nodeHTML(key,it,snap,lens){
     var sub=names.length?(names.join(" & ")+"'s bank"):"Retail bank";
     var g="", gi=it&&it.kind==="giro"?it:(S.recent&&S.recent.item.kind==="giro"&&S.mode==="live"&&S.sel==null?S.recent.item:null);
     if(gi&&nodeKey(gi.from)===key&&sees(gi,lens)) g='<div class="giro new">'+esc(narrate(gi,lens).head)+'</div>';
-    return '<div class="hd"><span class="ic" style="width:34px;height:34px;background:var(--teal-t)">'+IC.bank+'</span><div><div class="nt">PSP '+L+'</div><div class="ns">'+esc(sub)+'</div></div></div>'+(g||stat)+(g?"":"");
+    var hml=safe(function(){
+      var bl=hmRecent("bank-ledger",key); if(!bl||!sees(bl,lens)||!bl.body||!Array.isArray(bl.body.bookings)) return "";
+      return '<div class="hmled"><div class="eyebrow">Bank ledger \u00b7 Helicopter Money</div><div class="g">'+bl.body.bookings.map(function(x){var ac=String(x.account||""), gm=/^giro of (.+)$/.exec(ac), shown=gm?"giro of "+pname(person(gm[1]),lens,true):ac; return '<span>'+esc(anon(shown,lens))+'</span><span>'+esc(String(x.change||"").replace("-","\u2212"))+'</span>';}).join("")+'</div></div>';
+    },"");
+    return '<div class="hd"><span class="ic" style="width:34px;height:34px;background:var(--teal-t)">'+IC.bank+'</span><div><div class="nt">PSP '+L+'</div><div class="ns">'+esc(sub)+'</div></div></div>'+(g||stat)+hml;
   }
   var who=names.length?names.join(" · "):"Banking app";
   return '<div class="hd">'+IC.phone+'<div><div class="nt">Banking App '+L+'</div></div></div><div class="ns" style="margin-top:4px">'+esc(who)+'</div>'+stat.replace('class="st"','class="st" style="margin-top:6px"');
@@ -1174,15 +1367,16 @@ function ledgerHTML(it,snap,lens){
   var chg={}, led=null;
   if(it&&it.kind==="ledger") led=it; else if(S.mode==="live"&&S.sel==null&&S.recent&&S.recent.item.kind==="ledger") led=S.recent.item;
   if(led&&led.body&&Array.isArray(led.body.bookings)) led.body.bookings.forEach(function(b){chg[b.entry]=b.change;});
+  var hmled=!!(led&&led.body&&led.body.helicopterMoney);
   if(lens==="public") return '<div class="eyebrow" style="margin-bottom:4px">Central ledger · totals only</div><div class="g mono" style="display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:12.5px"><span style="color:var(--muted)">Digital euro in circulation</span><span>'+eur(snap.circ)+'</span></div>';
   var own=(lens==="A"||lens==="B")?lens:null, g="";
-  function val(key,v){var c=chg[key];return (c?'<span class="chg '+(/^-|−/.test(c)?"down":"up")+'">'+esc(String(c).replace("-","−"))+'</span> ':"")+eur(v);}
+  function val(key,v){var c=chg[key];return (c?'<span class="chg '+(hmled?"hm":/^-|−/.test(c)?"down":"up")+'">'+esc(String(c).replace("-","−"))+'</span> ':"")+eur(v);}
   snap.entries.forEach(function(en){ if(own&&en.bank!==own) return;
     g+='<span>'+esc(en.entry.slice(0,8))+'… (PSP '+esc(en.bank)+')</span><span class="'+(chg[en.entry]?"chg":"")+'">'+val(en.entry,en.bal)+'</span>'; });
   snap.banks.forEach(function(L){ if(own&&L!==own) return; if(snap.dca[L]==null) return;
     var k="DCA of PSP "+L; g+='<span>DCA PSP '+esc(L)+'</span><span>'+val(k,snap.dca[L])+'</span>'; });
   var book="";
-  if(led&&(lens==="all"||lens==="desp")&&S.mode!=="none") book='<div class="book">Booked: '+esc(bookingList(led,lens,true))+'</div>';
+  if(led&&(lens==="all"||lens==="desp")&&S.mode!=="none") book='<div class="book'+(hmled?" hm":"")+'">'+(hmled?"Helicopter Money: ":"Booked: ")+esc(bookingList(led,lens,true))+'</div>';
   return '<div class="eyebrow" style="margin-bottom:4px">Central ledger · no names</div><div class="g">'+g+'</div>'+book;
 }
 
@@ -1234,9 +1428,10 @@ function renderChips(){
     var vis=sees(r.it,lens);
     var label=vis?lensLabel(r.it,lens):(lens==="public"?"message":"not visible");
     var tag=r.status==="now"?" \u00b7 now":r.status==="done"?" \u00b7 done":r.status==="wait"?" \u00b7 waiting":"";
-    var cls="step "+(r.status==="now"?"now":r.status==="done"?"done":r.status==="wait"?"wait":"future")+(vis?"":" hid");
+    var cls="step "+(r.status==="now"?"now":r.status==="done"?"done":r.status==="wait"?"wait":"future")+(vis?"":" hid"), gmc=vis&&isHM(r.it);
+    if(gmc) cls+=" hm";
     var dis=r.status==="future"&&S.mode==="live";
-    return '<div role="listitem" style="flex:none"><button type="button" class="'+cls+'" data-i="'+r.i+'" data-k="c'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true"':"")+'><span class="n">'+(r.i+1+S.dropped)+tag+'</span>'+esc(label)+'</button></div>';
+    return '<div role="listitem" style="flex:none"><button type="button" class="'+cls+'" data-i="'+r.i+'" data-k="c'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true"':"")+'><span class="n">'+(r.i+1+S.dropped)+tag+'</span>'+(gmc?'<span class="gmtag">game master</span><br>':"")+esc(label)+'</button></div>';
   }).join("");
   var older=hiddenN+S.dropped;
   if(older>0) html='<div role="listitem" class="foot" style="flex:none;width:110px;align-self:center">'+older+' older steps hidden</div>'+html;
@@ -1307,6 +1502,7 @@ function moneyData(){
   if(lens==="public"){
     T.push({k:"circ",cls:"circ",l:"Digital euro in circulation",v:eur(snap.circ)+" €",s:"total, no names"});
     T.push({k:"settled",l:"Settlements so far",v:String(snap.settled||0),s:"the public sees totals only"});
+    T.push({k:"gm",cls:"gm",l:"Helicopter Money",v:eur(snap.created||0)+" €",s:"newly created, impossible in reality"});
     return {T:T,snap:snap,note:"The public sees aggregate figures only."};
   }
   if(lens==="all"||lens==="desp") T.push({k:"circ",cls:"circ",l:"Digital euro in circulation",v:eur(snap.circ)+" €",d:delta(snap.circ,prev?prev.circ:null)});
@@ -1317,36 +1513,75 @@ function moneyData(){
     snap.people.forEach(function(p){
       if((lens==="A"||lens==="B")&&p.bank!==lens) return;
       var q=prevPerson(p);
+      var made=(p.hmDe||0)+(p.hmGiro||0);
       T.push({k:"p"+(p.entry||p.name),l:first(p)+" · PSP "+p.bank,v:eur(p.de)+" €",d:delta(p.de,q?q.de:null),
-        s:"giro "+eur(p.giro)+" €"+(p.blocked?" ("+eur(p.blocked)+" blocked)":"")});
+        s:"giro "+eur(p.giro)+" €"+(p.blocked?" ("+eur(p.blocked)+" blocked)":""),pill:made>0?eur(made)+" € created":"",hmP:p});
     });
   }
   snap.banks.forEach(function(L){ if((lens==="A"||lens==="B")&&L!==lens) return; if(snap.dca[L]==null) return;
-    T.push({k:"d"+L,l:"DCA PSP "+L,v:eur(snap.dca[L])+" €",d:delta(snap.dca[L],prev&&prev.dca[L]!=null?prev.dca[L]:null),s:"central bank money"}); });
+    T.push({k:"d"+L,l:"DCA PSP "+L,v:eur(snap.dca[L])+" €",d:delta(snap.dca[L],prev&&prev.dca[L]!=null?prev.dca[L]:null),s:"central bank money"+(S.hm.mode?" \u00b7 grows with giro Helicopter Money":"")}); });
   if((lens==="all"||lens==="desp")&&snap.check){
-    T.push({k:"chk",cls:"chk",ok:snap.check.ok,l:"Bookkeeping check",v:snap.check.ok?"Balanced":"Out of balance",s:snap.check.ok?"matches the banks' central bank accounts":snap.check.text});
-    T.push({k:"gm",cls:"gm",l:"Game-master top-ups",v:eur(snap.created||0)+" €",s:"created out of thin air"});
+    T.push({k:"chk",cls:"chk",ok:snap.check.ok,l:"Bookkeeping check",v:snap.check.ok?"Balanced":"Out of balance",s:snap.check.ok?"matches the banks' central bank accounts, Helicopter Money included":snap.check.text});
+    var hmd=snap.hm||{de:0,dca:{}}, hmg=0; Object.keys(hmd.dca||{}).forEach(function(L){hmg+=hmd.dca[L]||0;});
+    T.push({k:"gm",cls:"gm",l:"Helicopter Money",v:eur(snap.created||0)+" €",s:"newly created, impossible in reality",s2:"digital euro "+eur(hmd.de||0)+" · giro "+eur(hmg)+" (via central bank accounts)"});
   }
   return {T:T,snap:snap};
 }
+/* ---------- Helicopter Money mode: banner, "+ Add money", the open tile ---------- */
+function hmBannerHTML(){
+  return '<div class="hmbanner" role="status">'+IC.heli+'<div><strong>Helicopter Money.</strong> Pick a person below and drop new money on their digital euro or giro account. Impossible with the real digital euro, so every drop is counted separately.</div></div>';
+}
+function hmPersonId(name){
+  var l=(S.lists&&S.lists.people)||[], f=l.filter(function(p){return p.name===name;})[0];
+  return f?f.id:String(name||"").split(" ")[0].toLowerCase();
+}
+function hmParse(v){
+  var t=String(v==null?"":v).trim().replace(",","."); if(!/^\d+(\.\d{1,2})?$/.test(t)) return null; return parseFloat(t);
+}
+function hmGoLabel(){var n=hmParse(S.hm.amount); return n===null?"Create":"Create "+n.toFixed(2)+" \u20ac";}
+function hmAddHTML(t,snap){
+  var p=t.hmP; if(!S.hm.mode||!p||S.mode!=="live") return "";
+  if(S.hm.open!==p.name) return '<button type="button" class="hmadd" data-hm-open="'+esc(p.name)+'" aria-expanded="false">+ Add money<span class="sr"> for '+esc(p.name)+'</span></button>';
+  var h=S.hm, de=h.account==="digital-euro", room=snap&&snap.limit!=null?Math.max(0,snap.limit-(p.de||0)-(p.pin||0)):null;
+  var hint=de?(room!=null?"Room up to the limit: "+eur(room)+" \u20ac":"The holding limit applies to digital euro."):"Giro money does not count against the holding limit.";
+  return '<form class="hmform" data-hm-form="'+esc(p.name)+'" novalidate aria-label="Add Helicopter Money for '+esc(p.name)+'">'+
+    '<div class="seg" role="group" aria-label="Kind of money"><button type="button" data-hm-acc="digital-euro" aria-pressed="'+de+'">Digital euro</button><button type="button" data-hm-acc="giro" aria-pressed="'+!de+'">Giro</button></div>'+
+    '<div class="hmchips" role="group" aria-label="Quick amounts">'+[50,100,500].map(function(c){return '<button type="button" data-hm-chip="'+c+'">+'+c+'</button>';}).join("")+'</div>'+
+    '<label for="hmAmt">Amount in \u20ac</label><input id="hmAmt" inputmode="decimal" autocomplete="off" value="'+esc(h.amount)+'" aria-describedby="hmHint hmErr">'+
+    '<div class="hint" id="hmHint">'+esc(hint)+'</div><div class="hmerr" id="hmErr" role="alert">'+esc(h.err)+'</div>'+
+    '<button type="submit" class="hmgo" id="hmGo"'+(h.busy?" disabled":"")+'>'+esc(hmGoLabel())+'</button>'+
+    '<button type="button" class="hmclose" data-hm-open="">Close</button></form>';
+}
+function setHTMLKeepFocus(el,html){ // rebuild a box without losing the keyboard focus (or the cursor in the amount field)
+  if(el._h===html) return;
+  var act=document.activeElement, sel=null, start=0, end=0;
+  if(act&&el.contains(act)){
+    if(act.id) sel="#"+act.id;
+    else{ var a=["data-hm-acc","data-hm-chip","data-hm-open"].filter(function(n){return act.hasAttribute(n);})[0]; if(a) sel="["+a+'="'+act.getAttribute(a)+'"]'; }
+    try{start=act.selectionStart;end=act.selectionEnd;}catch(e){}
+  }
+  el.innerHTML=html; el._h=html;
+  if(sel){ var n=el.querySelector(sel); if(n){ n.focus({preventScroll:true}); try{ if(start!=null) n.setSelectionRange(start,end); }catch(e){} } }
+}
 function renderMoney(){
   var box=$("moneyRow"), md=moneyData();
-  if(!md){ box.innerHTML='<div class="top"><span class="eyebrow">Money right now</span></div><div class="foot">Waiting for the first balances …</div>'; return; }
-  var html='<div class="top"><span class="eyebrow">Money right now</span><span class="foot">Digital euro sit on the central ledger · giro money sits at the bank'+(md.snap.limit!=null?" · holding limit "+eur(md.snap.limit).replace(/\.00$/,"")+" €":"")+'</span></div><div class="tiles">';
+  if(!md){ setHTMLKeepFocus(box,'<div class="top"><span class="eyebrow">Money right now</span></div><div class="foot">Waiting for the first balances …</div>'); return; }
+  var html=(S.hm.mode&&S.mode==="live"?hmBannerHTML():"")+'<div class="top"><span class="eyebrow">Money right now</span><span class="foot">Digital euro sit on the central ledger · giro money sits at the bank'+(md.snap.limit!=null?" · holding limit "+eur(md.snap.limit).replace(/\.00$/,"")+" €":"")+'</span></div><div class="tiles'+(S.hm.mode&&S.mode==="live"?" hmmode":"")+'">';
   var seen={};
   md.T.forEach(function(t){
     var bump=lastVals[t.k]!==undefined&&lastVals[t.k]!==t.v; seen[t.k]=t.v;
     var vstyle=t.cls==="chk"?' style="color:'+(t.ok?"var(--ok)":"var(--bad)")+';display:flex;align-items:center;gap:6px"':"";
-    html+='<div class="tile '+(t.cls||"")+(bump?" bump":"")+'"><div class="s">'+esc(t.l)+'</div><div class="v"'+vstyle+'>'+(t.cls==="chk"?(t.ok?IC.check:IC.warn).replace("<svg",'<svg width="18" height="18"'):"")+esc(t.v)+(t.d||"")+'</div>'+(t.s?'<div class="s">'+esc(t.s)+'</div>':"")+'</div>';
+    var open=!!(t.hmP&&S.hm.mode&&S.hm.open===t.hmP.name);
+    html+='<div class="tile '+(t.cls||"")+(bump?" bump":"")+(open?" hmopen":"")+'"><div class="s">'+esc(t.l)+'</div><div class="v"'+vstyle+'>'+(t.cls==="chk"?(t.ok?IC.check:IC.warn).replace("<svg",'<svg width="18" height="18"'):"")+esc(t.v)+(t.d||"")+'</div>'+(t.s?'<div class="s">'+esc(t.s)+'</div>':"")+(t.s2?'<div class="s">'+esc(t.s2)+'</div>':"")+(t.pill?'<div><span class="hmpill">'+esc(t.pill)+'</span></div>':"")+safe(function(){return hmAddHTML(t,md.snap);},"")+'</div>';
   });
   lastVals=seen;
-  box.innerHTML=html+'</div>'+(md.note?'<div class="foot">'+esc(md.note)+'</div>':"");
+  setHTMLKeepFocus(box,html+'</div>'+(md.note?'<div class="foot">'+esc(md.note)+'</div>':""));
 }
 function moneyListHTML(){
   var md=moneyData(); if(!md) return '<div class="eyebrow">Money right now</div><div class="foot">Waiting for the first balances …</div>';
-  return '<div class="eyebrow" style="margin-bottom:4px">Money right now</div><div class="mlist">'+md.T.map(function(t){
+  return (S.hm.mode&&S.mode==="live"?hmBannerHTML()+'<div class="hmrow"></div>':"")+'<div class="eyebrow" style="margin-bottom:4px">Money right now</div><div class="mlist">'+md.T.map(function(t){
     var col=t.cls==="gm"?' style="color:var(--violet)"':"", vc=t.cls==="chk"?' style="color:'+(t.ok?"var(--ok)":"var(--bad)")+'"':col;
-    return '<div class="tl"><span'+col+'>'+esc(t.l)+'</span><span class="v"'+vc+'>'+esc(t.v)+(t.d||"")+'</span></div>';}).join("")+'</div>';
+    return '<div class="tl"><span'+col+'>'+esc(t.l)+(t.pill?' <span class="hmpill">'+esc(t.pill)+'</span>':"")+'</span><span class="v"'+vc+'>'+esc(t.v)+(t.d||"")+'</span></div>'+safe(function(){return hmAddHTML(t,md.snap);},"");}).join("")+'</div>';
 }
 
 /* ---------- map view ---------- */
@@ -1355,18 +1590,20 @@ function renderMap(it){
   guard("snap",function(){snap=snapFor(cur);});
   var fk=it?nodeKey(it.from):null, tk=it?nodeKey(it.to):null;
   var internal=it&&!isMsg(it);
-  ["desp","pspA","pspB","appA","appB"].forEach(function(k){
+  GM_ON=S.mode==="live"&&lens!=="public"&&S.items.some(isGmMsg);
+  ["desp","pspA","pspB","appA","appB","gm"].forEach(function(k){
     guard("node "+k,function(){
       var el=$("n"+cap(k)); if(!el) return;
+      if(k==="gm"){ el.hidden=!GM_ON; if(!GM_ON){ el._h=null; el.innerHTML=""; return; } }
       var snd=!!it&&!internal&&fk===k, rcv=!!it&&(internal?fk===k:tk===k);
       el.classList.toggle("snd",snd); el.classList.toggle("rcv",rcv);
       el.classList.toggle("dim",!!it&&!sees(it,lens)&&lens!=="all");
       if(k==="desp"){ $("ledgerCard").innerHTML=ledgerHTML(it,snap,lens); }
-      else { var sig=nodeHTML(k,it,snap,lens); if(el._h!==sig){el.innerHTML=sig;el._h=sig;} }
+      else { var sig=nodeHTML(k,it,snap,lens); if(/^psp/.test(k)) el.style.width=sig.indexOf('class="hmled"')>=0?"244px":"200px"; if(el._h!==sig){el.innerHTML=sig;el._h=sig;} }
     });
   });
   guard("wires",function(){layoutWires(internal?null:fk,internal?null:tk);});
-  guard("narration",function(){var nr=$("narr"), nh=narrHTML(it,false); if(nr._h!==nh){nr.innerHTML=nh;nr._h=nh;}});
+  guard("narration",function(){var nr=$("narr"), nh=narrHTML(it,false); nr.classList.toggle("hm",!!it&&isHM(it)&&sees(it,lens)); if(nr._h!==nh){nr.innerHTML=nh;nr._h=nh;}});
   guard("chips",renderChips);
   guard("inspector",function(){renderInspectorOnce(it);});
   guard("money",renderMoney);
@@ -1380,7 +1617,8 @@ function renderInspectorOnce(it){
 
 /* ---------- timeline view ---------- */
 var LANE_META=[["Banking App A","amber","phone"],["PSP A","teal","bank"],["Central platform","blue","gov"],["PSP B","teal","bank"],["Banking App B","amber","phone"]];
-function laneOf(name){var k=nodeKey(name);return LANES.indexOf(k);}
+var CUR_LANES=LANES; // a "Game master" lane is added in front only while game-master messages exist
+function laneOf(name){var k=nodeKey(name);return CUR_LANES.indexOf(k);}
 function boxText(it,lens){
   if(it.kind==="ledger"){
     var bk=it.body&&it.body.bookings; if(Array.isArray(bk)&&sees(it,lens)){
@@ -1388,46 +1626,52 @@ function boxText(it,lens){
     return "settlement";
   }
   if(it.kind==="giro"){var b=it.body||{};return (b.action||"giro step")+(b.amount?" "+b.amount.amount+" €":"");}
+  if(it.kind==="bank-ledger") return "bank ledger: Helicopter Money";
+  if(isHM(it)) return "balance copy";
   return "note";
 }
 function renderTimeline(it){
   var lens=S.lens, rs=rows(), cur=curIdx();
-  var heads=LANE_META.map(function(m,i){
-    var col={amber:["var(--amber-t)","#A85F0A"],teal:["var(--teal-t)","#0E7566"],blue:["var(--blue-t)","#1D4C99"]}[m[1]];
-    var icon={phone:IC.phone,bank:IC.bank,gov:IC.gov}[m[2]];
+  var useGm=lens!=="public"&&rs.some(function(r){return isGmMsg(r.it);});
+  CUR_LANES=useGm?["gm"].concat(LANES):LANES;
+  var META=useGm?[["Game master","violet","heli"]].concat(LANE_META):LANE_META, NL=META.length, GRID='grid-template-columns:44px repeat('+(NL*2)+',minmax(0,1fr));';
+  var LINECOL={amber:"#FAEEDD",teal:"#E1F1ED",blue:"#E5ECF8",violet:"#EEE8F6"};
+  var heads=META.map(function(m,i){
+    var col={amber:["var(--amber-t)","#A85F0A"],teal:["var(--teal-t)","#0E7566"],blue:["var(--blue-t)","#1D4C99"],violet:["var(--violet-t)","#6A4C9E"]}[m[1]];
+    var icon={phone:IC.phone,bank:IC.bank,gov:IC.gov,heli:IC.heli.replace("<svg",'<svg width="22" height="22" style="color:#6A4C9E"')}[m[2]];
     return '<div class="lanehead" style="grid-column:'+(2+2*i)+' / '+(4+2*i)+'"><span class="ic" style="background:'+col[0]+'">'+icon+'</span>'+m[0]+'</div>';
   }).join("");
-  var lines='<div class="lanelines" aria-hidden="true"><i style="left:10%;border-color:#FAEEDD"></i><i style="left:30%;border-color:#E1F1ED"></i><i style="left:50%;border-color:#E5ECF8"></i><i style="left:70%;border-color:#E1F1ED"></i><i style="left:90%;border-color:#FAEEDD"></i></div>';
+  var lines='<div class="lanelines" aria-hidden="true">'+META.map(function(m,i){return '<i style="left:'+((2*i+1)/(2*NL)*100).toFixed(2)+'%;border-color:'+LINECOL[m[1]]+'"></i>';}).join("")+'</div>';
   var hiddenN=Math.max(0,rs.length-WINDOW), older=hiddenN+S.dropped;
-  var sig=[S.mode,lens,cur,rs.length,S.dropped,S.items.slice(-WINDOW).map(function(x){return x.released?1:0;}).join("")].join("|");
+  var sig=[S.mode,lens,cur,rs.length,S.dropped,NL,S.items.slice(-WINDOW).map(function(x){return x.released?1:0;}).join("")].join("|");
   var body=(older>0?'<div class="foot" style="padding:6px 8px;text-align:center">'+older+' older steps hidden</div>':"")+rs.slice(hiddenN).map(function(r){
     var it2=r.it, vis=sees(it2,lens), cls=r.status==="done"?"past":r.status==="now"?"cur":r.status==="wait"?"waitrow":"next";
-    var fl=laneOf(it2.from), tl=laneOf(it2.to), cell="";
+    var fl=laneOf(it2.from), tl=laneOf(it2.to), cell="", gmr=vis&&isHM(it2);
     if(isMsg(it2)&&fl>=0&&tl>=0&&fl!==tl){
-      var lo=Math.min(fl,tl), hi=Math.max(fl,tl), right=tl>fl, color=r.status==="now"||r.status==="wait"?"#1D4C99":"#CBD3DD";
+      var lo=Math.min(fl,tl), hi=Math.max(fl,tl), right=tl>fl, color=r.status==="now"||r.status==="wait"?(gmr?"#6A4C9E":"#1D4C99"):"#CBD3DD";
       var lbl=vis?shortLabel(it2):(lens==="public"?"···":"not visible");
-      cell='<div class="arrow '+cls+'" style="grid-column:'+(3+2*lo)+' / '+(3+2*hi)+(vis?"":";opacity:.45")+'">'+(right?"":IC.tri(-1,color))+'<span class="lbl">'+esc(lbl)+'</span><span class="ln"></span>'+(right?IC.tri(1,color):"")+'</div>';
+      cell='<div class="arrow '+cls+(gmr?" gmr":"")+'" style="grid-column:'+(3+2*lo)+' / '+(3+2*hi)+(vis?"":";opacity:.45")+'">'+(right?"":IC.tri(-1,color))+'<span class="lbl">'+esc(lbl)+'</span><span class="ln"></span>'+(right?IC.tri(1,color):"")+'</div>';
     }else{
-      var lane=fl>=0?fl:2, txt=vis?boxText(it2,lens):"hidden";
+      var lane=fl>=0?fl:(useGm?3:2), txt=vis?boxText(it2,lens):"hidden";
       if(isMsg(it2)) txt=shortLabel(it2);
-      cell='<div class="sbox '+cls+'" style="grid-column:'+(2+2*lane)+' / '+(4+2*lane)+(vis?"":";opacity:.45")+'">'+esc(txt)+'</div>';
+      cell='<div class="sbox '+cls+(gmr?" gmr":"")+'" style="grid-column:'+(2+2*lane)+' / '+(4+2*lane)+(vis?"":";opacity:.45")+'">'+esc(txt)+'</div>';
     }
     var dis=r.status==="future";
-    return '<button type="button" class="trow'+(r.status==="now"?" sel":"")+'" data-i="'+r.i+'" data-k="t'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true" tabindex="-1" style="cursor:default"':"")+
+    return '<button type="button" class="trow'+(r.status==="now"?" sel":"")+(gmr?" gmr":"")+'" style="'+GRID+'" data-i="'+r.i+'" data-k="t'+r.i+'"'+(r.status==="now"?' aria-current="step"':"")+(dis?' aria-disabled="true" tabindex="-1"':"")+
       ' aria-label="Step '+(r.i+1+S.dropped)+': '+esc(vis?lensLabel(it2,lens):"not visible")+(r.status==="future"?" (upcoming)":"")+'"><span class="tnum" style="'+(r.status==="now"?"color:var(--blue);font-weight:600":"")+'">'+(r.i+1+S.dropped)+'</span>'+cell+'</button>';
   }).join("");
   if(!rs.length) body='<div class="foot" style="padding:24px 8px;text-align:center">No messages yet. Run a scenario and they will appear here, one row per message.</div>';
   var seq=$("seq");
   if(seq._sig!==sig){
     var act=document.activeElement, key=act&&seq.contains(act)?act.getAttribute("data-k"):null, sl=seq.scrollLeft, st=window.pageYOffset;
-    seq.innerHTML='<div class="seqin">'+lines+'<div class="trow head">'+'<div></div>'+heads+'</div>'+body+'</div>'; seq._sig=sig; seq.scrollLeft=sl;
+    seq.innerHTML='<div class="seqin">'+lines+'<div class="trow head" style="'+GRID+'">'+'<div></div>'+heads+'</div>'+body+'</div>'; seq._sig=sig; seq.scrollLeft=sl;
     if(key){var n=seq.querySelector('[data-k="'+key+'"]'); if(n) n.focus({preventScroll:true});}
     var selEl=seq.querySelector(".trow.sel"); if(selEl&&!seq.contains(act)){ /* keep the current row in view in the page */
       var rc=selEl.getBoundingClientRect(); if(rc.top<80||rc.bottom>window.innerHeight-20){ selEl.scrollIntoView({block:"center",behavior:"auto"}); }
     }
   }
-  guard("side narration",function(){var nt=$("narrT"), nh=narrHTML(it,true); if(nt._h!==nh){nt.innerHTML=nh;nt._h=nh;}});
-  guard("side money",function(){$("moneyT").innerHTML=moneyListHTML();});
+  guard("side narration",function(){var nt=$("narrT"), nh=narrHTML(it,true); nt.classList.toggle("hm",!!it&&isHM(it)&&sees(it,lens)); if(nt._h!==nh){nt.innerHTML=nh;nt._h=nh;}});
+  guard("side money",function(){setHTMLKeepFocus($("moneyT"),moneyListHTML());});
   $("lensT").innerHTML='<div class="eyebrow" style="margin-bottom:8px">Whose view</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+LENS_LABEL.map(function(l){return '<button type="button" class="btn small'+(S.lens===l[0]?" on":"")+'" data-lens="'+l[0]+'" aria-pressed="'+(S.lens===l[0])+'">'+(l[0]==="desp"?"Platform":l[1])+'</button>';}).join("")+'</div>';
 }
 
@@ -1567,6 +1811,37 @@ function runScenario(){
   post("/control/scenarios/"+encodeURIComponent(v),{}).then(function(r){ if(r.ok) scheduleRender(); });
 }
 
+/* ---------- Helicopter Money mode (game master, live only) ---------- */
+function setHM(on){
+  if(on&&S.mode!=="live") return;
+  S.hm.mode=!!on; if(!on){ S.hm.open=null; S.hm.err=""; }
+  render();
+}
+function hmFocusAmount(){ setTimeout(function(){ var i=$("hmAmt"); if(i){ i.focus(); try{i.select();}catch(e){} } },0); }
+function hmClick(e){ // returns true when the click belonged to Helicopter Money
+  var t=e.target&&e.target.closest?e.target.closest("[data-hm-open],[data-hm-acc],[data-hm-chip]"):null; if(!t) return false;
+  if(t.hasAttribute("data-hm-open")){
+    var name=t.getAttribute("data-hm-open"); S.hm.open=name||null; S.hm.err=""; render();
+    if(name) hmFocusAmount(); else { var back=document.querySelector('[data-hm-open]'); if(back) back.focus(); }
+  }else if(t.hasAttribute("data-hm-acc")){ S.hm.account=t.getAttribute("data-hm-acc"); S.hm.err=""; render(); }
+  else if(t.hasAttribute("data-hm-chip")){ S.hm.amount=t.getAttribute("data-hm-chip")+".00"; S.hm.err=""; render(); }
+  return true;
+}
+function hmSubmit(name){
+  var h=S.hm, n=hmParse(h.amount);
+  function fail(text){ h.err=text; render(); hmFocusAmount(); }
+  if(h.busy) return;
+  if(n===null) return fail("Please enter an amount like 100.00 (at most two decimals).");
+  if(n<=0||n>1000000) return fail("The amount must be more than 0 and at most 1,000,000.00 \u20ac.");
+  h.busy=true; h.err=""; render();
+  post("/control/helicopter-money",{person:hmPersonId(name),account:h.account,amount:n.toFixed(2)},true).then(function(r){
+    h.busy=false;
+    if(r.ok){ h.open=null; h.err=""; S.sel=null; }
+    else{ h.err=r.error||"The relay did not accept this."; toast(h.err,"bad"); }
+    render(); if(!r.ok) hmFocusAmount();
+  });
+}
+
 /* ---------- wiring ---------- */
 function setView(v,persist){
   S.view=v==="timeline"?"timeline":"map";
@@ -1586,8 +1861,9 @@ function wire(){
   $("backLive").addEventListener("click",function(){S.sel=null;S.pill={id:null,mode:null};render();});
   $("run").addEventListener("click",runScenario);
   $("scenario").addEventListener("change",function(){ if(S.mode==="replay") loadReplay(parseInt($("scenario").value,10)||0); else if($("scenario").value==="__custom") openCustom(); });
-  $("bTop").addEventListener("click",function(e){e.preventDefault();toast("Top-up is coming later (money creation, ADR 0002).");});
+  $("bTop").addEventListener("click",function(e){e.preventDefault(); if(S.mode!=="live") return; setHM(!S.hm.mode);});
   document.addEventListener("click",function(e){
+    if(safe(function(){return hmClick(e);},false)) return;
     var t=e.target.closest?e.target.closest("[data-lens]"):null;
     if(t){ setLens(t.getAttribute("data-lens")); return; }
     var c=e.target.closest?e.target.closest("[data-i]"):null;
@@ -1612,10 +1888,18 @@ function wire(){
   $("cAct").addEventListener("change",syncCustom);
   $("cform").addEventListener("submit",submitCustom);
   document.addEventListener("keydown",function(e){
-    if(e.key==="Escape"){ var p=$("pop"); if(!p.hidden){p.hidden=true;$("bSet").setAttribute("aria-expanded","false");$("bSet").focus();} return; }
+    if(e.key==="Escape"){ var p=$("pop"); if(!p.hidden){p.hidden=true;$("bSet").setAttribute("aria-expanded","false");$("bSet").focus();}
+      else if(S.hm.mode&&!document.querySelector("dialog[open]")){ setHM(false); $("bTop").focus(); } return; }
     if(/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)||document.querySelector("dialog[open]")) return;
     if(e.key==="ArrowRight"){ if(!$("bFwd").disabled) stepForward(); }
     else if(e.key==="ArrowLeft"){ if(!$("bBack").disabled) stepBack(); }
+  });
+  document.addEventListener("input",function(e){
+    if(e.target&&e.target.id==="hmAmt"){ S.hm.amount=e.target.value; S.hm.err=""; var g=$("hmGo"),er=$("hmErr"); if(g) g.textContent=hmGoLabel(); if(er) er.textContent=""; }
+  });
+  document.addEventListener("submit",function(e){
+    var f=e.target&&e.target.closest?e.target.closest("[data-hm-form]"):null;
+    if(f){ e.preventDefault(); hmSubmit(f.getAttribute("data-hm-form")); }
   });
   window.addEventListener("resize",function(){ scheduleRender(); });
   try{ if(typeof ResizeObserver!=="undefined") new ResizeObserver(function(){ if(S.view==="map") guard("wires",function(){var it=S.items[curIdx()]||null; var internal=it&&!isMsg(it); layoutWires(it&&!internal?nodeKey(it.from):null,it&&!internal?nodeKey(it.to):null);}); }).observe($("stage")); }catch(e){}

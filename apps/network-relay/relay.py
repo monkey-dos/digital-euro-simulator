@@ -361,7 +361,7 @@ async def _run_helicopter(plan: dict):
     If the bank cannot follow, the DESP booking is undone, so the books never stay unbalanced."""
     title, hid = plan["title"], plan["helicopterId"]
     feed.publish("scenario", status="started", id="helicopter-money", title=title, steps=[], helicopterMoney=True,
-                 helicopterId=hid)
+                 helicopterId=hid, hm=plan["info"])
     try:
         status, answer = await _hm_send("desp", plan["desp"])
         if status != 200:
@@ -383,7 +383,6 @@ async def _run_helicopter(plan: dict):
     except Exception as e:  # never leave the control room waiting without an answer
         feed.publish("scenario", status="failed", id="helicopter-money", title=title, ok=False, error=str(e),
                      helicopterMoney=True, helicopterId=hid)
-        feed.publish("error", text=str(e))
     finally:
         feed.refresh_state_soon()
 
@@ -429,7 +428,9 @@ async def helicopter_money(request: Request):
         plan = {"desp": {"target": "dca", "bic": bic, "amount": f"{amount:.2f}", "helicopterId": hid},
                 "psp": {"account": "giro", "dean": person["dean"], "amount": f"{amount:.2f}", "helicopterId": hid},
                 "title": f"Helicopter Money: {amount:.2f} EUR giro money for {first} (via {APPS[slug]['name']})"}
-    plan.update(bank=slug, helicopterId=hid)
+    plan.update(bank=slug, helicopterId=hid,
+                info={"person": b["person"], "name": person["name"], "account": account, "amount": f"{amount:.2f}",
+                      "bank": slug, "bankName": APPS[slug]["name"]})
     task = asyncio.create_task(_run_helicopter(plan))
     _running.add(task)
     task.add_done_callback(_running.discard)

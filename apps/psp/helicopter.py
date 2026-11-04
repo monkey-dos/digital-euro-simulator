@@ -37,12 +37,12 @@ class HelicopterLedger:
 
     def book_giro(self, bank, customer, amount: Decimal, hid: str):
         """Giro Helicopter Money: bank ledger booking, then the customer's giro credit."""
-        bank.credit(customer, amount, label="credit (Helicopter Money)")
         legs = [{"account": "DCA at the central bank", "change": f"+{fmt(amount)}"},
                 {"account": f"giro of {customer.name}", "change": f"+{fmt(amount)}"}]
         sim_log.emit("internal", self.me, f"{self.me} bank ledger", "I5 (ours)", kind="bank-ledger",
                      body={"helicopterMoney": True, "helicopterId": hid, "bookings": legs},
                      note=f"bank ledger (Helicopter Money): DCA at the central bank +{fmt(amount)} / giro of {customer.name} +{fmt(amount)}")
+        bank.credit(customer, amount, label="credit (Helicopter Money)")
         self.bookings.append({"helicopterId": hid, "time": now_ts(), "account": "giro", "dean": customer.dean,
                               "name": customer.name, "amount": fmt(amount)})
 
